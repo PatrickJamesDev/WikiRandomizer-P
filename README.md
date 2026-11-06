@@ -10,8 +10,8 @@
 
 ---
 
-WikiRandomizer-P is a lightweight, distraction-free Android Wikipedia reader built around
-random discovery. Choose the subjects you care about, let the app build a local library of
+WikiRandomizer-P is a lightweight, distraction-free Wikipedia reader for Android, iOS and the
+web, built around random discovery. Choose the subjects you care about, let the app build a local library of
 matching articles, and press Random whenever you want something new to read. It is a fork of
 [WikiReader](https://github.com/nsh07/WikiReader) by nsh07, with a new random-topic engine,
 on-device relevance and personalization, curated reading lists, and many reading and library
@@ -83,6 +83,21 @@ SwiftUI iOS shell. On macOS with Xcode:
 See [BUILD_IOS.md](BUILD_IOS.md) for the full prerequisites, manual Xcode workflow and
 troubleshooting. iOS binaries must be built on macOS + Xcode; Linux and Windows can build the
 Android APK only.
+
+### Web app (PWA)
+
+The repository also contains an installable web app in [`pwa/`](pwa/) that shares the Kotlin core
+compiled to WebAssembly. Build it and start a local preview:
+
+```bash
+./build_pwa.sh serve
+```
+
+Then open <http://localhost:8080>. The app shell, visited articles, API responses and images are
+cached for offline reading, and it can be installed from the browser menu or Settings. A GitHub
+Actions workflow deploys it to GitHub Pages when Pages is enabled for the repository.
+
+See [BUILD_PWA.md](BUILD_PWA.md) for build, deployment and testing details.
 
 ## Curator feed
 

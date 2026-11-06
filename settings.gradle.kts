@@ -12,7 +12,9 @@ pluginManagement {
     }
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // Kotlin/Wasm adds the Binaryen distribution repository from the plugin. Keep the default
+    // PREFER_PROJECT mode so the wasm toolchain can resolve it; the project repositories below
+    // still provide every Android/KMP dependency.
     repositories {
         google()
         mavenCentral()

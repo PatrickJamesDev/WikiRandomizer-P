@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>WikiRandomizer-P</title>
+  <meta name="description" content="A fast, offline-friendly Wikipedia reader for Android, iOS and the web.">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="color-scheme" content="light dark">
+  <meta name="application-name" content="WikiReader">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="WikiReader">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/favicon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./styles.css">
+  <script>
+    // Apply the saved theme before paint to avoid a white flash in dark mode.
+    try {
+      const saved = localStorage.getItem('wr.theme') || 'system';
+      const dark = saved === 'dark' || (saved === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      document.documentElement.dataset.themePreference = saved;
+    } catch (_) { /* private mode */ }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="app" class="app">
+    <header class="topbar">
+      <button class="icon-button brand-button" data-action="home" aria-label="WikiReader home">
+        <span class="brand-mark" aria-hidden="true">W</span>
+        <span class="brand-text">WikiReader</span>
+      </button>
+      <div class="topbar-actions">
+        <span id="offlineBadge" class="offline-badge" hidden>Offline</span>
+        <button class="icon-button" data-action="random" aria-label="Open a random article" title="Random article">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+        </button>
+        <button class="icon-button" data-action="toggle-theme" aria-label="Toggle light or dark theme" title="Theme">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36A7 7 0 0 1 12 3Z"/></svg>
+        </button>
+        <button class="icon-button" data-action="open-language" aria-label="Choose Wikipedia language" title="Language">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9S14.5 18.3 12 21c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3Z"/></svg>
+          <span id="currentLang" class="lang-chip">EN</span>
+        </button>
+      </div>
+    </header>
+
+    <nav class="rail" aria-label="Main">
+      <button class="rail-item" data-action="tab" data-tab="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg><span>Home</span></button>
+      <button class="rail-item" data-action="tab" data-tab="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><span>Search</span></button>
+      <button class="rail-item" data-action="tab" data-tab="saved"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Z"/></svg><span>Saved</span></button>
+      <button class="rail-item" data-action="tab" data-tab="history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg><span>History</span></button>
+      <button class="rail-item" data-action="tab" data-tab="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg><span>Settings</span></button>
+    </nav>
+
+    <main id="main" class="main" tabindex="-1">
+      <section id="view-home" class="view" data-view="home">
+        <div class="view-heading">
+          <div>
+            <p class="eyebrow">Wikipedia, without the noise</p>
+            <h1>Read something new</h1>
+          </div>
+          <button class="pill-button" data-action="refresh-home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>Refresh</button>
+        </div>
+        <div id="homeContent" class="home-content" aria-live="polite"></div>
+      </section>
+
+      <section id="view-search" class="view" data-view="search" hidden>
+        <div class="view-heading"><div><p class="eyebrow">Find anything</p><h1>Search Wikipedia</h1></div></div>
+        <form id="searchForm" class="search-form" role="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+          <input id="searchInput" type="search" name="q" placeholder="Search Wikipedia…" autocomplete="off" enterkeyhint="search" aria-label="Search Wikipedia">
+          <button type="submit" class="pill-button">Search</button>
+        </form>
+        <div id="searchContent" class="list-stack" aria-live="polite"></div>
+      </section>
+
+      <section id="view-saved" class="view" data-view="saved" hidden>
+        <div class="view-heading">
+          <div><p class="eyebrow">Your library</p><h1>Saved articles</h1></div>
+          <button class="text-button" data-action="clear-saved" hidden id="clearSavedButton">Clear all</button>
+        </div>
+        <div id="savedContent" class="list-stack" aria-live="polite"></div>
+      </section>
+
+      <section id="view-history" class="view" data-view="history" hidden>
+        <div class="view-heading">
+          <div><p class="eyebrow">Pick up where you left off</p><h1>History</h1></div>
+          <button class="text-button" data-action="clear-history" hidden id="clearHistoryButton">Clear all</button>
+        </div>
+        <div id="historyContent" class="list-stack" aria-live="polite"></div>
+      </section>
+
+      <section id="view-settings" class="view" data-view="settings" hidden>
+        <div class="view-heading"><div><p class="eyebrow">Make it yours</p><h1>Settings</h1></div></div>
+        <div class="settings-grid">
+          <section class="card settings-card">
+            <h2>Appearance</h2>
+            <label class="setting-row"><span>Theme</span>
+              <select id="themeSelect">
+                <option value="system">Follow system</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
+            <label class="setting-row"><span>Article font size</span>
+              <input id="fontSizeInput" type="range" min="15" max="26" step="1">
+            </label>
+            <p class="setting-hint">Current: <strong id="fontSizeLabel">18 px</strong>. Tables scroll sideways on narrow screens.</p>
+          </section>
+
+          <section class="card settings-card">
+            <h2>Language</h2>
+            <label class="setting-row"><span>Wikipedia language</span>
+              <select id="languageSelect"></select>
+            </label>
+            <p class="setting-hint">Article links keep the language they were opened from. The interface stays English.</p>
+          </section>
+
+          <section class="card settings-card">
+            <h2>Offline &amp; storage</h2>
+            <p class="setting-hint">The app shell and every article you read are cached for offline use.</p>
+            <div id="cacheStats" class="cache-stats"></div>
+            <div class="button-row">
+              <button class="pill-button" data-action="clear-cache">Clear offline cache</button>
+              <button class="pill-button" data-action="export-data">Export data</button>
+              <button class="pill-button" data-action="import-data">Import data</button>
+            </div>
+            <input id="importFile" type="file" accept="application/json" hidden>
+          </section>
+
+          <section class="card settings-card">
+            <h2>Install</h2>
+            <p class="setting-hint" id="installHint">Install WikiReader on your home screen for a full-screen, offline-capable app.</p>
+            <button class="pill-button primary" data-action="install" id="installButton">Install app</button>
+          </section>
+
+          <section class="card settings-card">
+            <h2>Reading stats</h2>
+            <div id="statsContent" class="cache-stats"></div>
+            <button class="text-button" data-action="reset-stats">Reset statistics</button>
+          </section>
+
+          <section class="card settings-card about-card">
+            <h2>About</h2>
+            <p>WikiRandomizer-P is an open-source Wikipedia reader. The Android app is native Compose; the iOS app is SwiftUI; this PWA shares the same Kotlin core compiled to WebAssembly.</p>
+            <p class="setting-hint"><span id="wasmStatus">Loading WASM core…</span> · <a href="https://github.com/PatrickJamesDev/WikiRandomizer-P" target="_blank" rel="noopener">Source &amp; releases</a></p>
+          </section>
+        </div>
+      </section>
+
+      <section id="view-article" class="view article-view" data-view="article" hidden>
+        <div class="article-toolbar">
+          <button class="icon-button" data-action="back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
+          <div class="article-toolbar-title" id="articleToolbarTitle"></div>
+          <div class="article-toolbar-actions">
+            <button class="icon-button" data-action="font-smaller" aria-label="Decrease font size">A−</button>
+            <button class="icon-button" data-action="font-larger" aria-label="Increase font size">A+</button>
+            <button class="icon-button" data-action="toggle-save" aria-label="Save article" id="saveArticleButton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Z"/></svg></button>
+            <button class="icon-button" data-action="share" aria-label="Share article"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.6 6.8-4.2M8.6 13.4l6.8 4.2"/></svg></button>
+            <button class="icon-button" data-action="external" aria-label="Open on Wikipedia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3M21 14v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h6"/></svg></button>
+          </div>
+        </div>
+        <article id="articleContent" class="article-content" aria-live="polite"></article>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Main">
+      <button class="bottom-item" data-action="tab" data-tab="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg><span>Home</span></button>
+      <button class="bottom-item" data-action="tab" data-tab="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><span>Search</span></button>
+      <button class="bottom-item" data-action="tab" data-tab="saved"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Z"/></svg><span>Saved</span></button>
+      <button class="bottom-item" data-action="tab" data-tab="history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg><span>History</span></button>
+      <button class="bottom-item" data-action="tab" data-tab="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg><span>Settings</span></button>
+    </nav>
+
+    <dialog id="languageDialog" class="dialog">
+      <form method="dialog" class="dialog-card">
+        <div class="dialog-heading"><h2>Wikipedia language</h2><button class="icon-button" value="cancel" aria-label="Close">✕</button></div>
+        <input id="languageFilter" type="search" placeholder="Filter languages…" aria-label="Filter languages">
+        <div id="languageList" class="language-list"></div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div id="installBanner" class="install-banner" hidden>
+      <div><strong>Install WikiReader</strong><br><span>Add it to your home screen for offline reading.</span></div>
+      <button class="pill-button primary" data-action="install">Install</button>
+      <button class="icon-button" data-action="dismiss-install" aria-label="Dismiss">✕</button>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+  <noscript><p class="noscript">WikiReader needs JavaScript and WebAssembly for the full reader experience.</p></noscript>
+</body>
+</html>
