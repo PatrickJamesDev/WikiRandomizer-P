@@ -1,0 +1,125 @@
+﻿{{Short description|Family of ferns}}
+{{Automatic taxobox
+| image = Illustration Athyrium filix-femina0.jpg
+| image_caption = ''[[Athyrium filix-femina]]''
+| taxon = Athyriaceae
+| authority = [[Arthur Hugh Garfit Alston|Alston]]<ref name=PPGI/>
+| subdivision_ranks = Genera
+| subdivision = See text.
+| type_genus= ''[[Athyrium]]''
+}}
+
+The '''Athyriaceae''' (ladyferns and allies)<ref name=RothSundKuoLars12/> are a family of terrestrial [[fern]]s in the order [[Polypodiales]]. In the [[Pteridophyte Phylogeny Group]] classification of 2016 (PPG&nbsp;I), the family is placed  in the suborder [[Aspleniineae]], and includes two genera.<ref name=PPGI/> Alternatively, it may be treated as the subfamily ''' Athyrioideae''' of a very broadly defined family [[Aspleniaceae]].<ref name=ChriChas14/> The family has a [[cosmopolitan distribution]].
+
+==Description==
+Species of the Athyriaceae are terrestrial or [[lithophyte|lithophytic]], less commonly aquatic. They grow from various kinds of [[rhizome]]: short or long, creeping or erect, branched or not. The distribution and evolution of [[Phenotypic trait|characters]] in the family is complex, and the genera have few constant features by which they can be identified. The sporangia have stalks two or three cells wide in the middle, and contain brown [[Spore#Anatomy|monolete]] spores.<ref name=RothSundKuoLars12/>
+
+==Taxonomy ==
+
+=== Earlier classifications ===
+The family was first created by [[Arthur Hugh Garfit Alston|Arthur H.G. Alston]] in 1956. It has had a varied history. In 2014, Christenhusz and Chase submerged it as the subfamily Athyrioideae within the family [[Aspleniaceae]],<ref name=ChriChas14/> a status maintained by [[Plants of the World Online]] {{As of|lc=yes|2019|July}}.<ref name="POWO_30000361-2">{{citation |title=''Athyriaceae'' Alston |work=Plants of the World Online |publisher=Royal Botanic Gardens, Kew|url=https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:30000361-2 |access-date=2019-07-30 }}</ref> The [[Pteridophyte Phylogeny Group#PPG I|PPG I]] classification of 2016 restored it to family status.<ref name=PPGI/>
+
+Athyriaceae is a member of the eupolypods II clade (now the suborder Aspleniineae), in the order [[Polypodiales]].<ref name=RothLarsKuoKora12/> It is related to other families in the clade as in the following cladogram:<ref name=Leht11/><ref name=RothLarsKuoKora12/>
+{{eupolypods II cladogram}}
+
+The Athyriaceae in the past included ''[[Cystopteris]]'' and ''[[Gymnocarpium]]'' (now part of [[Dennstaedtiaceae]]<ref name=PPGI/>). The family has been subsumed in the family [[Woodsiaceae]], but a Woodsiaceae defined in this way may be [[paraphyletic]] if it omits the Onocleaceae and Blechnaceae (as of 2006, the evidence was not clear).<ref name=SmitPryeSchuKora06/>
+
+=== Genera ===
+As [[Circumscription (taxonomy)|circumscribed]] in [[PPG I]], Athyriacae contains the following genera.<ref name=PPGI/>
+
+*''[[Athyrium]]'' <small>Roth</small> (including ''Anisocampium'' and ''Cornopteris'' <small>Nakai</small>)
+*''[[Deparia]]'' <small>Hook. & Grev.</small>
+*''[[Diplazium]]'' <small>Sw.</small>
+
+{{As of|2019|November}}, the ''Checklist of Ferns and Lycophytes of the World'' recognizes three further genera,<ref name=CFLW/> which other sources include in ''Athyrium'':<ref name=PPGI/><ref name=POWO_17209410-1/>
+*''Anisocampium'' <small>C.Presl</small>
+*''Cornopteris'' <small>Nakai</small>
+*''Pseudathyrium'' <small>Newman</small>
+
+The genera have the following [[phylogenetic]] relationships:
+
+{| class="wikitable"
+|-
+! colspan=1 | PPG I<ref name=SchuPrye07/><ref name=LiuChioKato11/>
+! colspan=1 | Fern Tree of Life<ref>{{cite journal |last1=Nitta |first1=Joel H. |last2=Schuettpelz |first2=Eric |last3=Ramírez-Barahona |first3=Santiago |last4=Iwasaki |first4=Wataru |display-authors=et al. |year=2022 |title=An Open and Continuously Updated Fern Tree of Life |journal=Frontiers in Plant Science |volume=13 |issue= |article-number= 909768| doi=10.3389/fpls.2022.909768 |pmid= 36092417|pmc=9449725 |bibcode= 2022FrPS...1309768N|doi-access=free}}</ref><ref>{{cite web|last1= |first1= |last2= |first2= |last3= |first3= |last4= |first4= |display-authors=et al. |year=2022 |title=Tree viewer: interactive visualization of FTOL |url=https://fernphy.github.io/viewer.html |version=FTOL v1.3.0 |access-date=12 December 2022}}</ref>
+|- 
+| style="vertical-align:top|
+|-
+|style="padding:10px;"|
+{{clade|style=font-size:90%;line-height:80%
+|1={{clade
+  |1=''[[Deparia]]''
+  |2={{clade
+    |1=''[[Diplazium]]''
+    |label2=''[[Athyrium]]'' s.l.
+    |2={{clade
+      |1=''[[Anisocampium]]''
+      |2={{clade
+        |1=''[[Cornopteris]]''
+        |2=''[[Athyrium]]'' s.s.
+         }}
+       }}
+     }}
+   }}
+}}
+|
+{{clade|style=font-size:90%;line-height:80%
+|1={{Clade
+  |label1=Deparioideae
+  |1=''[[Deparia]]''
+  |label2=Athyrioideae
+  |2={{clade
+    |1={{clade
+      |1=''[[Ephemeropteris]]''
+      |2={{clade
+        |1=''[[Anisocampium]]''
+        |2={{clade
+          |1={{clade
+            |1=''[[Pseudathyrium]]''
+            |2=''[[Cornopteris]]''
+             }}
+          |2=''[[Athyrium]]''
+           }}
+         }}
+       }}
+    |2=''[[Diplazium]]''
+     }}
+   }}
+}}
+|}
+
+==Distribution and habitat==
+Athyriaceae has a worldwide distribution, particularly the genus ''Athyrium''.<ref name=POWO_30009012-2/> Most species of Athyriaceae are medium-sized terrestrial ferns, growing in the [[understory|understorey]] below trees and shrubs.<ref name=RothSundKuoLars12/>
+
+== References ==
+{{Reflist|30em|refs=
+<ref name=CFLW>{{Citation |mode=cs1 |last1=Hassler |first1=Michael |last2=Schmitt |first2=Bernd |date=November 2019 |contribution=Athyriaceae |title=Checklist of Ferns and Lycophytes of the World |at=8.11 |url=https://worldplants.webarchiv.kit.edu/ferns/ |access-date=2019-11-27 |name-list-style=amp |archive-date=2017-09-02 |archive-url=https://web.archive.org/web/20170902225743/http://worldplants.webarchiv.kit.edu/ferns/ }}</ref>
+
+<ref name=ChriChas14>{{Cite journal |last1=Christenhusz |first1=Maarten J.M. |last2=Chase |first2=Mark W. |date=2014 |title=Trends and concepts in fern classification |journal=[[Annals of Botany]] |volume=113 |issue=9 |pages=571–594 |doi=10.1093/aob/mct299 |author-link1=Maarten J. M. Christenhusz |author-link2=Mark W. Chase |pmid=24532607 |pmc=3936591 |name-list-style=amp }}</ref>
+
+<ref name=Leht11>{{Cite journal |last1=Lehtonen |first1=Samuli |date=2011 |title=Towards Resolving the Complete Fern Tree of Life |journal=PLOS ONE |volume=6 |issue=10 |article-number=e24851 |doi=10.1371/journal.pone.0024851 |pmid=22022365 |pmc=3192703 |bibcode=2011PLoSO...624851L |doi-access=free }}</ref>
+
+<ref name=LiuChioKato11>{{Citation |last1=Liu |first1=Yea-Chen |last2=Chiou |first2=Wen-Liang |last3=Kato |first3=Masahiro |date=2011 |title=Molecular phylogeny and taxonomy of the fern genus ''Anisocampium'' (Athyriaceae) |journal=[[Taxon (journal)|Taxon]] |volume=60 |issue=3 |pages=824–830 |url=http://140.130.96.119/wordpress/wp-content/uploads/2011/06/Taxon-60-824-830-Anisocampium.pdf |access-date=2019-07-30 |doi=10.1002/tax.603014 |jstor=41317249 |bibcode=2011Taxon..60..824L |name-list-style=amp }}</ref>
+
+<ref name=POWO_17209410-1>{{cite web |title=''Pseudathyrium'' Newman |work=Plants of the World Online |publisher=Royal Botanic Gardens, Kew|url=https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:17209410-1 |access-date=2019-11-27 }}</ref>
+
+<ref name=POWO_30009012-2>{{cite web |title=''Athyrium'' Roth |work=Plants of the World Online |publisher=Royal Botanic Gardens, Kew|url=https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:30009012-2 |access-date=2019-07-30 }}</ref>
+
+<ref name=PPGI>{{cite journal |author=PPG I |title=A community-derived classification for extant lycophytes and ferns |year=2016 |journal=Journal of Systematics and Evolution |volume=54 |issue=6 |pages=563–603 |doi=10.1111/jse.12229|bibcode=2016JSyEv..54..563. |s2cid=39980610 |doi-access=free }}</ref>
+
+<ref name=RothLarsKuoKora12>{{Cite journal |last1=Rothfels |first1=Carl J. |last2=Larsson |first2=Anders |last3=Kuo |first3=Li-Yaung |last4=Korall |first4=Petra |last5=Chiou |first5=Wen-Liang |last6=Pryer |first6=Kathleen M. |date=2012 |title=Overcoming Deep Roots, Fast Rates, and Short Internodes to Resolve the Ancient Rapid Radiation of Eupolypod II Ferns |journal=Systematic Biology |volume=61 |issue=1 |pages=490–509 |doi=10.1093/sysbio/sys001 |pmid=22223449 |name-list-style=amp |doi-access=free }}</ref>
+
+<ref name=RothSundKuoLars12>{{Cite journal |last1=Rothfels |first1=Carl J. |last2=Sundue |first2=Michael A. |last3=Kuo |first3=Li-Yaung |last4=Larsson |first4=Anders |last5=Kato |first5=Masahiro |last6=Schuettpelz |first6=Eric |last7=Pryer |first7=Kathleen M. |date=2012 |title=A revised family–level classification for eupolypod II ferns (Polypodiidae: Polypodiales) |journal=Taxon |volume=61 |issue=3 |pages=515–533 |url=http://reflora.jbrj.gov.br/downloads/PTER6.pdf |access-date=2019-07-30 |doi=10.1002/tax.613003 |bibcode=2012Taxon..61..515R |name-list-style=amp |archive-url=https://web.archive.org/web/20190710211140/http://reflora.jbrj.gov.br/downloads/PTER6.pdf |archive-date=2019-07-10 }}</ref>
+
+<ref name=SchuPrye07>{{Cite journal |last1=Schuettpelz |first1=Eric |last2=Pryer |first2=Kathleen M. |date=2007 |title=Fern phylogeny inferred from 400 leptosporangiate species and three plastid genes |journal=[[Taxon (journal)|Taxon]] |volume=56 |issue=4 |pages=1037–1050 |url=http://people.uncw.edu/schuettpelze/fernlab/publications_files/schuettpelz_and_pryer_2007.pdf |access-date=2012-04-30 |doi=10.2307/25065903 |jstor=25065903 |bibcode=2007Taxon..56.1037S |archive-url=https://web.archive.org/web/20120430050757/http://people.uncw.edu/schuettpelze/fernlab/publications_files/schuettpelz_and_pryer_2007.pdf |archive-date=2012-04-30 |name-list-style=amp }}</ref>
+
+<ref name=SmitPryeSchuKora06>{{Cite journal |last1=Smith |first1=Alan R. |last2=Pryer |first2=Kathleen M. |last3=Schuettpelz |first3=Eric |last4=Korall |first4=Petra |last5=Schneider |first5=Harald |last6=Wolf |first6=Paul G. |date=2006 |title=A classification for extant ferns |journal=Taxon |volume=55 |issue=3 |pages=705–731 |url=http://www.pryerlab.net/publication/fichier749.pdf |access-date=2008-02-26 |doi=10.2307/25065646 |jstor=25065646 |bibcode=2006Taxon..55..705S |archive-url=https://web.archive.org/web/20080226232147/http://www.pryerlab.net/publication/fichier749.pdf |archive-date=2008-02-26 |name-list-style=amp }}</ref>
+}}
+
+{{Plant classification}}
+{{Fern classification}}
+{{Taxonbar|from=Q3774137}}
+{{Authority control}}
+
+[[Category:Athyriaceae| ]]
+[[Category:Fern families]]

@@ -20,9 +20,15 @@ import ir.ehsannarmani.compose_charts.models.PopupProperties
 @Composable
 fun ArticleViewsGraph(viewCounts: List<Int>, modifier: Modifier = Modifier) {
     val colorScheme = MaterialTheme.colorScheme
+    // The chart library does min/max maths over the values: an empty or single-point series (or a
+    // all-zero one) can throw or produce NaN while drawing. A sparkline needs 2+ points anyway.
+    if (viewCounts.size < 2) return
+    // The library's default scale is 0..max, which divides by zero when every value is 0.
+    val hi = viewCounts.max().toDouble()
     LineChart(
         modifier = modifier,
-        data = remember {
+        maxValue = if (hi <= 0.0) 1.0 else hi,
+        data = remember(viewCounts) {
             listOf(
                 Line(
                     label = "",

@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "curators": [
+    {
+      "id": "patrickjames",
+      "name": "Patrick James",
+      "bio": "Builds WikiRandomizer-P. Likes plants, odd biology and articles that start with a rabbit hole.",
+      "github": "https://github.com/PatrickJamesDev",
+      "picks": [
+        {
+          "title": "Athyriaceae",
+          "lang": "en",
+          "note": "A fern family with a surprisingly readable phylogenetic tree."
+        },
+        {
+          "title": "Chasmogamy",
+          "lang": "en",
+          "note": "A small botanical concept that explains a lot about flowers."
+        },
+        {
+          "title": "Solanum",
+          "lang": "en",
+          "note": "Nightshades, tomatoes and a genus that keeps surprising people."
+        }
+      ]
+    },
+    {
+      "id": "wikirandomizer-community",
+      "name": "WikiRandomizer community",
+      "bio": "A rotating list of reader picks. Add yours with a pull request to curators.json.",
+      "github": "https://github.com/PatrickJamesDev/WikiRandomizer-P",
+      "picks": [
+        {
+          "title": "Poaceae",
+          "lang": "en",
+          "note": "Grasses, cereals and the family that feeds most of the world."
+        },
+        {
+          "title": "History of tea",
+          "lang": "en",
+          "note": "Trade, empire and a drink that changed daily life."
+        }
+      ]
+    }
+  ]
+}

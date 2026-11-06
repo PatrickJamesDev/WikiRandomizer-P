@@ -4,7 +4,7 @@
     <string name="about">Tentang</string>
     <string name="saved">Tersimpan</string>
     <string name="app">Apl</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="articleDeleted">Artikel dihapus</string>
     <string name="articlesSize">%1$s artikel, %2$s bahasa</string>
     <string name="author">Penggubah</string>
@@ -95,7 +95,7 @@
     <string name="onThisDay">Pada hari ini</string>
     <string name="resetSettingsDialogDesc">Semua setelan akan dipulihkan ke setelan asali</string>
     <string name="scrollRight">Gulir ke kanan</string>
-    <string name="setAsDefaultDesc">Anda bisa menyetel WikiReader sebagai aplikasi asali untuk membuka tautan Wikipedia. Klik tombol di bawah untuk mengetahui lebih lanjut atau untuk membuka setelannya.</string>
+    <string name="setAsDefaultDesc">Anda bisa menyetel WikiRandomizer-P sebagai aplikasi asali untuk membuka tautan Wikipedia. Klik tombol di bawah untuk mengetahui lebih lanjut atau untuk membuka setelannya.</string>
     <string name="settingImageBackground">Latar belakang gambar</string>
     <string name="settingSearchHistoryDesc">Simpan riwayat penelusuran. Riwayat yang sudah ada tidak terpengaruh oleh opsi ini.</string>
     <string name="settingImageBackgroundDesc">Tambahkan latar belakang putih ke gambar transparan. Latar belakang tersebut bisa membantu menaikkan tingkat keterbacaan dalam mode gelap.</string>
@@ -112,7 +112,7 @@
     <string name="titleMatches">Judul cocok</string>
     <string name="topArticlesOTD">Artikel teratas hari ini</string>
     <string name="translate">Terjemahkan</string>
-    <string name="translateDesc">Bantu terjemahkan WikiReader ke dalam bahasa Anda</string>
+    <string name="translateDesc">Bantu terjemahkan WikiRandomizer-P ke dalam bahasa Anda</string>
     <string name="trendingArticles">Artikel yang sedang tren</string>
     <string name="unableToDeleteArticle">Tidak dapat menghapus artikel: %1$s</string>
     <string name="up_arrow">Ke atas</string>

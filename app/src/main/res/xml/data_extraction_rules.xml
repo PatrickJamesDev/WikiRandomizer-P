@@ -1,19 +1,20 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ backup rules.
+  Cloud backup has a quota (about 25 MB). If an app goes over it, the whole backup fails, so only
+  small, irreplaceable data goes there: settings, history and saved articles (app_database).
+  Everything that can be downloaded again is left out: the article library (topic_index_*.db,
+  which can be tens of MB), and the caches. A device-to-device transfer keeps the library
+  because rebuilding it takes a long time, but not the caches.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- With an <include> in a domain, only what is listed in that domain is backed up. -->
+        <include domain="database" path="app_database" />
+        <!-- Only app_database is included, so caches, logs and the article library are already left out. -->
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="file" path="article_cache" />
+        <exclude domain="file" path="logs" />
     </device-transfer>
-    -->
 </data-extraction-rules>

@@ -16,3 +16,17 @@ local.properties
 /.kotlin
 api-reference.json
 .idea
+# iOS / Kotlin Multiplatform build output
+/iosApp/WikiReader.xcodeproj/
+/iosApp/*.xcworkspace/
+/iosApp/build/
+/build/ios*/
+/shared/build/
+*.framework
+*.xcuserstate
+xcuserdata/
+DerivedData/
+build_ios_log.txt
+build_ios_errors.txt
+build_log.txt
+build_errors.txt

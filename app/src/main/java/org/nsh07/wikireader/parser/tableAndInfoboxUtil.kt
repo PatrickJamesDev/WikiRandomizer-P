@@ -47,10 +47,11 @@ suspend fun parseWikitable(
 
     for (line in lines) {
         val currSize = currentRow.size
-        if (rowSpan[currSize] != null) {
-            if (rowSpan[currSize]!! - 1 > 0) {
+        val spanLeft = rowSpan[currSize]
+        if (spanLeft != null) {
+            if (spanLeft - 1 > 0) {
                 currentRow.add(AnnotatedString(""))
-                rowSpan[currSize] = rowSpan[currSize]!! - 1
+                rowSpan[currSize] = spanLeft - 1
             } else
                 rowSpan.remove(currSize)
         }
@@ -71,8 +72,18 @@ suspend fun parseWikitable(
             }
 
             line.startsWith("|+") -> {
-                // Table caption
-                caption = "'''${line.removePrefix("|+").trim()}'''".toWikitextAnnotatedString(
+                // Table caption. MediaWiki allows cell attributes before the caption text:
+                //     |+ style="text-align:centre;" | Panthera tigris tigris
+                // Only the part after the attribute separator is the caption; otherwise the
+                // whole `style=...` string used to be rendered as a bold header.
+                var captionText = line.removePrefix("|+").trim()
+                val attributeEnd = captionText.indexOf('|')
+                if (attributeEnd >= 0 &&
+                    captionText.substring(0, attributeEnd).contains('=')
+                ) {
+                    captionText = captionText.substring(attributeEnd + 1).trim()
+                }
+                caption = "'''$captionText'''".toWikitextAnnotatedStringSafe(
                     colorScheme,
                     typography,
                     loadPage,
@@ -85,6 +96,7 @@ suspend fun parseWikitable(
                 // Table end
                 if (currentRow.isNotEmpty()) {
                     rows.add(currentRow)
+                    maxSize = max(currentRow.size, maxSize)
                     currentRow = mutableListOf()
                 }
                 insideTable = false
@@ -128,7 +140,7 @@ suspend fun parseWikitable(
 
                         cells.add(
                             ("'''${curr.trim()}'''")
-                                .toWikitextAnnotatedString(
+                                .toWikitextAnnotatedStringSafe(
                                     colorScheme,
                                     typography,
                                     loadPage,
@@ -161,7 +173,7 @@ suspend fun parseWikitable(
 
                     cells.add(
                         ("'''${curr.trim()}'''")
-                            .toWikitextAnnotatedString(
+                            .toWikitextAnnotatedStringSafe(
                                 colorScheme,
                                 typography,
                                 loadPage,
@@ -205,7 +217,7 @@ suspend fun parseWikitable(
                         } else {
                             cells.add(
                                 curr.trim()
-                                    .toWikitextAnnotatedString(
+                                    .toWikitextAnnotatedStringSafe(
                                         colorScheme,
                                         typography,
                                         loadPage,
@@ -242,7 +254,7 @@ suspend fun parseWikitable(
                     } else {
                         cells.add(
                             curr.trim()
-                                .toWikitextAnnotatedString(
+                                .toWikitextAnnotatedStringSafe(
                                     colorScheme,
                                     typography,
                                     loadPage,
@@ -264,7 +276,7 @@ suspend fun parseWikitable(
                     val lastIndex = currentRow.lastIndex
                     if (lastIndex != -1)
                         currentRow[lastIndex] += line.trim()
-                            .toWikitextAnnotatedString(
+                            .toWikitextAnnotatedStringSafe(
                                 colorScheme,
                                 typography,
                                 loadPage,
@@ -278,14 +290,16 @@ suspend fun parseWikitable(
 
     if (currentRow.isNotEmpty()) {
         rows.add(currentRow)
+        maxSize = max(currentRow.size, maxSize)
     }
 
-    for (i in 0 until rows.size) {
-        // Sanity check to ensure all rows are the same size
-        if (rows[i].size < maxSize) {
-            repeat(maxSize - rows[i].size) {
-                rows[i].add(AnnotatedString(""))
-            }
+    // Sanity check: every row must have the same number of cells. Use the widest row that was
+    // actually seen rather than only the widest one before a `|-`, otherwise a table whose last
+    // row is wider than all previous rows could index outside the matrix in the renderer.
+    val columnCount = max(maxSize, rows.maxOfOrNull { it.size } ?: 0)
+    for (row in rows) {
+        repeat(columnCount - row.size) {
+            row.add(AnnotatedString(""))
         }
     }
 
@@ -322,19 +336,19 @@ suspend fun parseInfobox(
     lines.fastForEach { item ->
         val it = item.trim()
         if (it.startsWith('|') && it.contains('=')) {
-            if (currentRowVal.matches(".{1,6}:.+".toRegex())) { // Add image data in plaintext
+            if (currentRowVal.matches(imageRowRegex)) { // Add image data in plaintext
                 rows.add(Pair(AnnotatedString(currentRowKey), AnnotatedString(currentRowVal)))
             } else if (currentRowVal.isNotBlank()) {
                 rows.add(
                     Pair(
-                        currentRowKey.toWikitextAnnotatedString(
+                        currentRowKey.toWikitextAnnotatedStringSafe(
                             colorScheme,
                             typography,
                             loadPage,
                             fontSize,
                             showRef = showRef
                         ),
-                        currentRowVal.toWikitextAnnotatedString(
+                        currentRowVal.toWikitextAnnotatedStringSafe(
                             colorScheme,
                             typography,
                             loadPage,
@@ -361,14 +375,14 @@ suspend fun parseInfobox(
     if (currentRowVal.isNotBlank()) {
         rows.add(
             Pair(
-                currentRowKey.toWikitextAnnotatedString(
+                currentRowKey.toWikitextAnnotatedStringSafe(
                     colorScheme,
                     typography,
                     loadPage,
                     fontSize,
                     showRef = showRef
                 ),
-                currentRowVal.trim('\n', ' ', '}').toWikitextAnnotatedString(
+                currentRowVal.trim('\n', ' ', '}').toWikitextAnnotatedStringSafe(
                     colorScheme,
                     typography,
                     loadPage,
@@ -379,5 +393,21 @@ suspend fun parseInfobox(
         )
     }
 
-    rows.fastFilter { !it.first.matches("Image|Caption|Alt|Alt .+".toRegex()) && it.second.isNotBlank() }
+    rows.fastFilter { !it.first.matches(imageMetaKeyRegex) && it.second.isNotBlank() }
 }
+
+private val imageRowRegex = ".{1,6}:.+".toRegex()
+
+/**
+ * Keys whose values are picture metadata, not infobox rows. Covers `image`, `image2`, …, the
+ * many spellings of their captions (`image caption`, `image_caption`, `caption2`, …), alt text
+ * and size hints. These used to surface as raw `File:…` text rows.
+ */
+private val imageMetaKeyRegex = Regex(
+    "^(?:image|photo|img|logo|map|picture)\\s*\\d*$|" +
+            "^(?:image|photo|img|logo|map|picture)?\\s*\\d*\\s*caption\\s*\\d*$|" +
+            "^(?:image|photo|img|logo|map|picture)?\\s*alt\\s*\\d*$|" +
+            "^(?:image|photo|img|logo|map|picture)\\s*(?:size|upright|width)\\s*\\d*$|" +
+            "^(?:caption|alt)\\s*\\d*$",
+    RegexOption.IGNORE_CASE
+)

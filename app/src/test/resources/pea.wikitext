@@ -1,0 +1,379 @@
+﻿{{short description|Species of plant with edible seeds}}
+{{About|one species of plant and its variations}}
+{{More citations needed|date=March 2017}}
+{{Use dmy dates|date=June 2020}}
+{{Speciesbox
+|name = Pea
+|image = Doperwt rijserwt peulen Pisum sativum.jpg
+|image_caption = Pea plant
+|image2 = Peas in pods - Studio.jpg
+|image2_caption = Peas are produced in pods
+|taxon = Lathyrus oleraceus
+|authority = [[Jean-Baptiste Lamarck|Lam.]] (1779)<ref name = powo/>
+|synonyms={{collapsible list|bullets=true
+ |title=Synonymy
+ |''Lathyrus schaeferi'' {{small|Kosterin (2017)}}
+ |''Pisum abyssinicum'' {{small|A.Braun (1841)}}
+ |''Pisum album'' {{small|Garsault (1764), opus utique rej.}}
+ |''Pisum arvense'' {{small|L. (1753)}}
+ |''Pisum baclium'' {{small|Steud. (1841), not validly publ.}}
+ |''Pisum biflorum'' {{small|Raf. (1810)}}
+ |''Pisum borussicum'' {{small|Steud. (1841), not validly publ.}}
+ |''Pisum chlorospermum'' {{small|Steud. (1841), not validly publ.}}
+ |''Pisum coccineum'' {{small|Medik. (1787)}}
+ |''Pisum coerulescens'' {{small|Steud. (1841), not validly publ.}}
+ |''Pisum commune'' {{small|Clavaud (1884)}}
+ |''Pisum elatius'' {{small|M.Bieb. (1808)}}
+ |''Pisum elatum'' {{small|Ser. (1825)}}
+ |''Pisum excorticatum'' {{small|Steud. (1841), not validly publ.}}
+ |''Pisum fertile'' {{small|Steud. (1841), not validly publ.}}
+ |''Pisum granulatum'' {{small|J.Lloyd (1844)}}
+ |''Pisum hortense'' {{small|Asch. & Graebn. (1910)}}
+ |''Pisum humile'' {{small|Mill. (1768)}}
+ |''Pisum humile'' {{small|Boiss. & Noë (1856), nom. illeg.}}
+ |''Pisum jomardii'' {{small|Schrank (1805)}}
+ |''Pisum leptolobum'' {{small|Rchb. (1832)}}
+ |''Pisum macrocarpum'' {{small|Ser. ex Schur (1866)}}
+ |''Pisum macrospermum'' {{small|Steud. (1841)}}
+ |''Pisum oleraceus'' var. ''govorovii'' {{small|Golodk. (1935)}}
+ |''Pisum praecox'' {{small|Steud. (1841)}}
+ |''Pisum prolificum'' {{small|Steud. (1841)}}
+ |''Pisum pumilio'' {{small|(Meikle) Greuter (1973)}}
+ |''Pisum quadratum'' {{small|(L.) Rchb. (1832)}}
+ |''Pisum ramulare'' {{small|Rchb. (1832)}}
+ |''Pisum roseum'' {{small|Steud. (1841), not validly publ.}}
+ |''Pisum rugosum'' {{small|Steud. (1841), not validly publ.}}
+ |''Pisum saccharatum'' {{small|Rchb. (1832)}}
+ |''[[Pisum]] sativum'' {{small|L. (1753)}}
+ |''Pisum sibiricum'' {{small|Steud. (1841), not validly publ.}}
+ |''Pisum smyrnense'' {{small|Steud. (1841), not validly publ.}}
+ |''Pisum syriacum'' {{small|C.O.Lehm. ex El-Gadi & al. (1987), nom. superfl.}}
+ |''Pisum tetragonum'' {{small|Pasq. (1867)}}
+ |''Pisum thebaicum'' {{small|Willd. (1814)}}
+ |''Pisum transcaucasicum'' {{small|(Govorov) Stankov (1949), not validly publ.}}
+ |''Pisum tuffetii'' {{small|R.Lesson (1835)}}
+ |''Pisum umbellatum'' {{small|(L.) Mill. (1768)}}
+ |''Pisum uniflorum'' {{small|Moench (1794)}}
+ |''Pisum variegatum'' {{small|C.Presl (1826)}}
+ |''Pisum viride'' {{small|Steud. (1841), not validly publ.}}
+ |''Pisum vulgare'' {{small|J.Jundz. (1830)}}
+ |''Pisum zeylanicum'' {{small|Steud. (1841), not validly publ.}}
+}}
+|synonyms_ref = <ref name = powo>{{cite web|url=https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:501912-1|title=''Fabaceae''>''Lathyrus''>''Lathyrus oleraceus'' Lam.|publisher=[[Royal Botanic Gardens, Kew]]: [[Plants of the World Online]]|access-date=9 August 2023}}</ref>
+}}
+
+'''Pea''' is a [[Legume|pulse]] or fodder crop, but the word often refers to the [[seed]] or sometimes the [[Glossary of plant morphology#Fruit types|pod]] of this [[flowering plant]] species. Peas are eaten as a vegetable. The pea is native to the Mediterranean region and southwest Asia, and cultivated nearly worldwide.<ref name = powo/>
+
+[[Carl Linnaeus]] gave the species the scientific name '''''Pisum sativum''''' in 1753 (meaning [[Sativum|cultivated]] pea). Some sources now treat it as '''''Lathyrus oleraceus''''';<ref name="powo" /><ref>{{Cite journal |last1=Schaefer |first1=Hanno |last2=Hechenleitner |first2=Paulina |last3=Santos-Guerra |first3=Arnoldo |last4=de Sequeira |first4=Miguel Menezes |last5=Pennington |first5=R Toby |last6=Kenicer |first6=Gregory |last7=Carine |first7=Mark A |date=2012 |title=Systematics, biogeography, and character evolution of the legume tribe Fabeae with special focus on the middle-Atlantic island lineages |journal=[[BMC Evolutionary Biology]] |language=en |volume=12 |issue=1 |pages=250 |doi=10.1186/1471-2148-12-250 |doi-access=free |issn=1471-2148 |pmc=3547781 |pmid=23267563|bibcode=2012BMCEE..12..250S }}</ref> however the need and justification for the change is disputed.<ref name=EllisEtAl24>{{Cite journal |last1=Ellis |first1=Noel |last2=Smýkal |first2=Petr |last3=Maxted |first3=Nigel |last4=Coyne |first4=Clarice |last5=Domoney |first5=Claire  |last6=Burstin |first6=Judith |last7=Bouchenak-Khelladi |first7=Yanis |last8=Chayut |first8=Noam
+|date=2024 |title=The Taxonomic Status of Genera within the Fabeae (Vicieae), with a Special Focus on ''Pisum'' |journal=[[Diversity (journal)|Diversity]] |language=en |volume=16 |issue=7 |page=365 |doi=10.3390/d16070365 |bibcode=2024Diver..16..365E |doi-access=free }}</ref> The name "Pea" is also used to describe other edible seeds from the [[Fabaceae]] such as the [[pigeon pea]] (''Cajanus cajan''), the [[cowpea]] (''Vigna unguiculata''), the seeds from several species of ''[[Lathyrus]]'', and [[Swainsona formosa|Sturt's desert pea]] (''Swainsona formosa'').
+
+Each pod contains several seeds (peas), which can have green or yellow [[cotyledon]]s when mature. Botanically, pea pods are [[fruit]],<ref>Rogers, Speed (2007). [https://books.google.com/books?id=IEGqWXgcmQEC&pg=PA169&lpg=PA169 ''Man and the Biological World''] Read Books. pp. 169–170. {{ISBN|978-1-4067-3304-4}}. Retrieved on 2009-04-15.</ref> since they contain seeds and develop from the ovary of a pea flower.
+
+Peas are [[annual plant]]s, with a [[biological life cycle|life cycle]] of one year. They are a cool-season crop grown in many parts of the world; planting can take place from winter to early summer depending on location. The average pea weighs between {{convert|100|and(-)|360|mg|grain|frac=2|abbr=off}}.<ref name=autogenerated1>{{cite web |url=http://www.hort.purdue.edu/newcrop/cropfactsheets/pea.html |title=Pea|website=Purdue.edu |access-date=2017-08-21}}</ref> The immature peas (and in [[snow pea]]s and [[snap pea]]s the tender pod as well) are used as a vegetable, fresh, frozen or canned; varieties of the species typically called field peas are grown to produce dry peas like the [[split pea]] shelled from a matured pod. These are the basis of [[pease porridge]] and [[pea soup]], staples of [[medieval cuisine]]; in Europe, consuming fresh immature green peas was an innovation of [[Early modern European cuisine|early modern cuisine]].
+
+== Description ==
+[[File:Doperwt rijserwt bloemen Pisum sativum.jpg|thumb|Flowers]]
+[[File:Pisum sativum MHNT.BOT.2010.12.9.jpg|thumb|Ripe pods dehiscing to shed ripe seeds ([[MHNT]])]]
+
+A pea is a most commonly green, occasionally golden yellow,<ref>{{cite web|url=http://www.diggers.com.au/shop/product/S167/Pea%20Golden%20Podded.aspx |title=Pea Golden Podded|publisher=The Diggers Club|location=Australia |access-date=2018-07-24|archive-url=https://web.archive.org/web/20120126035837/http://www.diggers.com.au/shop/product/S167/Pea%20Golden%20Podded.aspx |archive-date=2012-01-26 }}</ref> or infrequently purple<ref>{{cite web|url=http://glallotments.co.uk/Peas.aspx|title=Purple podded peas|website=Glallotments.co.uk|access-date=21 August 2017|url-status=dead|archive-url=https://web.archive.org/web/20110318123440/http://glallotments.co.uk/Peas.aspx|archive-date=18 March 2011}}</ref> pod-shaped [[vegetable]], the pod has a length of about {{convert|4|to|10|cm|in|0}}, the fruit is widely grown as a cool-season crop. The seeds may be planted as soon as the soil temperature reaches {{convert|10|°C|°F|abbr=on}}, with the plants growing best at temperatures of {{convert|13|to|18|C|F}}. They do not thrive in the summer heat of warmer temperate and lowland tropical [[climate]]s, but do grow well in cooler, high-elevation, tropical areas. Many cultivars reach maturity about 60 days after planting.<ref>{{cite book|url=https://books.google.com/books?id=E4g9kgNSlOUC&pg=PA120|title=Crop Plant Anatomy|date=21 August 2017|publisher=CABI|access-date=21 August 2017|via=Google Books|isbn=9781780640198}}</ref>
+
+Peas have both low-growing and [[vine|vining]] cultivars. The vining cultivars grow thin [[tendril]]s from leaves that coil around any available support and can climb to be {{convert|1|to|2|m|ft|0}} high. A traditional approach to supporting climbing peas is to thrust branches pruned from [[tree]]s or other woody plants upright into the soil, providing a lattice for the peas to climb. Branches used in this fashion are called '''pea sticks'''<ref>{{cite web|url=https://www.rhs.org.uk/advice/grow-your-own/vegetables/peas|title=How to grow peas|publisher=Royal Horticultural Society|access-date=21 February 2021}}</ref> or sometimes '''pea brush'''. Metal fences, [[twine]], or netting supported by a frame are used for the same purpose. In dense plantings, peas give each other some measure of mutual support. Pea plants can [[self-pollinate]].<ref>{{cite web|url=http://www.hort.purdue.edu/newcrop/afcm/drypea.html|title=Dry Field Pea|website=Purdue.edu|access-date=2017-08-21}}</ref>
+
+=== Genome ===
+The pea [[karyotype]] consists of seven [[chromosome]]s, five of which are [[acrocentric]] and two [[submetacentric]].<ref>{{Cite journal |last1=Ellis |first1=T. H. N. |last2=Poyser |first2=S. J. |date=2002 |title=An integrated and comparative view of pea genetic and cytogenetic maps |journal=New Phytologist |language=en |volume=153 |issue=1 |pages=17–25 |bibcode=2002NewPh.153...17E |doi=10.1046/j.0028-646X.2001.00302.x |issn=1469-8137 |doi-access=free}}</ref> Despite its scientific popularity, its relatively large genome size (4.45[[gigabase|Gb]]) made it challenging to sequence compared to other legumes such as ''[[Medicago truncatula]]'' and [[soybean]]s. The International Pea Genome Sequencing Consortium was formed to develop the first pea [[reference genome]], and the draft assembly was officially announced in September 2019. It covers 88% of the genome (3.92Gb) and predicted 44,791 gene-coding sequences. The pea used for the assembly was the inbred French cultivar "Caméor".<ref>{{Cite journal |last1=Kreplak |first1=Jonathan |last2=Madoui |first2=Mohammed-Amin |last3=Burstin |first3=Judith |date=2 September 2019 |title=A reference genome for pea provides insight into legume genome evolution |journal=Nature Genetics |volume=51 |issue=9 |pages=1411–1422 |doi=10.1038/s41588-019-0480-1 |pmid=31477930 |bibcode=2019NaGen..51.1411K |doi-access=free}}</ref> In 2022, a pea [[Pan-genome|pangenome]] was published.<ref>{{Cite journal |last1=Yang |first1=Tao |last2=Liu |first2=Rong |last3=Luo |first3=Yingfeng |last4=Hu |first4=Songnian |last5=Wang |first5=Dong |last6=Wang |first6=Chenyu |last7=Pandey |first7=Manish K. |last8=Ge |first8=Song |last9=Xu |first9=Quanle |last10=Li |first10=Nana |last11=Li |first11=Guan |last12=Huang |first12=Yuning |last13=Saxena |first13=Rachit K. |last14=Ji |first14=Yishan |last15=Li |first15=Mengwei |date=October 2022 |title=Improved pea reference genome and pan-genome highlight genomic features and evolutionary characteristics |journal=Nature Genetics |language=en |volume=54 |issue=10 |pages=1553–1563 |doi=10.1038/s41588-022-01172-2 |issn=1061-4036 |pmc=9534762 |pmid=36138232 |bibcode=2022NaGen..54.1553Y }}</ref>
+
+== Taxonomy ==
+[[Carl Linnaeus]] gave the species the scientific name '''''Pisum sativum''''' in 1753 (meaning [[Sativum|cultivated]] pea). Some sources now treat it as '''''Lathyrus oleraceus''''',<ref name="powo" /><ref>{{Cite journal |last1=Schaefer |first1=Hanno |last2=Hechenleitner |first2=Paulina |last3=Santos-Guerra |first3=Arnoldo |last4=de Sequeira |first4=Miguel Menezes |last5=Pennington |first5=R Toby |last6=Kenicer |first6=Gregory |last7=Carine |first7=Mark A |date=2012 |title=Systematics, biogeography, and character evolution of the legume tribe Fabeae with special focus on the middle-Atlantic island lineages |journal=BMC Evolutionary Biology |language=en |volume=12 |issue=1 |pages=250 |bibcode=2012BMCEE..12..250S |doi=10.1186/1471-2148-12-250 |issn=1471-2148 |pmc=3547781 |pmid=23267563 |doi-access=free}}</ref> although the need and justification for this change is disputed.<ref name=EllisEtAl24/>
+
+== Etymology ==
+The term ''pea'' originates from the [[Latin]] word {{Lang|la|pisum}},<ref>{{L&S|pisum|ref}}</ref> which is the [[Latinisation (literature)|latinisation]] of the [[Greek language|Greek]] {{Lang|grc|πίσον}} ({{Lang|grc-latn|pison}}), neuter variant form of {{Lang|grc|πίσος}} ({{Lang|grc-latn|pisos}}) 'pea'.<ref>{{LSJ|pi/sos1|πίσος|ref}}.</ref><ref>{{OEtymD|pea}}</ref> It was adopted into [[English language|English]] as the [[noun]] ''pease'' (plural ''peasen''), as in [[pease pudding]]. However, by analogy with other plurals ending in ''-s'', speakers began construing ''pease'' as a [[plural]] and constructing the singular form by dropping the ''-s'', giving the term ''pea''. This process is known as [[back-formation]].<ref>{{Cite OED|pea|access-date=2 August 2018}}</ref>
+
+== Cultivars ==
+[[File:Peas in pods 2016 G1.jpg|thumb|A basket of pea pods]]
+
+=== Garden peas ===
+There are many [[cultivar]]s of garden peas. Some of the most common cultivars are listed here, with the number of days they require to reach maturity. ''PMR'' indicates some degree of [[powdery mildew]] resistance; ''afila'' types, also called semi-leafless, have clusters of tendrils instead of leaves.<ref>{{cite web|url=http://nwrec.hort.oregonstate.edu/pea-w.html|archive-url=https://web.archive.org/web/20100403002740/http://nwrec.hort.oregonstate.edu/pea-w.html|url-status=dead|archive-date=2010-04-03|title=Peas-Western Oregon, Commercial Vegetable Production Guides|publisher=Oregon State University}}</ref> Unless otherwise noted these are so called dwarf cultivars which grow to an average height of about 1&nbsp;m. Giving the vines support is recommended, but not required. Extra dwarf are suitable for container growing, reaching only about 25&nbsp;cm. Tall cultivars grow to about 2&nbsp;m with support required.<ref>{{cite web |title=Growing Peas the Right Way |url=https://www.grit.com/farm-and-garden/growing-peas-ze0z1305zsau |website=Grit |date=21 May 2013 |access-date=3 February 2021}}</ref>
+* Alaska, 55 days (smooth seeded)
+* Tom Thumb / Half Pint, 55 days ([[Heirloom plant|heirloom]], extra dwarf)
+* Thomas Laxton (heirloom) / Laxton's Progress / Progress #9, 60–65 days
+* Mr. Big, 60 days, 2000 [[All-America Selections|AAS]] winner
+* Little Marvel, 63 days, 1934 AAS winner
+* Early Perfection, 65 days<ref>{{cite web | title = Vegetable Cultivar Descriptions for North America | url = http://cuke.hort.ncsu.edu/cucurbit/wehner/vegcult/peagreenal.html|website=Cuke.hort.ncsu.edu|access-date=2017-08-21}}</ref>
+* Kelvedon Wonder, 65 days, 1997 [[Award of Garden Merit|RHS AGM]] winner<ref>Kelvedon Wonder is popular in the United Kingdom, but uncommon elsewhere.</ref>
+* Sabre, 65 days, PMR
+* Homesteader / Lincoln, 67 days (heirloom, known as ''Greenfeast'' in [[Australia]] and [[New Zealand]])
+* Miragreen, 68 days (tall climber)
+* Serge, 68 days, PMR, afila
+* Wando, 68 days
+* Green Arrow, 70 days
+* Recruit, 70 days, PMR, afila<ref>{{cite web|url=http://purelineseed.com/seeds/peas/late-season-varieties/recruit-peas|title=Recruit Peas|publisher=Pure Line Seeds|access-date=28 February 2015|archive-url=https://web.archive.org/web/20150217052339/http://purelineseed.com/seeds/peas/late-season-varieties/recruit-peas|archive-date=17 February 2015|url-status=dead}}</ref>
+* Tall Telephone / Alderman, 75 days (heirloom, tall climber)
+
+{{anchor|Sugar}}<!-- [[Sugar pea]] redirects here-->
+
+=== Edible-pod peas ===
+[[File:Peas for stir fry.jpg|thumb|upright|Handful of pea pods for a [[stir fry]]]]
+
+Some peas lack the tough membrane inside the pod wall and have tender edible pods,<ref name="Vilmorin-Andrieux & Cie-1883">{{cite wikisource|title=Les_Plantes_potagères|wslanguage=fr|author=Vilmorin-Andrieux & Cie|year=1883|chapter=Pois}}</ref> allowing them to be eaten whole. There are two main types:<ref>{{Citation|last1=Myers|first1=James R.|chapter=Origin, History, and Genetic Improvement of the Snap Pea (Pisum sativum L.)|date=2010-06-22|title=Plant Breeding Reviews|pages=93–138|editor-last=Janick|editor-first=Jules|publisher=John Wiley & Sons, Inc.|language=en|doi=10.1002/9780470650196.ch3|isbn=978-0-470-65019-6|last2=Baggett|first2=James R.|last3=Lamborn|first3=Calvin}}</ref>
+* [[Snow pea]]s have flat pods with thin pod walls. Pods and seeds are eaten when they are very young.
+* [[Snap pea]]s (also known as sugar snap peas) have rounded pods with thick pod walls. Pods and seeds are eaten before maturity.
+
+The name '''sugar pea''' can include both types<ref name="Vilmorin-Andrieux & Cie-1883" /><ref>{{Cite book |last1=Arthey |first1=David |url=https://books.google.com/books?id=d13ew2Du-gEC&pg=PA36 |title=Vegetable Processing |last2=Dennis |first2=Colin |date=1991-01-15 |publisher=John Wiley & Sons |isbn=978-0-471-19859-8 |language=en}}</ref> or be synonymous with either snow peas or snap peas in different dictionaries.<ref>{{Cite dictionary|url=https://www.thefreedictionary.com/sugar+pea|title=sugar pea|encyclopedia=TheFreeDictionary.com|access-date=2020-02-15}}</ref> The term '''mangetout''' ({{IPAc-en|ˈ|m|ɒ̃|ʒ|ˌ|t|uː}}; from {{langx|fr|pois mange-tout}}, 'eat-all pea') is generally used in British English to refer to the snow pea specifically,<ref>{{Cite news |title=mangetout |url=https://dictionary.cambridge.org/dictionary/english/mangetout |archive-url=https://web.archive.org/web/20231125074114/https://dictionary.cambridge.org/dictionary/english/mangetout |archive-date=2023-11-25 |access-date=2025-08-26 |language=en}}</ref><ref>{{Cite web |title=Mangetout definition and meaning {{!}} Collins English Dictionary |url=https://www.collinsdictionary.com/dictionary/english/mangetout |archive-url=https://web.archive.org/web/20210428223132/https://www.collinsdictionary.com/dictionary/english/mangetout |archive-date=2021-04-28 |access-date=2025-08-26 |website=www.collinsdictionary.com |language=en}}</ref> but may also refer to a snap pea, especially when used in other contexts.
+
+Snow peas and snap peas both belong to macrocarpon group,<ref name=JMS>{{Cite web|url=https://edis.ifas.ufl.edu/mv109|title=Pea, Snap—Pisum sativum L. (Macrocarpon group)|last=Stephens|first=James M.|date=2018-11-05|website=edis.ifas.ufl.edu|language=en|access-date=2020-02-15|archive-date=14 February 2020|archive-url=https://web.archive.org/web/20200214125729/http://edis.ifas.ufl.edu/mv109|url-status=dead}}</ref><ref>{{Cite dictionary|url=https://www.merriam-webster.com/dictionary/snow+pea|title=Definition of SNOW PEA|encyclopedia=www.merriam-webster.com|language=en|access-date=2020-02-15}}</ref> a [[cultivar group]] based on the variety ''Pisum sativum'' var. ''macrocarpum'' <small>[[Ser.]]</small> named in 1825.<ref name="Candolle-1825">{{Cite book|last=Candolle|first=Augustin Pyramus de|url=https://www.biodiversitylibrary.org/item/7151|title=Prodromus systematis naturalis regni vegetabilis, sive, Enumeratio contracta ordinum generum specierumque plantarum huc usque cognitarium, juxta methodi naturalis, normas digesta|date=1825|publisher=Sumptibus Sociorum Treuttel et Würtz|volume=2|location=Paris}}</ref> It was described as having very compressed non-leathery edible pods in the original publication.
+
+===<span class="anchor" id="Field pea"></span><span class="anchor" id="Field peas"></span>Field peas===
+[[File:Blauwschokker Kapucijner rijserwt Pisum sativum.jpg|thumb|upright|Pod 'Blue Schokker']]
+[[File:Blauwschokker Kapucijner rijserwt bloem Pisum sativum.jpg|thumb|upright|Field pea plant in bloom]]
+
+The '''field pea''' is a type of pea sometimes called ''Pisum sativum'' subsp. ''arvense'' (L.) Asch.  It is also known as dun (grey-brown) pea, Kapucijner pea, or Austrian winter pea, and is one of the oldest domesticated crops, cultivated for at least 7,000 years.  Field peas are now grown in many countries for both human consumption and stockfeed.  There are several cultivars and colours including blue, dun (brown), maple and white. This pea should not be confused with the [[cowpea]] (''Vigna unguiculata'') which is sometimes called the "field pea" in warmer climates.<ref>{{cite web|title=Field pea, (Pisum sativum)|url=http://www.pulseaus.com.au/Fieldpea.aspx|publisher=Pulse Australia|access-date=2019-04-11|archive-url=https://web.archive.org/web/20131104115649/http://www.pulseaus.com.au/Fieldpea.aspx|archive-date=2013-11-04|url-status=dead}}</ref><ref>{{cite web|last=French|first=Bob|title=Crop management Growing field pea|url=http://www.agric.wa.gov.au/objtwr/imported_assets/content/fcp/lp/southern_pulse_manual_ch2.pdf|publisher=Australia, Dept. of Agriculture and Food|access-date=11 April 2019|archive-date=3 April 2015|archive-url=https://web.archive.org/web/20150403092440/https://www.agric.wa.gov.au/objtwr/imported_assets/content/fcp/lp/southern_pulse_manual_ch2.pdf|url-status=dead}}</ref>
+
+It is a climbing annual legume with weak, viny, and relatively succulent stems. Vines often are {{convert|120-150|cm|ft|0|abbr=on}} long, but when grown alone, field pea's weak stems prevent it from growing more than {{convert|45-60|cm|ft|frac=2|abbr=on}} tall. Leaves have two leaflets and a tendril. Flowers are white, pink, or purple. Pods carry seeds that are large (seed densities of {{convert|4000|/lb|/kg|order=flip|abbr=on|disp=or}}), nearly spherical, and white, gray, green, or brown. The root system is relatively shallow and small, but well nodulated.<ref>{{cite web|last=Sattell|first=R|title=Field Pea|url=http://ir.library.oregonstate.edu/xmlui/bitstream/handle/1957/15224/em8698.pdf|publisher=Oregon State U.}}</ref>
+
+The field pea is a cool-season legume crop that is grown on over {{convert|25|e6acre|e6ha|order=flip|abbr=off|sigfig=2}} worldwide. It has been an important [[grain legume]] crop for millennia, seeds showing domesticated characteristics dating from at least 7,000 years ago have been found in archaeological sites around what is now [[Turkey]].  Field peas or "dry peas" are marketed as a dry, shelled product for either human or [[livestock]] food, unlike the garden pea, which is marketed as a fresh or canned vegetable. The major producing countries of field peas are Russia and China, followed by Canada, Europe, Australia and the United States. Europe, Australia, Canada and the U.S. raise over {{convert|1.8|e6ha|e6acre|abbr=off|sigfig=2}} and are major exporters of peas. In 2002, there were approximately {{convert|120000|ha|acre|sigfig=2}} of field peas grown in the U.S.<ref>{{cite web|last=McKay|first=Kent|title=Field Pea Production|url=http://www.ndsu.edu/pubweb/pulse-info/resources-pdf/Fieldpea%20production%20guide.pdf|publisher=North Dakota State University|access-date=11 April 2019|archive-date=10 October 2019|archive-url=https://web.archive.org/web/20191010235504/https://www.ndsu.edu/pubweb/pulse-info/resources-pdf/Fieldpea%20production%20guide.pdf|url-status=dead}}</ref>
+
+== Distribution and habitat ==
+The wild pea is restricted to the [[Mediterranean Basin]] and the Near East. The earliest archaeological finds of peas date from  about [[Neolithic|10'000 B.C.]] [[Near East]] and [[History of Central Asia#Prehistory|Central Asia]].<ref>{{Cite journal |last1=Trněný |first1=Oldřich |last2=Brus |first2=Jan |last3=Hradilová |first3=Iveta |last4=Rathore |first4=Abhishek |last5=Das |first5=Roma R. |last6=Kopecký |first6=Pavel |last7=Coyne |first7=Clarice J. |last8=Reeves |first8=Patrick |last9=Richards |first9=Christopher |last10=Smýkal |first10=Petr |date=2018-11-06 |title=Molecular Evidence for Two Domestication Events in the Pea Crop |journal=Genes |language=en |volume=9 |issue=11 |pages=535 |doi=10.3390/genes9110535 |doi-access=free |issn=2073-4425 |pmc=6265838 |pmid=30404223|quote=1.Introduction - Archaeological evidence dates the origin of cultivated pea 10,000 BC in the Near East [12,40] and Central Asia [10,41]. }}</ref> In Egypt, early finds date from {{Circa|4800}}–4400&nbsp;BC in the [[Nile Delta]] area, and from c. 3800–3600&nbsp;BC in Upper Egypt. In northern Europe, specifically Fennoscandia, findings of pea data back to 4000 BC.<ref>{{Cite journal |last1=Hagenblad |first1=Jenny |last2=Boström |first2=Erik |last3=Nygårds |first3=Lena |last4=Leino |first4=Matti W. |date=February 2014 |title=Genetic diversity in local cultivars of garden pea (Pisum sativum L.) conserved 'on farm' and in historical collections |url=http://link.springer.com/10.1007/s10722-013-0046-5 |journal=Genetic Resources and Crop Evolution |language=en |volume=61 |issue=2 |pages=413–422 |doi=10.1007/s10722-013-0046-5 |bibcode=2014GRCEv..61..413H |issn=0925-9864}}</ref> The pea was also present in [[Georgia (country)|Georgia]] in the 5th millennium BC. Farther east, the finds are younger. Peas were present in [[Afghanistan]] c.&nbsp;2000&nbsp;BC, in [[Harappan civilization]] around modern-day [[Pakistan]] and western- and northwestern [[India]] in 2250–1750&nbsp;BC. In the second half of the 2nd millennium BC, this [[Pulse (legume)|legume crop]] appears in the [[Ganges Basin]] and southern India.<ref>Zohary, Daniel and Hopf, Maria (2000). ''Domestication of Plants in the Old World'', third edition. Oxford: University Press. {{ISBN|978-0-19-850356-9}}. pp. 105–107.</ref>
+
+== Cultivation ==
+[[File:2DU Kenya 84 (5367322092).jpg|thumb|Woman picking peas in [[Mount Kenya]] region]]
+
+=== History ===
+In early times, peas were grown mostly for their dry seeds.<ref>Maguelonne Toussaint-Samat, ''A History of Food'', 2nd ed. 2009:38ff.</ref> From plants growing wild in the Mediterranean Basin, constant selection since the [[Neolithic Revolution|Neolithic dawn of agriculture]]<ref>Peas have been found in the Neolithic site of Abeurador in the south of France (Toussaint-Samat).</ref> improved their yield.
+
+Peas are mentioned in [[Aristophanes]]'s ''[[The Birds (play)|The Birds]]''. The Greeks and Romans were cultivating this legume from around 500 BC to 400 BC, with vendors in the streets of [[Athens]] selling hot pea soup.<ref>{{cite web|url=http://www.vegparadise.com/highestperch52.html|title=Peas: History, Uses, Folklore, Growing, Nutrition, Purchasing, Preparation, Recipe: Pease Porridge Hot, Pease Porridge Cold|access-date=20 February 2007|publisher=Vegetarians in Paradise: A Los Angeles Vegetarian Web Magazine|author=Zel and Reuben Allen|archive-date=27 April 2012|archive-url=https://web.archive.org/web/20120427183359/http://www.vegparadise.com/highestperch52.html|url-status=dead}}: "vendors in the streets of [classical] Athens were selling hot pea soup."</ref>
+
+In the early 3rd century BC, [[Theophrastus]] mentions peas among the [[Pulse (legume)|legumes]] that are sown late in the winter because of their tenderness.<ref>Theophrastus, ''[[Historia Plantarum (Theophrastus)|Historia Plantarum]]'', VIII.i.4.</ref> 
+[[File:Dried Green Peas.jpg|thumb|upright|Dried green peas]]
+In the first and second centuries BC, [[Cato the Elder]] and [[Varro]] both mention peas in their respective works [[De agri cultura]] and [[De re rustica (Varro)|De re rustica]].<ref>Hooper, William Davis & Ash, Harrison Boyd: ''Marcus Porcius Cato, On agriculture; Marcus Terentius Varro, On agriculture'' Volume 283 of Loeb classical library. Loeb classical library. Latin authors. Harvard University Press, 1934. Pages 141, 257, 299, 465.</ref> It is also mentioned frequently in [[Apicius|de re coquinaria]] by [[Apicius (2nd century AD)|Apicius]] and occurs in many different recipes.
+
+In the [[Middle Ages]], field peas are constantly mentioned, as they were the staple that kept [[famine]] at bay, as [[Charles the Good]], count of [[Flanders]], noted explicitly in 1124.<ref>Edict quoted in Michel Pitrat and Claude Four, ''Histoires de légumes: Des origines à l'orée du XXIe siècle'', "Le pois au cours des siècles" :353.</ref>
+
+Green "garden" peas, eaten immature and fresh, were an innovative luxury of [[Early Modern Europe]]. In England, the distinction between ''[[#Field peas|field peas]]'' and ''[[#Garden peas|garden peas]]'' dates from the early 17th century: [[John Gerard]] and [[John Parkinson (botanist)|John Parkinson]] both mention garden peas.{{Citation needed|date=March 2017}} [[#Edible-pod peas|Snow and snap peas]], which the French called {{lang|fr|mange-tout}}, because they were eaten pods and all, were introduced to France from the market gardens of [[Holland]] in the time of [[Henry IV of France|Henri IV]], through the French ambassador. Green peas were introduced from [[Republic of Genoa|Genoa]] to the court of [[Louis XIV]] in January 1660, with some staged fanfare. A [[hamper]] of them was presented before the King. They were shelled by [[Eugene Maurice, Count of Soissons|the Savoyan comte de Soissons]], who had married a niece of [[Cardinal Mazarin]]. Little dishes of peas were then presented to the King, the Queen, Cardinal Mazarin and Monsieur, the king's brother.<ref>An account is in Toussaint-Samat.</ref>{{clarify|date=March 2017}} Immediately established and grown for earliness warmed with [[manure]] and protected [[Greenhouse|under glass]], they were still a luxurious delicacy in 1696, when [[Mme de Maintenon]] and [[Mme de Sevigné]] each reported that they were "a fashion, a fury".<ref>Quoted by Michel Pitrat and Claude Four.</ref>{{clarify|date=March 2017}}
+
+The first ''sweet tasting pea'' was developed in the 18th century by amateur plant breeder Thomas Edward Knight of Downton, near Salisbury, England.<ref>{{Cite web |title=Pea Facts |url=https://peas.org/pea-facts/ |access-date=2024-03-13 |website=Yes Peas!}}</ref> Modern [[split pea]]s, with their indigestible skins rubbed off, are a development of the later 19th century. The first pea harvesting machine ("pea viner") able to shell peas through impact was invented around 1890 by [[John Alexander Chisholm]].
+
+=== Harvesting ===
+Large-scale commercial harvesting of peas without edible pods can be accomplished using specialised pea harvester machines (also called ''pea viners'') that strip them from their vines.<ref>{{cite web |last1=Wigdahl |first1=Nicholas |title=Exotic and unusual harvesters – peas, beans and spinach |url=https://www.fwi.co.uk/arable/exotic-unusual-harvesters-peas-beans-spinach |website=Farmers Weekly |date=26 February 2016 |publisher=MA Agriculture Ltd, a Mark Allen Group company |access-date=25 June 2025}}</ref>
+
+By contrast, the two edible-pod pea cultivars (snow peas<ref>{{cite web |last1=Watson |first1=Andrew |last2=Yousiph |first2=Amira |last3=Liew |first3=Edwar |last4=Duff |first4=John |last5=Brown |first5=Lee |last6=Snudden |first6=Meryl |last7=Church |first7=Caroline |last8=Martin |first8=Heidi |title=Fusarium wilt of snow peas. |url=https://ausveg.com.au/app/data/technical-insights/docs/VG05029%20Final%20Report.pdf |website=AUSVEG |publisher=NSW Department of Industry and Investment |access-date=25 June 2025 |page=15}}</ref> and snap peas<ref name="snap-pea-robot-poc">{{cite journal |last1=Tejada |first1=V. F. |last2=Stoelen |first2=M. F. |last3=Kusnierek |first3=K. |last4=Heiberg |first4=N. |last5=Korsaeth |first5=A. |title=Proof-of-concept robot platform for exploring automated harvesting of sugar snap peas |journal=Precision Agriculture |date=1 December 2017 |volume=18 |issue=6 |pages=952–972 |doi=10.1007/s11119-017-9538-1 |bibcode=2017PrAgr..18..952T }}</ref>) are still usually picked by hand. A prototype for an automated snap pea harvester was being researched in 2017.<ref name="snap-pea-robot-poc" />
+
+=== Grading ===
+Pea grading involves sorting peas by size, in which the smallest peas are graded as the highest quality for their tenderness.<ref name="Sivasankar">Sivasankar, B. (2002). [https://books.google.com/books?id=tbxGHBUY0BcC&pg=PA175 ''Food Processing and Preservation'']. PHI Learning Pvt. Ltd. pp. 175–177. {{ISBN|8120320867}}</ref> Brines may be used, in which peas are floated, from which their density can be determined.<ref name="Sivasankar" />
+
+=== Pests and diseases ===
+{{Main|List of pea diseases}}
+
+A variety of diseases affect peas through a number of [[pathogen]]s, including insects, viruses, bacteria and fungi.<ref>{{cite book |last=Hagedorn |first=D. J. |url=http://learningstore.uwex.edu/assets/pdfs/A1167.pdf |title=Handbook of pea diseases |publisher=University of Wisconsin - Extension |year=1976}}</ref> In particular, virus disease of peas has worldwide economic importance.<ref>{{cite book |last=Hagedorn |first=Donald J. |title=Virus Diseases of Pea, ''Pisum sativum'' |publisher=American Phytopathological Society |year=1974 |location=St. Paul, Minnesota |page=7}}</ref> Additionally, the diseases limiting to global yield potential of pea are members of the pea root rot complex.<ref>{{Cite journal |last1=Rubiales |first1=Diego |last2=Barilli |first2=Eleonora |last3=Rispail |first3=Nicolas |date=2023-09-18 |title=Breeding for Biotic Stress Resistance in Pea |journal=Agriculture |language=en |volume=13 |issue=9 |pages=1825 |doi=10.3390/agriculture13091825 |bibcode=2023Agric..13.1825R |doi-access=free |issn=2077-0472|hdl=10261/336464 |hdl-access=free }}</ref>
+
+Additionally, insects such as the pea leaf weevil (''[[Sitona lineatus]]'') can damage peas and other pod fruits. The pea leaf weevil is native to Europe, but has spread to other places such as [[Alberta, Canada]]. They are about {{convert|3.5-5.5|mm|in|frac=64|abbr=on}} long and are distinguishable by three light-coloured stripes running length-wise down the [[thorax]]. The weevil [[larva]]e feed on the [[root nodule]]s of pea plants, which are essential to the plants' supply of [[nitrogen]], and thus diminish leaf and stem growth. Adult weevils feed on the leaves and create a notched, "c-shaped" appearance on the outside of the leaves.<ref>{{cite web |last=Barkley |first=Shelley |date=2007-05-02 |title=Pea Leaf Weevil |url=http://www1.agric.gov.ab.ca/$Department/deptdocs.nsf/all/prm11287 |access-date=2009-04-05 |work=Agriculture and Rural Development website |publisher=Government of Alberta}}</ref>
+
+[[Delia platura]], also known as the seed corn maggot, is another pest of peas that can cause damage to germinating seeds and seedlings.<ref>{{Cite web |title=Order Diptera—Flies and Maggots |url=https://www.sciencedirect.com/science/chapter/monograph/abs/pii/B9780128144886000078 |access-date=2026-06-11 |website=www.sciencedirect.com |language=en-US |doi=10.1016/B978-0-12-814488-6.00007-8}}</ref>
+
+The [[Cydia nigricana|pea moth]] can be a serious pest producing caterpillars that resemble small white maggots in the pea pods. The caterpillars eat the developing peas making them unsightly and unsuitable for culinary use.<ref>{{cite web |title=Pea moth |url=https://www.rhs.org.uk/advice/profile?pid=660 |access-date=21 February 2021 |publisher=Royal horticultural Society}}</ref> Prior to the use of modern insecticides, pea moth caterpillars were a very common sight in pea pods.
+
+==Production==
+{{Table alignment}}
+{| class="wikitable floatright col2right" 
+|+ Green pea production <br>{{small|2023, tonnes}}
+|-
+|{{CHN}} ||11,821,097
+|-
+|{{IND}} ||6,592,000
+|-
+|{{PAK}} ||401,866
+|-
+|{{FRA}} ||268,200
+|-
+|{{USA}} ||237,270
+|-
+|{{ALG}} ||211,552
+|-
+|{{UK}} ||155,616
+|-
+|'''World''' ||'''21,484,769'''
+|-
+|colspan=2|{{small|Source: [[FAOSTAT]] of the [[United Nations]]}}<ref name="faostat">{{cite web|url=https://www.fao.org/faostat/en/#data/QCL|title=Green pea production in 2023, Crops/Regions/World list/Production Quantity/Year (pick lists)|date=2025|publisher=UN Food and Agriculture Organization, Corporate Statistical Database (FAOSTAT)|access-date=7 July 2025}}</ref>
+|}
+In 2023, world production of green peas was 21.5 million [[tonne]]s, led by China and India with 86% of the total when combined (table).
+<div style="display:inline-table; vertical-align:top;">
+{{owidslider
+|start        = 2023
+|list         = Template:OWID/pea production#gallery
+|location      = commons
+|caption      =
+|title        =
+|language     =
+|file         = [[File:pea production, World, 2023 (cropped).svg|link=|thumb|upright=1.6|Pea production]]
+|startingView = World
+}}
+</div>
+
+<div style="display:inline-table; vertical-align:top;">
+
+{{owidslider
+|start        = 2024
+|list         = Template:OWID/Pea yields#gallery
+|location      = commons
+|caption      =
+|title        =
+|language     =
+|file         = [[File:Pea yields, World, 2024 (cropped).svg|link=|thumb|upright=1.6|right|Pea yields]]
+|startingView = World
+}}
+
+</div>
+
+== Potential adverse effects ==
+Some people experience [[allergic reaction]]s to peas, with [[vicilin]] or convicilin as the most common allergens.<ref name="Sanchez-Monge2004">{{cite journal |last=Sanchez-Monge |first=R. |author2=G. Lopez-Torrejon |author3=C. Y. Pascual |author4=J. Varela |author5=M. Martin-Esteban |author6=G. Salcedo |year=2004 |title=Vicilin and convicilin are potential major allergens from pea |journal=Clinical & Experimental Allergy |volume=34 |issue=11 |pages=1747–1753 |doi=10.1111/j.1365-2222.2004.02085.x |issn=0954-7894 |pmid=15544600 |s2cid=24690605}}</ref>
+
+{{nutritionalvalue
+| name = Peas, green, raw (fresh)
+| image = (Pisum sativum), A pea is a most commonly green.JPG
+| kJ = 339
+| water = 79 g
+| protein = 5.42 g
+| fat = 0.4 g
+| carbs = 14.45 g
+| fibre = 5.1 g
+| sugars = 5.67 g
+| calcium_mg = 25
+| iron_mg = 1.47
+| magnesium_mg = 33
+| phosphorus_mg = 108
+| potassium_mg = 244
+| sodium_mg = 5
+| zinc_mg = 1.24
+| manganese_mg = 0.41
+| vitC_mg = 40
+| thiamin_mg = 0.266
+| riboflavin_mg = 0.132
+| niacin_mg = 2.09
+| vitB6_mg = 0.169
+| folate_ug = 65
+| vitA_ug = 38
+| betacarotene_ug = 449
+| lutein_ug = 2477
+| vitE_mg = 0.13
+| vitK_ug = 24.8
+| note = [https://fdc.nal.usda.gov/food-details/170419/nutrients Link to USDA Database entry]
+}}
+
+== Uses ==
+
+=== Nutrition ===
+Raw green peas are 79% water, 14% [[carbohydrate]]s, 5% [[protein (nutrient)|protein]], and contain negligible [[fat]]. In a reference amount of {{convert|100|g|oz|abbr=off|frac=2}}, raw green peas supply {{convert|339|kJ|kcal|abbr=off}} of [[food energy]], and are a rich source (20% or more of the [[Daily Value]], DV) of [[vitamin C]], [[vitamin K]], and [[thiamine]], with several [[B vitamins]] and [[mineral (nutrient)|dietary minerals]] in moderate amounts (10–18% DV) (table).
+
+=== Culinary ===
+In modern times peas are usually boiled or [[steamed]], which breaks down the cell walls and makes them taste sweeter and the nutrients more [[Bioavailability|bioavailable]]. Along with [[broad bean]]s and [[lentil]]s, these formed an important part of the diet of most people in the Middle East, North Africa and Europe during the [[Middle Ages]].<ref>{{Citation
+|last1=Bianchini |first1=F. |last2=Corbetta |first2=F. |year=1976 |title=The Complete Book of Fruits and Vegetables |place=New York |publisher=Crown |isbn=978-0-517-52033-8 |page=40}}</ref> By the 17th and 18th centuries, it had become popular to eat peas "green", that is, while they are immature and right after they are picked.<ref>{{Citation|last=Hedrick |first=U.P. |year=1919 |chapter=Sturtevant's Notes on Edible Plants |title=Report of the New York Agricultural Experiment Station for the Year 1919 II |place=Albany |publisher=J.B Lyon Company, State Printers |chapter-url=http://food.oregonstate.edu/glossary/p/pplant189.html |access-date=26 Feb 2010 |url-status=dead |archive-url=https://web.archive.org/web/20110718234523/http://food.oregonstate.edu/glossary/p/pplant189.html |archive-date=18 July 2011 }}</ref> New cultivars of peas were developed by the English during this time, which became known as "garden" or "English" peas. The popularity of green peas spread to [[North America]]. [[Thomas Jefferson]] grew more than 30 cultivars of peas on his estate.<ref>{{Citation |last=Kafka |first=B. |year=2005 |title=Vegetable Love |place=New York |publisher=Artisan |isbn=978-1-57965-168-8 |page=[https://archive.org/details/vegetablelove00kafk/page/297 297] |url-access=registration |url=https://archive.org/details/vegetablelove00kafk/page/297 }}</ref> With the invention of canning, peas were one of the first vegetables to be canned.{{sfn|Bitting|1909|p=5}}
+
+[[File:Chinese Chawal in Basmati.jpg|thumb|Peas in [[fried rice]]]]
+Fresh peas are often eaten boiled and flavoured with [[butter]] or [[spearmint]] as a side dish vegetable. Salt and pepper are also commonly added to peas when served. Fresh peas are also used in [[pot pie]]s, salads and [[casserole]]s. Pod peas ([[snow pea]]s and [[snap pea]]s) are used in stir-fried dishes, particularly those in [[American Chinese cuisine]].<ref>{{cite web|url=http://www.pccnaturalmarkets.com/health/Food_Guide/Snow_Peas.htm|title=Product how-to guides|work=PCC Natural Markets}}</ref> Pea pods do not keep well once picked, and if not used quickly, are best preserved by drying, [[canning]] or [[freezing]] within a few hours of harvest.<ref>{{citation |mode=cs1|contribution=Peas |title=Glossary: BBC Good Food |publisher=BBC |contribution-url=https://www.bbcgoodfood.com/glossary/peas |access-date=2019-07-25}}</ref>
+
+Dried peas are often made into a [[soup]] or simply eaten on their own. In [[Japan]], [[China]], [[Taiwan]] and some [[Southeast Asia]]n countries, including [[Thailand]], the [[Philippines]] and [[Malaysia]], peas are roasted and salted, and eaten as [[snack]]s. In the Philippines, peas, while still in their pods, are a common ingredient in viands and [[pansit]]. In the UK, dried yellow or green split peas are used to make [[pease pudding]] (or "pease porridge"), a traditional dish. In North America, a similarly traditional dish is split [[pea soup]].<ref>{{cite web
+| url = https://whatscookingamerica.net/soup/split-pea-soup.htm
+| title = Classic Split Pea Soup History and Recipe
+| last = Stradley
+| first = Linda
+| date = n.d.
+| website = What's Cooking America
+| publisher =
+| access-date = 10 November 2023
+| quote = }}</ref>
+
+Pea soup is eaten in many other parts of the world, including [[northern Europe]], parts of [[middle Europe]], [[Russia]], [[Iran]], [[Iraq]] and [[India]].<ref>{{cite web|url=http://www.lansbladet.se/vasterbotten/tidningen/200803/pdf/18.pdf|archive-url=https://web.archive.org/web/20161229225644/http://www.lansbladet.se/vasterbotten/tidningen/200803/pdf/18.pdf|url-status=dead|archive-date=29 December 2016|title=lansbladet.se|date=29 December 2016|access-date=21 August 2017}}</ref>
+
+In [[India]], fresh peas are used in various dishes such as ''[[aloo matar]]'' (curried potatoes with peas) or ''[[mattar paneer]]'' ([[paneer]] cheese with peas), though they can be substituted with frozen peas as well. Peas are also eaten raw, as they are sweet when fresh off the bush. Green peas known as hasiru batani in [[Kannada]] are used to make curry and gasi.<ref>{{cite web|url=https://udupi-recipes.com/2014/05/potato-pea-curry-batani-gasi-recipe-chapati-side-dish.html|title=Batani Gasi Recipe|date=19 May 2014|access-date=2 May 2020}}</ref> Split peas are also used to make ''[[dal]]'', particularly in [[Guyana]], and [[Trinidad]], where there is a significant population of [[Indian people|Indians]].{{Citation needed|date=March 2017}}
+
+In [[Chinese cuisine]], the tender new growth (leaves and stem) {{Lang|zh-latn|dou miao}} ([[pea shoots]], [[:zh:豆苗|豆苗]]; {{Lang|zh-latn|dòu miáo}}) are commonly used in stir-fries. Much like picking the leaves for tea, the farmers pick the tips off of the pea plant.{{Citation needed|date=March 2017}}
+
+In [[Greece]], [[Tunisia]], [[Turkey]], [[Cyprus]], and other parts of the Mediterranean, peas are made into a stew with lamb and potatoes.{{Citation needed|date=March 2017}}
+
+In [[Hungary]] and [[Serbia]], pea soup is often served with [[dumpling]]s and spiced with hot [[paprika]].<ref name="hung_Gree">{{Cite web |title=Green Pea Soup, Hungarian - Soups - Recipes |last=László |first=Vida |work=hungarianpaprika.net |access-date=11 December 2019 |url= https://hungarianpaprika.net/en/recipes-page-10/soups-blogcat-2/green_pea_soup__hungarian-blog-3/}}</ref><ref name="hung_Hung">{{Cite web |title=Hungarian Pea Soup – Borsóleves |work=Hungarian Tidbits |date=15 September 2013 |access-date=11 December 2019 |url= https://www.hungariantidbits.com/hungarian-pea-soup-borsoleves/}}</ref><ref name="just_Hung">{{Cite web |title=Hungarian Pea Soup with Nokedli |work=Just a Taste |date=21 January 2009 |access-date=11 December 2019 |url= https://www.justataste.com/hungarian-pea-soup-with-nokedli/}}</ref>
+
+In the United Kingdom, dried, rehydrated and mashed [[marrowfat peas]], or cooked green split peas, known as [[mushy peas]], are popular, originally in the north of England, but now ubiquitously, and especially as an accompaniment to [[fish and chips]] or [[meat pie]]s, particularly in [[fish and chip shop]]s. [[Sodium bicarbonate]] is sometimes added to soften the peas. In 2005, a poll of 2,000 people revealed the pea to be Britain's seventh favourite culinary vegetable.<ref>{{cite news| url=https://www.theguardian.com/uk/2005/may/23/britishidentity.foodanddrink | location=London | work=The Guardian | title=Onions come top for British palates | first=Martin | last=Wainwright | date=2005-05-23}}</ref>
+
+Processed peas are mature peas which have been dried, soaked and then heat treated (processed) to prevent spoilage, in the same manner as [[Pasteurization|pasteurising]]. Cooked peas are sometimes sold dried and coated with [[wasabi]], [[salt]], or other spices.<ref>{{cite web |url=http://www.hesca.org/nutrition/are-wasabi-peas-good-for-you/ |title=Are Wasabi Peas Good For You |last=Enders |first=Missy |website=The Healthy & Smart Choice Advocates |publisher=HESCA |access-date=24 June 2018 |date=2016-10-03 |archive-date=6 August 2020 |archive-url=https://web.archive.org/web/20200806072436/http://www.hesca.org/nutrition/are-wasabi-peas-good-for-you/ |url-status=dead }}</ref>
+
+In North America [[pea milk]] is produced and sold as an alternative to [[cow milk]] for a variety of reasons.<ref>{{cite web|url=https://www.gq.com/story/what-is-pea-milk|title=If You Like Almond Milk, You'll Love...Pea Milk?|last=Vrabel|first=Jeff|date=2016-07-10|access-date=2016-07-13}}</ref>
+
+<gallery mode="packed" widths="150px" heights="150px">
+File:Wasabi peas - Massachusetts.jpg|[[Wasabi]] peas
+File:Fish and chips at Sainsbury's Low Hall, Chingford, London.jpg|[[Fish and chips]] with peas
+File:Pea soup 2.jpg|[[Pea soup]]
+File:Aloo Matar.JPG|[[Aloo mutter]]
+File:Matar Panir mit Chapati - Mutter Paneer with chapati.jpg|[[Matar paneer]] with [[chapati]]
+</gallery>
+
+=== Pea sprouts ===
+{{Main|Pea shoots}}
+
+[[File:Dao miao, snow pea shoots-sprouts.jpg|thumb|Pea sprouts]]
+In East Asia, pea sprouts or shoots ({{lang|zh|豆苗}}; {{lang|ko|완두순}})<ref>{{cite web |url=http://www.fooddb.com.hk/chi_fruit.php?id=15&type=1 |work=香港食物規格資料庫網站 |title=莖葉類蔬菜: 豆苗 |trans-title=Stem and Leaves Vegetables: Pea Sprouts |access-date=2021-03-05 |language=zh-hant |archive-date=4 August 2011 |archive-url=https://web.archive.org/web/20110804133755/http://www.fooddb.com.hk/chi_fruit.php?id=15&type=1 |url-status=dead }}</ref> were once dedicated cuisine{{Clarify|reason=what does dedicated mean here?|date=January 2024}} when the plant was less highly available. Today, when the plant can be easily grown, fresh pea shoots are available in supermarkets or may be grown at home.
+
+=== Manufacturing ===
+==== Frozen peas ====
+[[File:Frozen peas.JPG|right|thumb|Frozen green peas]]
+
+In order to freeze and preserve peas, they must first be grown, picked, and shelled. Usually, the more tender the peas are, the more likely that they will be used in the final product. The peas must be put through the process of freezing shortly after being picked so that they do not spoil too soon. Once the peas have been selected, they are placed in ice water and allowed to cool. After, they are sprayed with water to remove any residual dirt or dust that may remain on them. The next step is [[blanching (cooking)|blanching]]. The peas are boiled for a few minutes to remove any enzymes that may shorten their shelf life. They are then cooled and removed from the water. The final step is the actual freezing to produce the final product.<ref>{{cite web|url=http://www.madehow.com/Volume-5/Frozen-Vegetable.html|title=How frozen vegetable is made - production process, making, used, processing, product, industry, machine|work=madehow.com}}</ref> This step may vary considerably; some companies freeze their peas by air blast freezing, where the vegetables are put through a tunnel at high speeds and frozen by cold air. Finally, the peas are packaged and shipped out for retail sale.
+
+=== Science ===
+In the mid-19th century, Austrian monk [[Gregor Mendel]]'s observations of pea pods led to the principles of [[Mendelian genetics]], the foundation of modern [[genetics]].<ref>{{cite journal|author=Nasmyth, K |title=The magic and meaning of Mendel's miracle|journal=Nat Rev Genet|volume=23|pages=447–452|year=2022|issue=7 |doi=10.1038/s41576-022-00497-2|pmid=35595848 }}</ref><ref>{{cite journal|url=http://courses.pbsci.ucsc.edu/mcdb/bio105/Spring15/Lecture2/Rediscovery%20of%20Mendel.pdf|title=The "Rediscovery" of Mendel's Work |publisher=General College, University of Minnesota|journal=Bioscene|volume=27|number=2|date=May 2001|first=Randy|last=Moore|archive-url=https://web.archive.org/web/20160216153032/http://courses.pbsci.ucsc.edu/mcdb/bio105/Spring15/Lecture2/Rediscovery%20of%20Mendel.pdf |archive-date=16 February 2016 }}</ref> He ended up growing and examining about 28,000 pea plants in the course of his experiments.<ref name=h2g2>{{cite web|url=http://h2g2.com/dna/h2g2/A6257865|title=h2g2 - The Garden Pea - Edited Entry|first=Not Panicking|last=Ltd|website=H2g2.com|date=December 2005 |access-date=21 August 2017}}</ref>
+
+Mendel chose peas for his experiments because he could grow them easily, pure-bred strains were readily available,<ref>{{cite journal|author=Ellis, T.H.N.|author2= Hofer, J.M.I.|author3= Swain, M.T.|author4= Van Dijk, P.J.|title= Mendel's pea crosses: varieties, traits and statistics|journal=Hereditas|volume=156|issue=33 |year=2019|page= 33|doi=10.1186/s41065-019-0111-y|doi-access= free|pmid= 31695583|pmc= 6823958}}</ref> and the structure of the flowers protect them from cross-pollination, and cross pollination was easy.<ref>{{cite web | url=http://www.esp.org/foundations/genetics/classical/browse/ | title=ESP Classical Genetics }}</ref> Mendel cross-bred tall and dwarf pea plants, green and [[yellow pea]]s, purple and white flowers, wrinkled and smooth peas, and a few other traits. He then observed the resulting offspring. In each of these cases, one trait is dominant and all the offspring, or Filial-1 (abbreviated F<sub>1</sub>) generation, showed the dominant trait. Then he allowed the F<sub>1</sub> generation to self pollinate and observed their offspring, the Filial-2 (abbreviated F<sub>2</sub>)  generation. The F<sub>2</sub> plants had the dominant trait in approximately a 3:1 ratio. He studied later generations of self pollinated plants, and performed crosses to determine the nature of the pollen and egg cells.<ref>{{cite web|title=Experiments in Plant Hybridization|year=1865|author=
+Gregor Mendel|url=http://www.esp.org/foundations/genetics/classical/gm-65-a.pdf}}</ref>
+
+Mendel reasoned that each parent had a 'vote' in the appearance of the offspring, and the non-dominant, or [[Dominance (genetics)|recessive]], trait appeared only when it was inherited from both parents. He did further experiments that showed each trait is separately inherited. Unwittingly, Mendel had solved a major problem with [[Charles Darwin]]'s [[theory of evolution]]: how new traits were preserved and not blended back into the population, a question Darwin himself did not answer. Mendel's work was published in an obscure Austrian journal and was not rediscovered until about 1900.<ref name=mendel>{{cite web|url=http://naturalselection.0catch.com/Files/gregormendel.html|title=Gregor Mendel - Father of Genetics|website=naturalselection.0catch.com|access-date=21 August 2017|archive-date=5 September 2017|archive-url=https://web.archive.org/web/20170905152043/http://naturalselection.0catch.com/Files/gregormendel.html|url-status=dead}}</ref>
+
+=== Nitrogen fixation ===
+[[File:Snow pea flowers.jpg|thumb|upright|Pea flowers]]
+Peas, like many legumes, contain [[symbiosis|symbiotic]] bacteria called ''[[Rhizobia]]'' within [[root nodule]]s of their [[root|root systems]]. These bacteria have the special ability to [[nitrogen fixation|fix nitrogen]] from atmospheric, molecular nitrogen ({{chem2|N2}}) into [[ammonia]] ({{chem2|NH3}}).<ref>{{cite web|url=http://www.biology.ed.ac.uk/archive/jdeacon/microbes/nitrogen.htm|title=Biological Sciences|website=Biology.ed.ac.uk|access-date=21 August 2017|archive-date=16 January 2013|archive-url=https://web.archive.org/web/20130116214211/http://www.biology.ed.ac.uk/archive/jdeacon/microbes/nitrogen.htm|url-status=dead}}</ref> The chemical reaction is:
+:{{chem2|N2 + 8H+ + 8e- -> 2NH3 + H2}}
+Ammonia is then converted to another form, [[ammonium]] ({{chem2|NH4+}}), usable by (some) plants, by the following reaction:
+:{{chem2|NH3 + H+ -> NH4+}}
+The root nodules of peas and other legumes are sources of nitrogen that they can use to make [[amino acid]]s, constituents of proteins. Hence, legumes are good sources of [[plant protein]].<ref>{{Cite journal|last1=Lawrence|first1=John M.|last2=Grant|first2=D. R.|date=September 1963|title=Nitrogen Mobilization in Pea Seedlings. II. Free Amino Acids|journal=Plant Physiology|volume=38|issue=5|pages=561–566|issn=0032-0889|pmid=16655833|pmc=549973|doi=10.1104/pp.38.5.561 |bibcode=1963PlanP..38..561L }}</ref>
+
+When a pea plant dies in the field, for example following the [[harvest]], all of its remaining nitrogen, incorporated into [[amino acid]]s inside the remaining plant parts, is released back into the [[soil]]. In the soil, the amino acids are converted to nitrate ({{chem2|NO3-}}), that is available to other plants, thereby serving as fertiliser for future crops.<ref>Postgate, J (1998). Nitrogen Fixation, 3rd Edition. Cambridge University Press, Cambridge UK</ref><ref>{{Cite book |author=Smil, V |year=2000 |title=Cycles of Life |publisher=Scientific American Library}}</ref>
+
+==See also==
+{{Portal|Food}}
+{{div col|colwidth=30em}}
+* [[Black-eyed pea]]
+* [[Black pea]]
+* [[Chickpea]]
+* [[Cowpea]]
+* [[Dixie lee pea]]
+* [[Snap pea]]
+* [[Snow pea]]
+* [[Sweet pea]]
+* [[Cydia nigricana|Pea moth]]
+{{div col end}}
+
+==References==
+{{reflist|colwidth=30em}}
+
+==Bibliography==
+* European Association for Grain Legume Research (AEP). ''Pea''. https://web.archive.org/web/20061017214408/http://www.grainlegumes.com/default.asp?id_biblio=52 .
+* Hernández Bermejo, J. E. & León, J., (1992). ''Neglected crops: 1492 from a different perspective'', Food and Agricultural Organization of the United Nations (FAO) [http://www.fao.org/docrep/t0646e/T0646E00.HTM Contents] {{Webarchive|url=https://web.archive.org/web/20181106132601/http://www.fao.org/docrep/t0646e/T0646E00.HTM |date=6 November 2018 }}
+* Muehlbauer, F. J. and Tullu, A., (1997). ''Pisum sativum L.'' Purdue University. [http://www.hort.purdue.edu/newcrop/cropfactsheets/pea.html Pea]
+* Oelke, E. A., Oplinger E. S., et al. (1991). ''Dry Field Pea''. University of Wisconsin.[http://www.hort.purdue.edu/newcrop/afcm/drypea.html Dry Field Pea]
+* {{cite book | last=Bitting | first=A.W. | title=The Canning of Peas: Based on Factory Inspection and Experimental Data | publisher=U.S. Government Printing Office | series=Bulletin (United States. Bureau of Chemistry) | year=1909 | url=https://books.google.com/books?id=5QPZRbOtApEC | access-date=2024-05-06}}
+
+==External links==
+{{Cookbook|Pea}}
+* [http://www.plantnames.unimelb.edu.au/Sorting/Pisum.html Sorting Pisum names]
+* [https://plants.usda.gov/java/profile?symbol=PISA6 USDA plant profile]
+* [https://www.nal.usda.gov/human-nutrition-and-food-safety/dri-calculator Foodcomp]
+
+{{Taxonbar|from2=Q25237|from=Q109902416}}
+{{Authority control}}
+
+[[Category:Edible legumes]]
+[[Category:Lathyrus|oleraceus]]
+[[Category:Fruit vegetables]]
+[[Category:Plants described in 1753]]
+[[Category:Plant models]]
+[[Category:Botanical taxa named by Carl Linnaeus]]
+[[Category:Founder crops]]
+[[Category:Plants with compound leaves]]

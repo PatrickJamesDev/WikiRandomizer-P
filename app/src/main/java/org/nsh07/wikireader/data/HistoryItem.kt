@@ -18,5 +18,7 @@ data class ViewHistoryItem(
     val thumbnail: String?,
     val title: String,
     val description: String?,
-    val lang: String
+    val lang: String,
+    /** The topic library this article came from, if any. */
+    val topic: String? = null
 )

@@ -2,7 +2,7 @@
 <resources>
     <string name="snackbarUnableToDelete">לא ניתן למחוק את המאמר: %1$s</string>
     <string name="sourceCode">קוד מקור</string>
-    <string name="setAsDefaultDesc">ניתן להגדיר את WikiReader כאפליקציית ברירת המחדל לפתיחת קישורים בוויקיפדיה. לחץ על הכפתורים למטה כדי לקבל מידע נוסף או לפתוח את ההגדרות.</string>
+    <string name="setAsDefaultDesc">ניתן להגדיר את WikiRandomizer-P כאפליקציית ברירת המחדל לפתיחת קישורים בוויקיפדיה. לחץ על הכפתורים למטה כדי לקבל מידע נוסף או לפתוח את ההגדרות.</string>
     <string name="settingImageBackgroundDesc">הוספת רקע לבן לתמונות שקופות. הרקע יכול לעזור לשפר את הקריאות במצב כהה.</string>
     <string name="settingWikipediaLanguage">שפת וויקיפדיה</string>
     <string name="topArticlesOTD">המאמרים המובילים של היום</string>
@@ -14,7 +14,7 @@
     <string name="articlesSize">%1$s מאמרים, %2$s שפות</string>
     <string name="app">אפלקציה</string>
     <string name="appTagline">קרא דפי ויקיפדיה ללא הסחות דעת</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="articleDeleted">המאמר נמחק</string>
     <string name="author">יוצר</string>
     <string name="back">חזור אחורה</string>
@@ -90,7 +90,7 @@
     <string name="themeSystemDefault">מערכת</string>
     <string name="titleMatches">כותרות תואמות</string>
     <string name="translate">תרגם</string>
-    <string name="translateDesc">עזרה בתרגום WikiReader לשפה שלך</string>
+    <string name="translateDesc">עזרה בתרגום WikiRandomizer-P לשפה שלך</string>
     <string name="trendingArticles">מאמרים פופולריים</string>
     <string name="unableToDeleteArticle">לא ניתן למחוק את המאמר: %1$s</string>
     <string name="up_arrow">עבור למעלה</string>

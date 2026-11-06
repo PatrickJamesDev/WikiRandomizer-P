@@ -13,7 +13,11 @@ data class SavedArticle(
     val thumbnail: String?,
     val description: String?,
     val apiResponse: String,
-    val pageContent: String
+    val pageContent: String,
+    /** When the article was saved; 0 for rows saved before 1.0 beta. */
+    val savedAt: Long = System.currentTimeMillis(),
+    /** The topic library this article came from, if any. */
+    val topic: String? = null
 )
 
 data class ArticleInfo(
@@ -22,7 +26,9 @@ data class ArticleInfo(
     val langName: String,
     val title: String,
     val thumbnail: String?,
-    val description: String?
+    val description: String?,
+    val savedAt: Long = 0L,
+    val topic: String? = null
 )
 
 data class LanguageInfo(

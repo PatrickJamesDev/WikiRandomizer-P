@@ -40,8 +40,7 @@ fun ArticleLanguageBottomSheet(
     searchStr: String,
     searchQuery: String,
     setShowSheet: (Boolean) -> Unit,
-    setLang: (String) -> Unit,
-    loadPage: (String) -> Unit,
+    loadPage: (String, String) -> Unit,
     setSearchStr: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -134,8 +133,7 @@ fun ArticleLanguageBottomSheet(
                                 items = articleLangs.first.size,
                                 index = index
                             ) {
-                                setLang(it.lang)
-                                loadPage(it.title)
+                                loadPage(it.title, it.lang)
                                 scope
                                     .launch { bottomSheetState.hide() }
                                     .invokeOnCompletion {
@@ -178,8 +176,7 @@ fun ArticleLanguageBottomSheet(
                             items = articleLangs.second.size,
                             index = index
                         ) {
-                            setLang(it.lang)
-                            loadPage(it.title)
+                            loadPage(it.title, it.lang)
                             scope
                                 .launch { bottomSheetState.hide() }
                                 .invokeOnCompletion {

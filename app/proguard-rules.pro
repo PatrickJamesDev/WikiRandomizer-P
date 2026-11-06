@@ -21,3 +21,10 @@
 #-renamesourcefileattribute SourceFile
 
 -dontobfuscate
+
+# Kiwix / libzim expose their API through JNI. Class and method names are looked up natively.
+-keep class org.kiwix.** { *; }
+-keep class com.getkeepsafe.relinker.** { *; }
+-keepclasseswithmembernames class * {
+    native <methods>;
+}

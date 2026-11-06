@@ -35,7 +35,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import org.nsh07.wikireader.R
-import org.nsh07.wikireader.ui.theme.WikiReaderTheme
+import org.nsh07.wikireader.ui.theme.WikiRandomizerPTheme
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -78,7 +78,7 @@ fun ColorSchemePickerDialog(
     onColorChange: (Color) -> Unit,
 ) {
     val colorSchemes = listOf(
-        Color(0xfffeb4a7), Color(0xffffb3c0), Color(0xfffcaaff), Color(0xffb9c3ff),
+        Color(0xFF4C662B), Color(0xfffeb4a7), Color(0xffffb3c0), Color(0xfffcaaff), Color(0xffb9c3ff),
         Color(0xff62d3ff), Color(0xff44d9f1), Color(0xff52dbc9), Color(0xff78dd77),
         Color(0xff9fd75c), Color(0xffc1d02d), Color(0xfffabd00), Color(0xffffb86e),
         Color.White
@@ -104,9 +104,9 @@ fun ColorSchemePickerDialog(
                 Spacer(Modifier.height(16.dp))
 
                 Column(Modifier.align(Alignment.CenterHorizontally)) {
-                    (0..11 step 4).forEach {
+                    colorSchemes.dropLast(1).chunked(4).forEach { row ->
                         Row {
-                            colorSchemes.slice(it..it + 3).fastForEach { color ->
+                            row.fastForEach { color ->
                                 ColorPickerButton(
                                     color,
                                     color == currentColor,
@@ -144,7 +144,7 @@ fun ColorSchemePickerDialog(
 @Composable
 fun ColorPickerDialogPreview() {
     var currentColor by remember { mutableStateOf(Color(0xfffeb4a7)) }
-    WikiReaderTheme(darkTheme = true) {
+    WikiRandomizerPTheme(darkTheme = true) {
         ColorSchemePickerDialog(
             currentColor,
             setShowDialog = {},

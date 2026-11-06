@@ -3,6 +3,10 @@ package org.nsh07.wikireader.ui.image
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -35,7 +39,7 @@ import org.nsh07.wikireader.ui.theme.WRShapeDefaults.cardShape
  * object
  */
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun SharedTransitionScope.ImageCard(
     photo: WikiPhoto?,
@@ -44,14 +48,18 @@ fun SharedTransitionScope.ImageCard(
     showPhoto: Boolean,
     background: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Full-size address saved by "hold to download"; null disables the hold menu. */
+    downloadUrl: String? = null
 ) {
     val context = LocalContext.current
+    val menu = rememberImageMenuState()
+    val haptic = LocalHapticFeedback.current
 
     val contentScale = ContentScale.Crop
     val painter = rememberAsyncImagePainter(
         model = ImageRequest.Builder(context)
-            .data(photo?.source)
+            .data(ImagePrefetcher.standardThumbnailUrl(photo?.source))
             .crossfade(true)
             .build(),
         contentScale = contentScale,
@@ -60,14 +68,24 @@ fun SharedTransitionScope.ImageCard(
 
     if (photo != null && showPhoto) {
         Card(
-            onClick = onClick,
             colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainer),
             shape = cardShape,
             modifier = modifier
                 .padding(horizontal = 16.dp)
                 .widthIn(max = 512.dp)
                 .fillMaxWidth()
+                .clip(cardShape)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = if (downloadUrl == null) null else {
+                        {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            menu.open = true
+                        }
+                    }
+                )
         ) {
+            if (downloadUrl != null) ImageDownloadMenu(menu, downloadUrl, title)
             PageImage(
                 photo = photo,
                 photoDesc = title,

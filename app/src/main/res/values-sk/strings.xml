@@ -2,7 +2,7 @@
 <resources>
     <string name="app">Aplikácia</string>
     <string name="appTagline">Čítajte Wikipédiu bez rušenia</string>
-    <string name="app_name">Wikireader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="articleDeleted">Článok vymazaný</string>
     <string name="articlesSize">Počet článkov: %1$s, počet jazykov: %2$s</string>
     <string name="author">Autor</string>
@@ -72,7 +72,7 @@
     <string name="resetSettingsIconDesc">Resetovať nastavenia na predvolené</string>
     <string name="searchWikipedia">Vyhľadávať Wikipediu</string>
     <string name="setAsDefault">Nastaviť ako predvolené</string>
-    <string name="setAsDefaultDesc">Môžete nastaviť WikiReader ako predvolenú aplikáciu na otváranie Wikipedia odkazov. Aby ste zistili viac, kliknite na tlačidlo nižšie, alebo otvorte nastavenia.</string>
+    <string name="setAsDefaultDesc">Môžete nastaviť WikiRandomizer-P ako predvolenú aplikáciu na otváranie Wikipedia odkazov. Aby ste zistili viac, kliknite na tlačidlo nižšie, alebo otvorte nastavenia.</string>
     <string name="settingBlackTheme">Čierny režim</string>
     <string name="settingBlackThemeDesc">Aplikovať čisto čierny režim</string>
     <string name="settingColorScheme">Farebný motív</string>
@@ -108,7 +108,7 @@
     <string name="titleMatches">Zhoda v názve</string>
     <string name="topArticlesOTD">Top články dňa</string>
     <string name="translate">Preložiť</string>
-    <string name="translateDesc">Pomôžte preložiť Wikireader do svojho jazyka</string>
+    <string name="translateDesc">Pomôžte preložiť WikiRandomizer-P do svojho jazyka</string>
     <string name="unableToDeleteArticle">Nedá sa vymazať článok: %1$s</string>
     <string name="up_arrow">Prejsť na vrch</string>
     <string name="version">Verzia</string>

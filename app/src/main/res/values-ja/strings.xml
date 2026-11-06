@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">アプリについて</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="cancel">キャンセル</string>
     <string name="onThisDay">今日は何の日</string>
     <string name="openInBrowser">ブラウザで開く</string>
@@ -38,13 +38,13 @@
     <string name="resetSettingsDialog">初期化しますか？</string>
     <string name="resetSettingsDialogDesc">すべての設定が初期化されます</string>
     <string name="setAsDefault">デフォルトに設定</string>
-    <string name="setAsDefaultDesc">Wikipediaのリンクを開くデフォルトのアプリとしてWikiReaderを設定することができます。下のボタンから詳細の確認と、設定の表示が可能です。</string>
+    <string name="setAsDefaultDesc">Wikipediaのリンクを開くデフォルトのアプリとしてWikiRandomizer-Pを設定することができます。下のボタンから詳細の確認と、設定の表示が可能です。</string>
     <string name="settingWikipediaLanguage">Wikipediaの言語</string>
     <string name="themeDark">ダーク</string>
     <string name="wikipedia">Wikipedia</string>
     <string name="version">バージョン</string>
     <string name="trendingArticles">トレンド記事</string>
-    <string name="translateDesc">WikiReaderの翻訳を手伝う</string>
+    <string name="translateDesc">WikiRandomizer-Pの翻訳を手伝う</string>
     <string name="settingFontStyle">フォント</string>
     <string name="settingImmersiveMode">没入モード</string>
     <string name="settingImageBackgroundDesc">透明な背景の画像に白の背景を追加します。ダークモードでの視認性を向上させます。</string>

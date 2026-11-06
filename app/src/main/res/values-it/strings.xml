@@ -3,7 +3,7 @@
     <string name="openInBrowser">Apri nel browser</string>
     <string name="about">Informazioni</string>
     <string name="appTagline">Leggi le pagine di Wikipedia senza distrazioni</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="articleDeleted">Articolo eliminato</string>
     <string name="articlesSize">%1$s articoli, %2$s lingue</string>
     <string name="author">Autore</string>
@@ -102,7 +102,7 @@
     <string name="titleMatches">Corrispondenze nel titolo</string>
     <string name="topArticlesOTD">Articoli più letti della giornata</string>
     <string name="translate">Traduci</string>
-    <string name="translateDesc">Aiuta a tradurre WikiReader nella tua lingua</string>
+    <string name="translateDesc">Aiuta a tradurre WikiRandomizer-P nella tua lingua</string>
     <string name="trendingArticles">Articoli di tendenza</string>
     <string name="unableToDeleteArticle">Impossibile eliminare l\'articolo: %1$s</string>
     <string name="up_arrow">Torna all\'inizio</string>
@@ -131,7 +131,7 @@
     <string name="picOfTheDay">Immagine del giorno</string>
     <string name="scroll_to_top">Scorri in alto</string>
     <string name="sections">Sezioni</string>
-    <string name="setAsDefaultDesc">Puoi impostare WikiReader come app predefinita per aprire i link di Wikipedia. Usa i pulsanti qui sotto per saperne di più o per aprire le impostazioni.</string>
+    <string name="setAsDefaultDesc">Puoi impostare WikiRandomizer-P come app predefinita per aprire i link di Wikipedia. Usa i pulsanti qui sotto per saperne di più o per aprire le impostazioni.</string>
     <string name="settingFeedDesc">Mostra la bacheca all\'avvio. La bacheca mette in evidenza articoli di tendenza, voci relative a notizie recenti e altri articoli interessanti</string>
     <string name="settingTheme">Tema dell\'app</string>
     <string name="settingImmersiveModeDesc">Nasconde la barra di ricerca e i pulsanti fluttuanti durante lo scorrimento. Attivata automaticamente su schermi di piccole dimensioni.</string>

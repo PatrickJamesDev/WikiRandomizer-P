@@ -1,7 +1,11 @@
 package org.nsh07.wikireader.ui.homeScreen
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import org.nsh07.wikireader.ui.image.ImageDownloadMenu
+import org.nsh07.wikireader.ui.image.rememberImageMenuState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,7 +18,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.MaterialTheme.motionScheme
 import androidx.compose.material3.MaterialTheme.shapes
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
@@ -31,10 +34,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import org.nsh07.wikireader.R
-import org.nsh07.wikireader.parser.toWikitextAnnotatedString
+import org.nsh07.wikireader.parser.toWikitextAnnotatedStringSafe
 import org.nsh07.wikireader.ui.image.FeedImage
+import org.nsh07.wikireader.ui.image.ImagePrefetcher
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun Gallery(
     text: String,
@@ -42,6 +46,7 @@ fun Gallery(
     fontSize: Int,
     background: Boolean,
     onLinkClick: (String) -> Unit,
+    onLinkLongClick: (String) -> Unit = {},
     onClick: (String, String) -> Unit
 ) {
     val content = remember(text) { text.substringAfter('>').trim(' ', '\n').lines() }
@@ -51,48 +56,72 @@ fun Gallery(
     HorizontalPager(
         state = pagerState,
         verticalAlignment = Alignment.Top,
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize(motionScheme.defaultSpatialSpec())
+        modifier = Modifier.fillMaxWidth()
     ) {
-        val uriLow = remember(text) {
-            "https://$lang.wikipedia.org/wiki/Special:FilePath/${
-                content[it].substringBefore('|')
-            }?width=720"
-        }
+        val fileName = remember(text) { content[it].substringBefore('|').substringAfter(':').trim() }
+        val uriLow = remember(text) { ImagePrefetcher.fileUrl(lang, fileName) }
         val uriHigh = remember(text) {
-            "https://$lang.wikipedia.org/wiki/Special:FilePath/${
-                content[it].substringBefore('|')
-            }"
+            ImagePrefetcher.fileUrl(lang, fileName, width = 1920)
         }
-        val description = remember(text) { content[it].substringAfter('|') }
+            val description = remember(text) { content[it].substringAfter('|', "") }
+            val captionColorScheme = colorScheme
+            val captionTypography = typography
+            val caption = remember(description, fontSize, captionColorScheme, captionTypography) {
+                description.toWikitextAnnotatedStringSafe(
+                    colorScheme = captionColorScheme,
+                    fontSize = fontSize - 2,
+                    loadPage = onLinkClick,
+                    typography = captionTypography,
+                    showRef = {}
+                )
+            }
+            val captionDisplay = remember(caption, captionColorScheme.primary) {
+                caption.toTappableArticleLinks(captionColorScheme.primary)
+            }
+            val captionLayout = remember(captionDisplay) {
+                androidx.compose.runtime.mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null)
+            }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .padding(horizontal = 16.dp)
         ) {
-            FeedImage(
-                source = uriLow,
-                description = description,
-                loadingIndicator = false,
-                background = background,
-                modifier = Modifier
-                    .clip(shapes.large)
-                    .clickable(onClick = { onClick(uriHigh, description) })
-            )
+            val menu = rememberImageMenuState()
+            val haptic = LocalHapticFeedback.current
+            Box {
+                FeedImage(
+                    source = uriLow,
+                    description = description,
+                    loadingIndicator = false,
+                    lightPlaceholder = true,
+                    background = background,
+                    modifier = Modifier
+                        .clip(shapes.large)
+                        .combinedClickable(
+                            onClick = { onClick(uriHigh, description) },
+                            onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                menu.open = true
+                            }
+                        )
+                )
+                ImageDownloadMenu(menu, uriHigh, description.ifBlank { null })
+            }
             Text(
-                description.toWikitextAnnotatedString(
-                    colorScheme = colorScheme,
-                    fontSize = fontSize - 2,
-                    loadPage = onLinkClick,
-                    typography = typography,
-                    showRef = {}
-                ),
+                text = captionDisplay,
                 fontSize = (fontSize - 2).sp,
                 lineHeight = (24 * ((fontSize - 2) / 16.0)).toInt().sp,
                 textAlign = TextAlign.Center,
                 color = colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(8.dp)
+                onTextLayout = { captionLayout.value = it },
+                modifier = Modifier
+                    .padding(8.dp)
+                    .articleLinkGestures(
+                        text = captionDisplay,
+                        layoutProvider = { captionLayout.value },
+                        onLinkClick = onLinkClick,
+                        onLinkLongClick = onLinkLongClick
+                    )
             )
         }
     }

@@ -51,6 +51,31 @@ interface ViewHistoryDao {
     @Query("SELECT * FROM view_history ORDER BY time DESC LIMIT 1")
     suspend fun getLast(): ViewHistoryItem?
 
+    @Query("DELETE FROM view_history WHERE title = :title AND lang = :lang")
+    suspend fun deleteByTitle(title: String, lang: String)
+
     @Query("DELETE FROM view_history WHERE time = :time")
     suspend fun deleteByTime(time: Long)
+
+    /** Returns all article titles the user has already viewed in [lang]. Used for deduplication. */
+    @Query("SELECT title FROM view_history WHERE lang = :lang")
+    suspend fun getViewedTitles(lang: String): List<String>
+
+    /** Old rows written before topic sorting existed; used for a lazy backfill. */
+    @Query("SELECT * FROM view_history WHERE topic IS NULL")
+    suspend fun getViewHistoryWithoutTopic(): List<ViewHistoryItem>
+
+    /** Local search in the reader's browsing history. */
+    @Query(
+        "SELECT * FROM view_history " +
+                "WHERE title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%' " +
+                "ORDER BY time DESC LIMIT 25"
+    )
+    suspend fun search(query: String): List<ViewHistoryItem>
+
+    @Query("UPDATE view_history SET topic = :topic WHERE time = :time")
+    suspend fun setTopic(time: Long, topic: String)
+
+    @Query("SELECT COUNT(*) FROM view_history")
+    suspend fun count(): Int
 }

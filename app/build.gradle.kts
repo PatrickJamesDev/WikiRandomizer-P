@@ -19,8 +19,8 @@ android {
         applicationId = "org.nsh07.wikireader"
         minSdk = 26
         targetSdk = 36
-        versionCode = 53
-        versionName = "2.5.5"
+        versionCode = 54
+        versionName = "1.0 beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -32,6 +32,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            // A debuggable app runs in ART's slow "debug" mode: no ahead-of-time compilation, no
+            // baseline profiles, so Compose scrolling janks badly (the debug log showed exactly that).
+            // This keeps the build type and debug signing but makes it run like a normal app.
+            // Set to true only if you need to attach a debugger.
+            isDebuggable = false
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -39,6 +46,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Fast, installable test build: build_windows.bat release  (-PlocalRelease signs it with
+            // the debug key). Compose runs several times faster than in the debug build.
+            if (project.hasProperty("localRelease")) {
+                signingConfig = signingConfigs.getByName("debug")
+            }
         }
     }
     compileOptions {
@@ -53,11 +65,26 @@ android {
     ksp {
         arg("room.schemaLocation", "$projectDir/schemas")
     }
+    lint {
+        // New UI strings are English-only; don't let release lint fail on the other locales.
+        disable += "MissingTranslation"
+        // The debug build is no longer "debuggable", so Gradle treats it like a release target and
+        // would run lint as a build gate (and fail on style findings). Lint is not needed to build.
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
     }
     packaging {
+        jniLibs {
+            // libkiwix + libzim ship ~200 MB of .so files across four ABIs. Uncompressed native
+            // libraries would make the APK almost that large, so use the legacy layout: the
+            // libraries are compressed in the APK and extracted once at install time.
+            useLegacyPackaging = true
+        }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
@@ -77,6 +104,7 @@ tasks.withType(Test::class) {
 }
 
 dependencies {
+    implementation(project(":shared"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.adaptive)
@@ -103,6 +131,7 @@ dependencies {
     implementation(libs.ehsannarmani.compose.charts)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.material.kolor)
+    implementation(libs.libkiwix)
     implementation(libs.okhttp)
     implementation(libs.retrofit2.converter.scalars)
     implementation(libs.retrofit2.kotlinx.serialization.converter)

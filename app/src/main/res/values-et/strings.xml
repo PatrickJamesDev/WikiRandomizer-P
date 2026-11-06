@@ -9,7 +9,7 @@
     <string name="appTagline">Loe Vikipeedia lehti ilma liigse segamiseta</string>
     <string name="clear">Kustuta</string>
     <string name="articleDeleted">Artikkel on kustutatud</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="author">Autor</string>
     <string name="chooseColorScheme">Vali värvid</string>
     <string name="chooseWikipediaLanguage">Vali Vikipeedia keel</string>
@@ -103,8 +103,8 @@
     <string name="settingDataSaverDesc">Ära kohe laadi pilte ja uudisvoogu. Pilte saad siiski avada asenduskaardi klõpsimisel.</string>
     <string name="settingExpandSectionsDesc">Vaikimisi näita kõiki artikli lõike avatuna</string>
     <string name="settingImmersiveModeDesc">Artikli kerimisel peida otsinguriba ja ujuvad tegevustenupud. Väikeste ekraanidega nutiseadmetes on see eelistus vaikimisi kasutusel.</string>
-    <string name="translateDesc">Aita WikiReaderit tõlkida oma keelde</string>
-    <string name="setAsDefaultDesc">Sa võid WikiReaderi määrata Vikipeedia linkide vaikimise avajaks. Lisateavet leiad allpooltoodud nupust ja seadistustest saad seda siis muuta.</string>
+    <string name="translateDesc">Aita WikiRandomizer-Pit tõlkida oma keelde</string>
+    <string name="setAsDefaultDesc">Sa võid WikiRandomizer-Pi määrata Vikipeedia linkide vaikimise avajaks. Lisateavet leiad allpooltoodud nupust ja seadistustest saad seda siis muuta.</string>
     <string name="settingImageBackground">Pildi taust</string>
     <string name="settingImageBackgroundDesc">Lisa läbipaistvatele piltidele valge taust. Muu hulgas parandab see loetavust tumedas kujunduses.</string>
     <string name="app">Rakendus</string>

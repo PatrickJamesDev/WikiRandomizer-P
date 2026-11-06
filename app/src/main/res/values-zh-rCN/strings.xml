@@ -8,7 +8,7 @@
     <string name="dialogDeleteHistoryItem">“%1$s”将不再出现在你的搜索记录里.</string>
     <string name="app">应用</string>
     <string name="appTagline">助你专心阅读维基百科</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="author">作者</string>
     <string name="back">返回</string>
     <string name="cancel">取消</string>
@@ -103,9 +103,9 @@
     <string name="about">关于</string>
     <string name="articlesSize">第%1$s 篇条目, 共%2$s篇</string>
     <string name="settingFontSize">字体大小</string>
-    <string name="translateDesc">为WikiReader添加你的语言</string>
+    <string name="translateDesc">为WikiRandomizer-P添加你的语言</string>
     <string name="clear">清除</string>
-    <string name="setAsDefaultDesc">你可以将WikiReader设置为打开维基百科链接的默认软件，点击下方按钮了解更多或者打开设置界面进行调整.</string>
+    <string name="setAsDefaultDesc">你可以将WikiRandomizer-P设置为打开维基百科链接的默认软件，点击下方按钮了解更多或者打开设置界面进行调整.</string>
     <string name="fontStyleSansSerif">Sans-serif</string>
     <string name="pageIndicator">第%1$s页，共%2$s页</string>
     <string name="license">开源协议</string>

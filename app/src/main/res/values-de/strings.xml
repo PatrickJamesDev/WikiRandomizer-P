@@ -6,7 +6,7 @@
     <string name="dialogDeleteHistoryItem">\"%1$s\" wird dauerhaft von deinem Suchverlauf gelöscht.</string>
     <string name="articlesSize">%1$s Artikel, %2$s Sprachen</string>
     <string name="colorSchemeColor">Farbe</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="clear">Löschen</string>
     <string name="deleteAllArticles">Alle Artikel löschen?</string>
     <string name="app">App</string>
@@ -112,8 +112,8 @@
     <string name="resetSettingsDialogDesc">Alle Einstellungen werden auf die Standardeinstellungen zurückgesetzt</string>
     <string name="snackbarUnableToSave">Artikel konnte nicht gespeichert werden: %1$s</string>
     <string name="resetSettingsIconDesc">Einstellungen auf Standard zurücksetzen</string>
-    <string name="translateDesc">Helfen Sie mit, WikiReader in Ihre Sprache zu übersetzen</string>
-    <string name="setAsDefaultDesc">Sie können WikiReader als Standard-App zum Öffnen von Wikipedia-Links festlegen. Klicken Sie auf die Schaltflächen unten, um mehr zu erfahren oder die Einstellungen zu öffnen.</string>
+    <string name="translateDesc">Helfen Sie mit, WikiRandomizer-P in Ihre Sprache zu übersetzen</string>
+    <string name="setAsDefaultDesc">Sie können WikiRandomizer-P als Standard-App zum Öffnen von Wikipedia-Links festlegen. Klicken Sie auf die Schaltflächen unten, um mehr zu erfahren oder die Einstellungen zu öffnen.</string>
     <string name="settingRenderMathDesc">Erfordert geringe Mengen zusätzlicher Daten. Deaktivieren Sie diese Option, um die Leistung auf Kosten der Lesbarkeit zu verbessern.</string>
     <string name="settingTheme">Thema</string>
     <string name="snackbarArticleDeleted">Artikel gelöscht</string>

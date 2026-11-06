@@ -4,10 +4,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
@@ -21,10 +20,12 @@ import org.nsh07.wikireader.ui.theme.CustomColors.topBarColors
 fun SettingsTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
     onBack: () -> Unit,
-    onResetSettings: () -> Unit
+    title: Int = R.string.settings
 ) {
-    LargeFlexibleTopAppBar(
-        title = { Text(stringResource(R.string.settings)) },
+    // Deliberately a normal (small) app bar: the large flexible bar laid out extra title styles on
+    // the first frame and was the main source of the 40-60 ms Settings launch stall.
+    TopAppBar(
+        title = { Text(stringResource(title)) },
         navigationIcon = {
             FilledTonalIconButton(
                 shapes = IconButtonDefaults.shapes(),
@@ -34,14 +35,6 @@ fun SettingsTopBar(
                 Icon(
                     painterResource(R.drawable.arrow_back),
                     contentDescription = stringResource(R.string.back)
-                )
-            }
-        },
-        actions = {
-            IconButton(shapes = IconButtonDefaults.shapes(), onClick = onResetSettings) {
-                Icon(
-                    painterResource(R.drawable.reset_settings),
-                    contentDescription = stringResource(R.string.resetSettingsIconDesc)
                 )
             }
         },

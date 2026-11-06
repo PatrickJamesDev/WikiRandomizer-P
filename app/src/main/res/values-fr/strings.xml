@@ -3,7 +3,7 @@
     <string name="setAsDefault">Définir par défaut</string>
     <string name="settingWikipediaLanguage">Langue de Wikipédia</string>
     <string name="selectedLabel">Sélectionné</string>
-    <string name="setAsDefaultDesc">Vous pouvez définir WikiReader comme votre application par défaut pour ouvrir les liens Wikipédia. Cliquez sur les boutons ci-dessous pour en savoir plus ou ouvrir les paramètres.</string>
+    <string name="setAsDefaultDesc">Vous pouvez définir WikiRandomizer-P comme votre application par défaut pour ouvrir les liens Wikipédia. Cliquez sur les boutons ci-dessous pour en savoir plus ou ouvrir les paramètres.</string>
     <string name="settingImageBackgroundDesc">Ajouter un fond blanc aux images transparentes. L\'arrière-plan peut aider à augmenter la lisibilité en mode sombre.</string>
     <string name="themeLight">Clair</string>
     <string name="settingImageBackground">Arrière-plan d\'image</string>
@@ -13,7 +13,7 @@
     <string name="articlesSize">%1$s articles, %2$s langues</string>
     <string name="app">Application</string>
     <string name="appTagline">Lisez des pages Wikipédia sans distractions</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="articleDeleted">Article supprimé</string>
     <string name="author">Auteur</string>
     <string name="cancel">Annuler</string>
@@ -111,7 +111,7 @@
     <string name="noSavedArticlesDesc">Clique sur le bouton de téléchargement dans la barre d’outils en bas lors de la lecture d’un article pour commencer</string>
     <string name="donateToWikipedia">Donner ou contribuer à WIkipédia</string>
     <string name="fontStyleSansSerif">Sans-serif</string>
-    <string name="translateDesc">Aidez à traduire WikiReader dans votre langue</string>
+    <string name="translateDesc">Aidez à traduire WikiRandomizer-P dans votre langue</string>
     <string name="trendingArticles">Articles tendances</string>
     <string name="unableToDeleteArticle">Impossible de supprimer l\'article : %1$s</string>
     <string name="up_arrow">Aller en haut</string>

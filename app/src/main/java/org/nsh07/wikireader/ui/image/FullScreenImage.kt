@@ -2,17 +2,19 @@ package org.nsh07.wikireader.ui.image
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.animateZoomBy
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
@@ -76,7 +78,7 @@ fun FullScreenImage(
     val view = LocalView.current
     val context = LocalContext.current
     val motionScheme = motionScheme
-    val window = remember { (view.context as Activity).window }
+    val window = remember { view.context.requireActivity().window }
     val insetsController = remember { WindowCompat.getInsetsController(window, view) }
 
     val contentScale = ContentScale.Crop
@@ -123,6 +125,7 @@ fun FullScreenImage(
         }
     }
 
+    val download = rememberImageDownload(photo?.source, photoDesc ?: title)
     with(sharedScope) {
         Scaffold(
             topBar = {
@@ -134,6 +137,7 @@ fun FullScreenImage(
                     FullScreenImageTopBar(
                         description = title,
                         link = link,
+                        onDownload = download,
                         onBack = onBack
                     )
                 }
@@ -141,29 +145,24 @@ fun FullScreenImage(
             containerColor = Color.Black,
             modifier = modifier
         ) { _ ->
-            var scale by remember { mutableFloatStateOf(1f) }
-            var offset by remember { mutableStateOf(Offset.Zero) }
-            var size by remember { mutableStateOf(IntSize.Zero) }
+            val zoom = remember { ImageZoomState() }
             val borderRadius by animateDpAsState(
                 if (showTopBar) 16.dp else 0.dp,
                 animationSpec = motionScheme.defaultSpatialSpec()
             )
 
-            // Zoom/Offset logic. Also prevents image from going out of bounds
+            // Pinch + pan. Taps, double taps and "tap then drag" zooming are handled by
+            // imageZoomGestures on the surrounding box (see ZoomGestures.kt).
             val state = rememberTransformableState { scaleChange, offsetChange, _ ->
-                val maxX = (size.width * (scale - 1) / 2f)
-                val maxY = (size.height * (scale - 1) / 2f)
-
-                scale = (scale * scaleChange).coerceIn(1f..8f)
-
-                offset += offsetChange.times(scale)
-                offset = Offset(
-                    offset.x.coerceIn(-maxX, maxX),
-                    offset.y.coerceIn(-maxY, maxY)
-                )
-
-                showTopBar = scale <= 1.1f
+                zoom.animation?.cancel()
+                val newScale = (zoom.scale * scaleChange).coerceIn(MIN_IMAGE_SCALE, MAX_IMAGE_SCALE)
+                zoom.scale = newScale
+                zoom.offset = zoom.clampedOffset(newScale, zoom.offset + offsetChange.times(newScale))
+                showTopBar = newScale <= 1.1f
             }
+            // Resolve the theme animation spec here: defaultSpatialSpec() is @Composable and
+            // cannot be called from inside the pointerInput gesture lambdas.
+            val doubleTapSpec = motionScheme.defaultSpatialSpec<Float>()
 
             val coroutineScope = rememberCoroutineScope()
             val painterState by painter.state.collectAsStateWithLifecycle()
@@ -185,7 +184,19 @@ fun FullScreenImage(
                                 .alpha(0.3f)
                         )
                     }
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .onSizeChanged { zoom.areaSize = it }
+                            .imageZoomGestures(
+                                zoom = zoom,
+                                scope = coroutineScope,
+                                doubleTapSpec = doubleTapSpec,
+                                onTap = { showTopBar = !showTopBar },
+                                onScaleChanged = { showTopBar = it <= 1.1f }
+                            )
+                    ) {
                         PageImage(
                             photo = photo,
                             photoDesc = photoDesc,
@@ -194,35 +205,14 @@ fun FullScreenImage(
                             contentScale = contentScale,
                             background = background,
                             modifier = Modifier
-                                .onSizeChanged { size = it }
-                                .graphicsLayer(
-                                    scaleX = scale,
-                                    scaleY = scale,
-                                    translationX = offset.x,
-                                    translationY = offset.y
-                                )
-                                .transformable(state = state)
-                                .pointerInput(Unit) {
-                                    detectTapGestures(
-                                        onTap = {
-                                            showTopBar = !showTopBar
-                                        },
-                                        onDoubleTap = {
-                                            coroutineScope.launch {
-                                                if (scale == 1f) // Zoom in only if the image is zoomed out
-                                                    state.animateZoomBy(
-                                                        4f,
-                                                        motionScheme.defaultSpatialSpec()
-                                                    )
-                                                else
-                                                    state.animateZoomBy(
-                                                        0.25f,
-                                                        motionScheme.defaultEffectsSpec()
-                                                    )
-                                            }
-                                        }
-                                    )
+                                .onSizeChanged { zoom.size = it }
+                                .graphicsLayer {
+                                    scaleX = zoom.scale
+                                    scaleY = zoom.scale
+                                    translationX = zoom.offset.x
+                                    translationY = zoom.offset.y
                                 }
+                                .transformable(state = state)
                                 .fillMaxSize()
                                 .padding(borderRadius.coerceAtLeast(0.dp))
                                 .clip(RoundedCornerShape(borderRadius.coerceAtLeast(0.dp)))
@@ -249,7 +239,7 @@ fun FullScreenArticleImage(
     val view = LocalView.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val window = remember { (view.context as Activity).window }
+    val window = remember { view.context.requireActivity().window }
     val insetsController = remember { WindowCompat.getInsetsController(window, view) }
 
     val contentScale = ContentScale.Fit
@@ -297,6 +287,7 @@ fun FullScreenArticleImage(
         }
     }
 
+    val download = rememberImageDownload(uri, description)
     with(sharedScope) {
         Scaffold(
             topBar = {
@@ -308,6 +299,7 @@ fun FullScreenArticleImage(
                     FullScreenImageTopBar(
                         description = description,
                         link = link,
+                        onDownload = download,
                         onBack = onBack
                     )
                 }
@@ -315,29 +307,21 @@ fun FullScreenArticleImage(
             containerColor = Color.Black,
             modifier = modifier
         ) { _ ->
-            var scale by remember { mutableFloatStateOf(1f) }
-            var offset by remember { mutableStateOf(Offset.Zero) }
-            var size by remember { mutableStateOf(IntSize.Zero) }
+            val zoom = remember { ImageZoomState() }
             val borderRadius by animateDpAsState(
                 if (showTopBar) 16.dp else 0.dp,
                 animationSpec = motionScheme.defaultSpatialSpec()
             )
 
-            // Zoom/Offset logic. Also prevents image from going out of bounds
             val state = rememberTransformableState { scaleChange, offsetChange, _ ->
-                val maxX = (size.width * (scale - 1) / 2f)
-                val maxY = (size.height * (scale - 1) / 2f)
-
-                scale = (scale * scaleChange).coerceIn(1f..8f)
-
-                offset += offsetChange.times(scale)
-                offset = Offset(
-                    offset.x.coerceIn(-maxX, maxX),
-                    offset.y.coerceIn(-maxY, maxY)
-                )
-
-                showTopBar = if (scale > 1.1f) false else true
+                zoom.animation?.cancel()
+                val newScale = (zoom.scale * scaleChange).coerceIn(MIN_IMAGE_SCALE, MAX_IMAGE_SCALE)
+                zoom.scale = newScale
+                zoom.offset = zoom.clampedOffset(newScale, zoom.offset + offsetChange.times(newScale))
+                showTopBar = newScale <= 1.1f
             }
+            // Same reason as above: the spec must be read in composable scope.
+            val doubleTapSpec = motionScheme.defaultSpatialSpec<Float>()
 
             val painterState by painter.state.collectAsStateWithLifecycle()
 
@@ -357,7 +341,19 @@ fun FullScreenArticleImage(
                             .alpha(0.3f)
                     )
                 }
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .onSizeChanged { zoom.areaSize = it }
+                        .imageZoomGestures(
+                            zoom = zoom,
+                            scope = scope,
+                            doubleTapSpec = doubleTapSpec,
+                            onTap = { showTopBar = !showTopBar },
+                            onScaleChanged = { showTopBar = it <= 1.1f }
+                        )
+                ) {
                     PageImage(
                         uri = uri,
                         description = description,
@@ -366,29 +362,14 @@ fun FullScreenArticleImage(
                         contentScale = contentScale,
                         background = background,
                         modifier = Modifier
-                            .onSizeChanged { size = it }
-                            .graphicsLayer(
-                                scaleX = scale,
-                                scaleY = scale,
-                                translationX = offset.x,
-                                translationY = offset.y
-                            )
-                            .transformable(state = state)
-                            .pointerInput(Unit) {
-                                detectTapGestures(
-                                    onTap = {
-                                        showTopBar = !showTopBar
-                                    },
-                                    onDoubleTap = {
-                                        scope.launch {
-                                            if (scale == 1f) // Zoom in only if the image is zoomed out
-                                                state.animateZoomBy(4f)
-                                            else
-                                                state.animateZoomBy(0.25f)
-                                        }
-                                    }
-                                )
+                            .onSizeChanged { zoom.size = it }
+                            .graphicsLayer {
+                                scaleX = zoom.scale
+                                scaleY = zoom.scale
+                                translationX = zoom.offset.x
+                                translationY = zoom.offset.y
                             }
+                            .transformable(state = state)
                             .padding(borderRadius.coerceAtLeast(0.dp))
                             .clip(RoundedCornerShape(borderRadius.coerceAtLeast(0.dp)))
                     )
@@ -396,4 +377,14 @@ fun FullScreenArticleImage(
             }
         }
     }
+}
+
+/** The hosting Activity, even when the view's context is wrapped (themed / locale-wrapped contexts). */
+internal fun Context.requireActivity(): Activity {
+    var c = this
+    while (c is ContextWrapper) {
+        if (c is Activity) return c
+        c = c.baseContext
+    }
+    throw IllegalStateException("No Activity found in context chain")
 }

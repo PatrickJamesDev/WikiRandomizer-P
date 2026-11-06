@@ -1,6 +1,5 @@
 package org.nsh07.wikireader.ui.shimmer
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,13 +14,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import org.nsh07.wikireader.ui.theme.WikiReaderTheme
+import org.nsh07.wikireader.ui.theme.WikiRandomizerPTheme
 
 @Composable
-fun FeedLoader(brush: Brush, insets: PaddingValues, modifier: Modifier = Modifier) {
+fun FeedLoader(shimmer: Modifier, insets: PaddingValues, modifier: Modifier = Modifier) {
     val xl = MaterialTheme.shapes.extraLarge
     val l = MaterialTheme.shapes.large
     LazyColumn(
@@ -36,7 +34,7 @@ fun FeedLoader(brush: Brush, insets: PaddingValues, modifier: Modifier = Modifie
                     .padding(horizontal = 16.dp)
                     .size(256.dp, 56.dp)
                     .clip(xl)
-                    .background(brush)
+                    .then(shimmer)
             )
         }
         item {
@@ -46,7 +44,7 @@ fun FeedLoader(brush: Brush, insets: PaddingValues, modifier: Modifier = Modifie
                     .height(256.dp)
                     .padding(horizontal = 16.dp)
                     .clip(l)
-                    .background(brush)
+                    .then(shimmer)
             )
         }
         item {
@@ -55,7 +53,7 @@ fun FeedLoader(brush: Brush, insets: PaddingValues, modifier: Modifier = Modifie
                     .padding(horizontal = 16.dp)
                     .size(200.dp, 52.dp)
                     .clip(xl)
-                    .background(brush)
+                    .then(shimmer)
             )
         }
         item {
@@ -65,7 +63,7 @@ fun FeedLoader(brush: Brush, insets: PaddingValues, modifier: Modifier = Modifie
                     .height(400.dp)
                     .padding(horizontal = 16.dp)
                     .clip(l)
-                    .background(brush)
+                    .then(shimmer)
             )
         }
         item {
@@ -74,7 +72,7 @@ fun FeedLoader(brush: Brush, insets: PaddingValues, modifier: Modifier = Modifie
                     .padding(horizontal = 16.dp)
                     .size(200.dp, 52.dp)
                     .clip(xl)
-                    .background(brush)
+                    .then(shimmer)
             )
         }
         item {
@@ -84,7 +82,7 @@ fun FeedLoader(brush: Brush, insets: PaddingValues, modifier: Modifier = Modifie
                     .height(256.dp)
                     .padding(horizontal = 16.dp)
                     .clip(l)
-                    .background(brush)
+                    .then(shimmer)
             )
         }
         items(2) {
@@ -93,7 +91,7 @@ fun FeedLoader(brush: Brush, insets: PaddingValues, modifier: Modifier = Modifie
                     .padding(horizontal = 16.dp)
                     .size(200.dp, 52.dp)
                     .clip(xl)
-                    .background(brush)
+                    .then(shimmer)
             )
             Row {
                 Spacer(
@@ -103,7 +101,7 @@ fun FeedLoader(brush: Brush, insets: PaddingValues, modifier: Modifier = Modifie
                         .padding(start = 16.dp)
                         .padding(end = 8.dp)
                         .clip(xl)
-                        .background(brush)
+                        .then(shimmer)
                 )
                 Spacer(
                     Modifier
@@ -111,7 +109,7 @@ fun FeedLoader(brush: Brush, insets: PaddingValues, modifier: Modifier = Modifie
                         .height(256.dp)
                         .padding(end = 16.dp)
                         .clip(xl)
-                        .background(brush)
+                        .then(shimmer)
                 )
             }
         }
@@ -124,7 +122,7 @@ fun FeedLoader(brush: Brush, insets: PaddingValues, modifier: Modifier = Modifie
 @Preview
 @Composable
 fun FeedShimmerPreview() {
-    WikiReaderTheme {
+    WikiRandomizerPTheme {
         Surface {
             AnimatedShimmer {
                 FeedLoader(it, PaddingValues(bottom = 16.dp))

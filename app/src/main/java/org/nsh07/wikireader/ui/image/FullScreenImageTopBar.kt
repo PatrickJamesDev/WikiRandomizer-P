@@ -24,7 +24,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import org.nsh07.wikireader.R
-import org.nsh07.wikireader.parser.toWikitextAnnotatedString
+import org.nsh07.wikireader.data.DebugLog
+import org.nsh07.wikireader.parser.toWikitextAnnotatedStringSafe
 
 @OptIn(
     ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class,
@@ -34,6 +35,7 @@ import org.nsh07.wikireader.parser.toWikitextAnnotatedString
 fun SharedTransitionScope.FullScreenImageTopBar(
     description: String,
     link: String? = null,
+    onDownload: (() -> Unit)? = null,
     onBack: () -> Unit,
 ) {
     val sendIntent: Intent = Intent()
@@ -55,7 +57,7 @@ fun SharedTransitionScope.FullScreenImageTopBar(
         title = { Text(stringResource(R.string.image)) },
         subtitle = {
             val text = remember(description) {
-                description.toWikitextAnnotatedString(
+                description.toWikitextAnnotatedStringSafe(
                     colorScheme = colorScheme,
                     typography = typography,
                     loadPage = {},
@@ -83,6 +85,18 @@ fun SharedTransitionScope.FullScreenImageTopBar(
             }
         },
         actions = {
+            if (onDownload != null) {
+                IconButton(
+                    shapes = IconButtonDefaults.shapes(),
+                    onClick = onDownload
+                ) {
+                    Icon(
+                        painterResource(R.drawable.download),
+                        tint = Color.White,
+                        contentDescription = stringResource(R.string.downloadImage)
+                    )
+                }
+            }
             if (link != null) {
                 IconButton(
                     shapes = IconButtonDefaults.shapes(),
@@ -95,7 +109,14 @@ fun SharedTransitionScope.FullScreenImageTopBar(
                 }
                 IconButton(
                     shapes = IconButtonDefaults.shapes(),
-                    onClick = { uriHandler.openUri(link) }) {
+                    onClick = {
+                        // openUri throws for a malformed link or when no app can open it
+                        try {
+                            uriHandler.openUri(link)
+                        } catch (e: Exception) {
+                            DebugLog.w("Image", "could not open $link", e)
+                        }
+                    }) {
                     Icon(
                         painterResource(R.drawable.open_in_browser),
                         tint = Color.White,

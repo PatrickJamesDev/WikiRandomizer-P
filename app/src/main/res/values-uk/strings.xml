@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="setAsDefaultDesc">Ви можете зробити WikiReader типовим застосунком для відкриття посилань з Вікіпедії. Натисніть на кнопки нижче, щоби дізнатися більше або відкрити налаштування.</string>
+    <string name="setAsDefaultDesc">Ви можете зробити WikiRandomizer-P типовим застосунком для відкриття посилань з Вікіпедії. Натисніть на кнопки нижче, щоби дізнатися більше або відкрити налаштування.</string>
     <string name="fontStyleSerif">Із засічками</string>
     <string name="back">Назад</string>
     <string name="colorSchemeColor">Колір</string>
@@ -30,7 +30,7 @@
     <string name="themeSystemDefault">Як у системі</string>
     <string name="up_arrow">Повернутися нагору</string>
     <string name="wikipedia_logo">Лого Вікіпедії</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="collapse_section">Згорнути розділ</string>
     <string name="settingDataSaverDesc">Вимкнути зображення та стрічку. Зображення сторінок все ще можна відкрити, натиснувши на картку з описом.</string>
     <string name="settingImmersiveMode">Режим занурення</string>
@@ -103,7 +103,7 @@
     <string name="snackbarUnableToLoadFeed">Не вдається завантажити стрічку: %1$s</string>
     <string name="articlesSize">Статей: %1$s, мов: %2$s</string>
     <string name="translate">Перекласти</string>
-    <string name="translateDesc">Допоможіть перекласти WikiReader вашою мовою</string>
+    <string name="translateDesc">Допоможіть перекласти WikiRandomizer-P вашою мовою</string>
     <string name="imageCounter">Зображення %1$s з %2$s</string>
     <string name="settingImageBackground">Фонове зображення</string>
     <string name="settingImageBackgroundDesc">Додайте білий фон до прозорих зображень. Фон може покращити читабельність у темному режимі.</string>

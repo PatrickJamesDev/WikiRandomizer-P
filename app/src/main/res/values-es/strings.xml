@@ -2,7 +2,7 @@
 <resources>
     <string name="articleDeleted">Artículo eliminado</string>
     <string name="back">Volver</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="about">Acerca de</string>
     <string name="articlesSize">%1$s artículos, %2$s idiomas</string>
     <string name="author">Autor</string>
@@ -90,7 +90,7 @@
     <string name="snackbarArticleSaved">Artículo guardado para lectura sin conexión</string>
     <string name="titleMatches">Coincidencias en el título</string>
     <string name="translate">Traducir</string>
-    <string name="translateDesc">Ayuda a traducir WikiReader en tu idioma</string>
+    <string name="translateDesc">Ayuda a traducir WikiRandomizer-P en tu idioma</string>
     <string name="trendingArticles">Artículos en tendencia</string>
     <string name="up_arrow">Ir al principio</string>
     <string name="version">Versión</string>
@@ -112,7 +112,7 @@
     <string name="pageIndicator">Página %1$s de %2$s</string>
     <string name="settingDataSaverDesc">Desactivar imágenes y feed. Las imágenes de la página aún se pueden abrir haciendo clic en la tarjeta de descripción.</string>
     <string name="topArticlesOTD">Artículos destacados del día</string>
-    <string name="setAsDefaultDesc">Puedes establecer WikiReader como tu aplicación predeterminada para abrir enlaces de Wikipedia. Haz clic en los botones abajo para saber más o abrir configuración.</string>
+    <string name="setAsDefaultDesc">Puedes establecer WikiRandomizer-P como tu aplicación predeterminada para abrir enlaces de Wikipedia. Haz clic en los botones abajo para saber más o abrir configuración.</string>
     <string name="settingRenderMathDesc">Requiere pequeñas cantidades de datos adicionales. Desactívalo para mejorar el rendimiento a costa de la legibilidad.</string>
     <string name="settingSearchHistory">Historial de búsqueda</string>
     <string name="snackbarUnableToDelete">No se pudo eliminar el artículo: %1$s</string>

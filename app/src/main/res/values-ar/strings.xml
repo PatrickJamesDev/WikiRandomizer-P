@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="snackbarUnableToLoadFeed">تعذر تحميل الموجز: %1$s</string>
-    <string name="app_name">قارئ ويكي</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="otherProjectsDesc">اطلع على مشاريعي الأخرى على جيثب</string>
     <string name="settingDataSaverDesc">تعطيل الصور والموجز. يمكن فتح صور الصفحة بالنقر على بطاقة الوصف.</string>
     <string name="about">حول</string>

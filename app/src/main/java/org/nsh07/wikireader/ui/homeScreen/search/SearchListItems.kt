@@ -26,6 +26,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -37,6 +39,7 @@ import org.nsh07.wikireader.data.SearchHistoryItem
 import org.nsh07.wikireader.data.WikiPrefixSearchResult
 import org.nsh07.wikireader.data.WikiSearchResult
 import org.nsh07.wikireader.ui.homeScreen.viewModel.HomeAction
+import org.nsh07.wikireader.ui.homeScreen.viewModel.LocalArticleMatch
 import org.nsh07.wikireader.ui.image.FeedImage
 import org.nsh07.wikireader.ui.theme.CustomColors.listItemColors
 
@@ -95,7 +98,7 @@ fun LazyItemScope.SearchHistoryListItem(
             ) {
                 Icon(
                     painterResource(R.drawable.north_west),
-                    contentDescription = null
+                    contentDescription = stringResource(R.string.useSuggestionAsQuery)
                 )
             }
         },
@@ -138,6 +141,8 @@ fun LazyItemScope.PrefixSearchResultListItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     val top by animateDpAsState(
         if (isPressed) 36.dp
@@ -160,16 +165,17 @@ fun LazyItemScope.PrefixSearchResultListItem(
         headlineContent = {
             Text(
                 item.title,
-                softWrap = false,
+                softWrap = true,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
         },
         supportingContent = if (item.terms != null) {
             {
                 Text(
-                    item.terms.description[0],
+                    item.terms.description.firstOrNull().orEmpty(),
                     softWrap = true,
-                    maxLines = 2,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
             }
@@ -201,6 +207,8 @@ fun LazyItemScope.PrefixSearchResultListItem(
             )
             .clickable(
                 onClick = {
+                    focusManager.clearFocus(force = true)
+                    keyboardController?.hide()
                     onSearchBarExpandedChange(false)
                     onAction(HomeAction.LoadPage(item.title))
                 },
@@ -224,6 +232,14 @@ fun LazyItemScope.SearchResultListItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+
+    // HTML parsing is not free and this row is recomposed on every press animation frame.
+    val titleText = remember(it.titleSnippet, it.title) {
+        AnnotatedString.fromHtml(it.titleSnippet.ifEmpty { it.title })
+    }
+    val snippetText = remember(it.snippet) {
+        AnnotatedString.fromHtml(it.snippet)
+    }
 
     val top by animateDpAsState(
         if (isPressed) 36.dp
@@ -257,18 +273,17 @@ fun LazyItemScope.SearchResultListItem(
         } else null,
         headlineContent = {
             Text(
-                AnnotatedString.fromHtml(
-                    it.titleSnippet.ifEmpty { it.title }
-                ),
-                softWrap = false,
+                titleText,
+                softWrap = true,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
         },
         supportingContent = {
             Text(
-                AnnotatedString.fromHtml(it.snippet),
+                snippetText,
                 softWrap = true,
-                maxLines = 2,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
         },
@@ -301,6 +316,115 @@ fun LazyItemScope.SearchResultListItem(
                 onClick = {
                     onSearchBarExpandedChange(false)
                     onAction(HomeAction.LoadPage(it.title))
+                },
+                interactionSource = interactionSource
+            )
+            .animateItem()
+    )
+}
+
+/** Small, consistent heading used to separate the three kinds of search results. */
+@Composable
+fun SearchSectionHeader(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+        color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+        modifier = modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+    )
+}
+
+/**
+ * A saved article or history row matching the query. These are shown alongside Wikipedia results
+ * so a reader can jump straight back to something they already found instead of searching again.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun LazyItemScope.LocalSearchResultListItem(
+    item: LocalArticleMatch,
+    index: Int,
+    items: Int,
+    dataSaver: Boolean,
+    imageBackground: Boolean,
+    onSearchBarExpandedChange: (Boolean) -> Unit,
+    onAction: (HomeAction) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val top by animateDpAsState(
+        if (isPressed) 36.dp
+        else if (items == 1 || index == 0) 20.dp else 4.dp,
+        motionScheme.fastSpatialSpec()
+    )
+    val bottom by animateDpAsState(
+        if (isPressed) 36.dp
+        else if (items == 1 || index == items - 1) 20.dp else 4.dp,
+        motionScheme.fastSpatialSpec()
+    )
+
+    ListItem(
+        leadingContent = {
+            Icon(
+                painterResource(if (item.saved) R.drawable.download_done else R.drawable.history),
+                contentDescription = null
+            )
+        },
+        overlineContent = {
+            Text(
+                stringResource(if (item.saved) R.string.savedBadge else R.string.historyBadge),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        headlineContent = {
+            Text(
+                item.title,
+                softWrap = true,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        supportingContent = if (!item.description.isNullOrBlank()) {
+            {
+                Text(
+                    item.description,
+                    softWrap = true,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        } else null,
+        trailingContent = {
+            if (item.thumbnail != null && !dataSaver)
+                FeedImage(
+                    source = item.thumbnail,
+                    contentScale = ContentScale.Crop,
+                    loadingIndicator = true,
+                    background = imageBackground,
+                    modifier = Modifier
+                        .padding(vertical = 4.dp)
+                        .size(56.dp)
+                        .clip(shapes.large)
+                )
+            else null
+        },
+        colors = listItemColors,
+        modifier = modifier
+            .padding(horizontal = 16.dp)
+            .clip(
+                RoundedCornerShape(
+                    topStart = top,
+                    topEnd = top,
+                    bottomStart = bottom,
+                    bottomEnd = bottom
+                )
+            )
+            .clickable(
+                onClick = {
+                    onSearchBarExpandedChange(false)
+                    onAction(HomeAction.LoadPage(item.title, item.lang))
                 },
                 interactionSource = interactionSource
             )

@@ -11,7 +11,14 @@ import java.util.Locale
  *
  *      Color(0.0, 0.0, 0.0, 1.0, sRGB IEC61966-2.1)
  */
-fun String.toColor(): Color {
+fun String.toColor(): Color = try {
+    parseColorString()
+} catch (e: Exception) {
+    // A malformed stored value used to crash MainActivity.setContent on every launch.
+    Color.White
+}
+
+private fun String.parseColorString(): Color {
     // Sample string: Color(0.0, 0.0, 0.0, 1.0, sRGB IEC61966-2.1)
     val comma1 = this.indexOf(',')
     val comma2 = this.indexOf(',', comma1 + 1)
@@ -24,6 +31,9 @@ fun String.toColor(): Color {
     val a = this.slice(comma3 + 1..comma4 - 1).toFloat()
     return Color(r, g, b, a)
 }
+
+// Compiled once — this regex is called on every article load.
+private val sectionSplitRegex = "\n==(?!=)|(?<!=)==\n".toRegex()
 
 /**
  * Function to parse a string returned by the Wikipedia API and convert it into a [List] of [String]s
@@ -38,7 +48,7 @@ fun String.toColor(): Color {
  * on either side)
  */
 fun parseSections(text: String): List<String> {
-    val out = text.split("\n==(?!=)|(?<!=)==\n".toRegex()).toMutableList()
+    val out = text.split(sectionSplitRegex).toMutableList()
 
     for (i in out.lastIndex downTo 1) {
         val curr = out[i].trim()
@@ -50,7 +60,9 @@ fun parseSections(text: String): List<String> {
                 "Reference notes"
             )
         ) {
-            out.removeAt(i + 1)
+            // The heading can be the very last element (article ends right after it, no body):
+            // removeAt(i + 1) then threw IndexOutOfBounds and the whole article failed to load.
+            if (i + 1 <= out.lastIndex) out.removeAt(i + 1)
             out.removeAt(i)
         } else if (i + 1 <= out.lastIndex) {
             if (out[i + 1].trim('\n') == "") {
@@ -155,9 +167,12 @@ fun isRtl(langCode: String): Boolean {
  * countryFlag("in")
  * ```
  */
-fun countryFlag(code: String) = code
-    .uppercase()
-    .split("")
-    .filter { it.isNotBlank() }
-    .map { it.codePointAt(0) + 0x1F1A5 }
-    .joinToString("") { String(Character.toChars(it)) }
+fun countryFlag(code: String): String {
+    if (code.isEmpty()) return ""
+    // Avoid split("") + filter + map + joinToString — use StringBuilder directly.
+    val sb = StringBuilder(code.length * 2)
+    for (ch in code.uppercase()) {
+        sb.appendCodePoint(ch.code + 0x1F1A5)
+    }
+    return sb.toString()
+}

@@ -7,7 +7,7 @@
     <string name="deleteAllArticlesDesc">Véglegesen törlődni fog az összes szócikk az eszközéről</string>
     <string name="cancel">Mégse</string>
     <string name="about">Névjegy</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="app">Alkalmazás</string>
     <string name="articleDeleted">Szócikk törölve</string>
     <string name="back">Vissza</string>
@@ -109,7 +109,7 @@
     <string name="titleMatches">Egyező címek</string>
     <string name="topArticlesOTD">A nap legfelkapottabb szócikkei</string>
     <string name="translate">Fordítás</string>
-    <string name="translateDesc">Segítsen lefordítani a WikiReader-t a saját nyelvére</string>
+    <string name="translateDesc">Segítsen lefordítani a WikiRandomizer-P-t a saját nyelvére</string>
     <string name="trendingArticles">Felkapott szócikkek</string>
     <string name="up_arrow">Ugrás a tetejére</string>
     <string name="version">Verzió</string>
@@ -120,5 +120,5 @@
     <string name="supportMyWork">Támogassa a munkám</string>
     <string name="shareLink">Hivatkozás megosztása</string>
     <string name="settingImmersiveModeDesc">A keresősáv és a lebegőgomb elrejtése görgetés közben. Alapértelmezetten engedélyezve van kis kijelzők esetén.</string>
-    <string name="setAsDefaultDesc">Beállíthatja a WikiReader-t, mint az alapértelmezett alkalmazást a Wikipédia linkek megnyitásához. Koppintson az alábbi gombok egyikére, hogy többet is megtudhasson vagy nyissa meg a beállításokat.</string>
+    <string name="setAsDefaultDesc">Beállíthatja a WikiRandomizer-P-t, mint az alapértelmezett alkalmazást a Wikipédia linkek megnyitásához. Koppintson az alábbi gombok egyikére, hogy többet is megtudhasson vagy nyissa meg a beállításokat.</string>
 </resources>

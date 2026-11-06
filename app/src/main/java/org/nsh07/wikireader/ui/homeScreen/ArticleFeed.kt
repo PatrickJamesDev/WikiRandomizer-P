@@ -91,13 +91,13 @@ import kotlin.math.min
 fun ArticleFeed(
     feedContent: HomeSubscreen.Feed,
     sharedScope: SharedTransitionScope,
-    pagerState: PagerState?,
-    newsCarouselState: CarouselState?,
-    otdCarouselState: CarouselState?,
+    pagerState: PagerState,
+    newsCarouselState: CarouselState,
+    otdCarouselState: CarouselState,
     insets: PaddingValues,
     windowSizeClass: WindowSizeClass,
     imageBackground: Boolean,
-    loadPage: (String) -> Unit,
+    loadPage: (String, String?) -> Unit,
     refreshFeed: () -> Unit,
     onImageClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -166,7 +166,7 @@ fun ArticleFeed(
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
                         Card(
-                            onClick = { loadPage(feedContent.tfa.titles?.canonical ?: "") },
+                            onClick = { loadPage(feedContent.tfa.titles?.canonical ?: "", feedContent.currentLang) },
                             shape = cardShape,
                             colors = cardColors,
                             modifier = Modifier
@@ -193,7 +193,6 @@ fun ArticleFeed(
                                 Text(
                                     feedContent.tfa.titles?.normalized ?: "",
                                     style = typography.headlineMedium,
-                                    fontFamily = FontFamily.Serif,
                                     modifier = Modifier
                                         .sharedBounds(
                                             sharedContentState = rememberSharedContentState(
@@ -250,7 +249,6 @@ fun ArticleFeed(
                                         Text(
                                             feedContent.tfa.titles?.normalized ?: "",
                                             style = typography.headlineMedium,
-                                            fontFamily = FontFamily.Serif,
                                             modifier = Modifier
                                                 .sharedBounds(
                                                     sharedContentState = rememberSharedContentState(
@@ -310,7 +308,7 @@ fun ArticleFeed(
                         )
 
                         HorizontalPager(
-                            state = pagerState!!, // PagerState is not null when mostReadArticles is not null
+                            state = pagerState,
                             verticalAlignment = Alignment.Top,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -322,7 +320,8 @@ fun ArticleFeed(
                                     .fillMaxWidth()
                                     .padding(16.dp)
                             ) {
-                                for (i in page * 5..page * 5 + 4) {
+                                // minOf: the pager count and this list can briefly disagree while the feed is replaced
+                                for (i in page * 5..minOf(page * 5 + 4, feedContent.mostReadArticles.lastIndex)) {
                                     key(i) {
                                         Row(
                                             modifier = Modifier
@@ -338,7 +337,8 @@ fun ArticleFeed(
                                                     onClick = {
                                                         loadPage(
                                                             feedContent.mostReadArticles[i].titles?.normalized
-                                                                ?: ""
+                                                                ?: "",
+                                                            feedContent.currentLang
                                                         )
                                                     }
                                                 )
@@ -518,7 +518,7 @@ fun ArticleFeed(
                                         .clip(cardShape)
                                 )
                                 Text(
-                                    feedContent.image.description?.text?.parseAsHtml().toString(),
+                                    feedContent.image.description?.text?.parseAsHtml()?.toString().orEmpty(),
                                     modifier = Modifier
                                         .padding(horizontal = 16.dp)
                                         .padding(top = 16.dp)
@@ -548,7 +548,7 @@ fun ArticleFeed(
                                     Column(Modifier.weight(1f)) {
                                         Text(
                                             feedContent.image.description?.text?.parseAsHtml()
-                                                .toString(),
+                                                ?.toString().orEmpty(),
                                             modifier = Modifier
                                                 .padding(horizontal = 16.dp)
                                                 .padding(top = 16.dp)
@@ -584,7 +584,7 @@ fun ArticleFeed(
                                 .padding(top = 32.dp)
                         )
                         HorizontalMultiBrowseCarousel(
-                            state = newsCarouselState!!,
+                            state = newsCarouselState,
                             itemSpacing = 8.dp,
                             flingBehavior = CarouselDefaults.multiBrowseFlingBehavior(
                                 newsCarouselState
@@ -599,7 +599,7 @@ fun ArticleFeed(
                                     .height(512.dp),
                             preferredItemWidth = 512.dp
                         ) { i ->
-                            Box {
+                            if (i in feedContent.news.indices) Box {
                                 FeedImage(
                                     source = feedContent.news[i].links
                                         ?.find { it.thumbnail != null }
@@ -625,7 +625,7 @@ fun ArticleFeed(
                                 ) {}
                                 Column(modifier = Modifier.align(Alignment.BottomStart)) {
                                     Text(
-                                        feedContent.news[i].story?.parseAsHtml().toString(),
+                                        feedContent.news[i].story?.parseAsHtml()?.toString().orEmpty(),
                                         maxLines = 10,
                                         overflow = TextOverflow.Ellipsis,
                                         color = Color.White,
@@ -659,7 +659,8 @@ fun ArticleFeed(
                                                     ),
                                                     onClick = {
                                                         loadPage(
-                                                            it.titles?.canonical ?: ""
+                                                            it.titles?.canonical ?: "",
+                                                            feedContent.currentLang
                                                         )
                                                     }
                                                 ) {
@@ -696,7 +697,7 @@ fun ArticleFeed(
                                 .padding(top = 32.dp)
                         )
                         HorizontalMultiBrowseCarousel(
-                            state = otdCarouselState!!,
+                            state = otdCarouselState,
                             itemSpacing = 8.dp,
                             flingBehavior = CarouselDefaults.multiBrowseFlingBehavior(
                                 otdCarouselState
@@ -712,10 +713,10 @@ fun ArticleFeed(
                                         .height(512.dp),
                             preferredItemWidth = 512.dp
                         ) { i ->
-                            Column {
+                            if (i in feedContent.onThisDay.indices) Column {
                                 Text(
                                     if ((feedContent.onThisDay[i].year ?: 9999) > 1) {
-                                        feedContent.onThisDay[i].year.toString()
+                                        feedContent.onThisDay[i].year?.toString().orEmpty()
                                     } else {
                                         feedContent.onThisDay[i].year?.absoluteValue.toString() + " BC"
                                     },
@@ -786,7 +787,8 @@ fun ArticleFeed(
                                                         ),
                                                         onClick = {
                                                             loadPage(
-                                                                it.titles?.canonical ?: ""
+                                                                it.titles?.canonical ?: "",
+                                                                feedContent.currentLang
                                                             )
                                                         }
                                                     ) {

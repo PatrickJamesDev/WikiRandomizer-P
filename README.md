@@ -2,158 +2,157 @@
 
 <img src="app/src/main/ic_launcher-playstore.png" width="128">
 
-# WikiReader
+# WikiRandomizer-P
+
+**Read random Wikipedia articles of your desired topics**
 
 </div>
 
 ---
 
-<div align="center">
-
-<a href="https://hosted.weblate.org/engage/wikireader/?utm_source=widget">
-  <img src="https://img.shields.io/weblate/progress/wikireader?logo=weblate&labelColor=1a1a1a&color=2ecba9">
-</a>
-<a href="https://github.com/nsh07/WikiReader/releases/latest">
-  <img src="https://img.shields.io/github/v/release/nsh07/WikiReader?logo=github&labelColor=1a1a1a">
-</a>
-<a href="https://f-droid.org/packages/org.nsh07.wikireader">
-  <img src="https://img.shields.io/f-droid/v/org.nsh07.wikireader?logo=f-droid&labelColor=1a1a1a">
-</a>
-<a href="https://github.com/nsh07/WikiReader/blob/main/LICENSE">
-  <img src="https://img.shields.io/github/license/nsh07/wikireader?logo=gnu&color=blue&labelColor=1a1a1a">
-</a>
-<img src="https://img.shields.io/badge/API-26+-blue?logo=android&labelColor=1a1a1a">
-<br/><br/>
-
-A lightweight Android app for reading Wikipedia articles distraction-free
-
-Supports light mode, dark mode, Material You dynamic colors and 300+ Wikipedia languages
-
-<p>
-  <a href="https://apt.izzysoft.de/fdroid/index/apk/org.nsh07.wikireader">
-    <img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" width="200">
-  </a>
-  <a href="https://f-droid.org/packages/org.nsh07.wikireader">
-      <img src="https://f-droid.org/badge/get-it-on.png" width="200">
-  </a>
-</p>
-<p>
-  <a href="https://hosted.weblate.org/engage/wikireader/">
-    <img src="https://hosted.weblate.org/widget/wikireader/287x66-black.png" alt="Translation status" />
-  </a>
-</p>
-
-</div>
-
----
-
-## Screenshots
-
-<p align="center" width="100%">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="30%">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="30%">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="30%">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" width="30%">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="30%">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" width="30%">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/7.png" width="30%">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/8.png" width="60%">
-</p>
+WikiRandomizer-P is a lightweight, distraction-free Android Wikipedia reader built around
+random discovery. Choose the subjects you care about, let the app build a local library of
+matching articles, and press Random whenever you want something new to read. It is a fork of
+[WikiReader](https://github.com/nsh07/WikiReader) by nsh07, with a new random-topic engine,
+on-device relevance and personalization, curated reading lists, and many reading and library
+improvements.
 
 ## Features
 
-- **Fast loading:** The article text is loaded before anything else, so you can get to reading,
-  quick.
-- **Feed:** Read the article of the day, find trending articles and get up to speed on the news with
-  the Wikipedia Feed
-- **Article image:** View an image of the topic from its Wikipedia page. Click on it to enlarge it
-  and view in full-screen
-- **Random article:** Feeling lucky? Click the random article button to read a random article
-- **Choose your language:** Choose from over 300 languages on Wikipedia
-- **Save articles:** Download articles to your device for offline reading
-- **One-handed use:** Use the floating action buttons at the bottom for a complete one-handed
-  experience
-- **Immersive mode:** Hide UI elements while scrolling and enjoy an immersive reading experience
-- **Lightweight:** The app starts instantly, and works smoothly
-- **Material 3 Expressive:** Designed according to the latest Material 3 Expressive design
-  guidelines
-- **Smooth animations:** Smooth and fluent animations
-- **Customizable colors:** Choose from light/dark themes and customize the Material 3 color palette
-- **Customizable font size:** Choose your own comfortable font size
-- **Data saver:** Save your limited data plan by loading text only
-- **Math expressions:** View properly rendered mathematical expressions for easily reading
-  mathematical articles
-
-## Translation
-
-This project is [available on Hosted Weblate](https://hosted.weblate.org/engage/wikireader/) for
-translation.
-
-You can contribute to this project even if you are not a developer by helping in
-translating this project into languages you know.
-
-<a href="https://hosted.weblate.org/engage/wikireader/">
-<img src="https://hosted.weblate.org/widget/wikireader/horizontal-auto.svg" alt="Translation status" />
-</a>
+- **Random by topic:** Build on-device libraries for plants, history, physics, music, or any
+  category you choose. Random picks come from those libraries, not from all of Wikipedia.
+- **Relevance that improves:** Title, short description and article introductions are scored
+  against your topic. Like/dislike votes and reading behaviour gently refine future picks. All
+  learning stays on the device.
+- **Never a dead end:** If a topic library is still building, exhausted, or temporarily has no
+  usable article, the app falls back to a general Wikipedia random article instead of showing an
+  error page.
+- **Feed and search:** Read the featured article, trending articles, the picture of the day, the
+  news and “on this day”, or search Wikipedia in your chosen language.
+- **Saved and History:** Keep articles for later, sort by date or topic, and switch between list
+  and 2/3/4-column grid layouts.
+- **Curated picks:** Follow readers whose taste matches yours and open their curated Wikipedia
+  articles. The list is hosted on GitHub, so it can grow without an app update.
+- **Reading comfort:** Wikitext rendering by default (HTML is optional), open sections by default,
+  adjustable font size, immersive mode, a right-edge tab switcher, and a searchable Settings
+  screen.
+- **Languages:** Choose from 300+ Wikipedia languages. The app language and the Wikipedia
+  language are separate settings, and article links keep the language of the article they came
+  from.
+- **Cladograms:** Phylogenetic trees in plant and biology articles render as trees, in both
+  wikitext and HTML modes.
+- **Better tables:** Tables stretch to fit when they are narrow, scroll sideways when they are
+  wide, keep a readable cell width, highlight the header row and re-parse when the theme or font
+  size changes.
+- **Large screens and foldables:** The reading column stays centred at a comfortable width on
+  tablets, desktop windows and unfolded foldables, the navigation rail adapts to the window size,
+  and tables get more columns before they need scrolling.
+- **Material 3 Expressive:** Light/dark themes, dynamic Material You colours, and smooth
+  animations.
 
 ## Download
 
-- **F-Droid** (recommended): WikiReader is available for download on the
-  official [F-Droid app store repository](https://f-droid.org/). Updates on F-Droid are generally a
-  week late. To get faster updates, you can download WikiReader from
-  the [IzzyOnDroid repository](https://apt.izzysoft.de/fdroid/)
-- **Obtainium** (recommended): You can add this GitHub repository
-  on [Obtainium](https://obtainium.imranr.dev/) to get updates directly from GitHub releases. This
-  is the fastest way to install and update WikiReader.
-- **GitHub releases**: Alternatively, you can manually download and install APKs from
-  the [Releases](https://github.com/nsh07/WikiReader/releases/latest) section of this repo (This
-  method is not recommended, use Obtainium instead).
+- **GitHub Releases:** Download the latest APK from
+  [github.com/PatrickJamesDev/WikiRandomizer-P/releases](https://github.com/PatrickJamesDev/WikiRandomizer-P/releases).
+- **Obtainium:** Add the repository URL to
+  [Obtainium](https://obtainium.imranr.dev/) to receive updates directly from GitHub releases.
 
-> [!TIP]
-> To [verify](https://developer.android.com/studio/command-line/apksigner#usage-verify) the APK
-> downloaded from Obtainium/GitHub, use the following signing certificate fingerprints:
-> ```
-> SHA1: B1:4E:17:93:11:E8:DB:D5:35:EF:8D:E9:FB:8F:FF:08:F8:EC:65:08
-> SHA256: 07:BE:F3:05:81:BA:EE:8F:45:EC:93:E4:7E:E6:8E:F2:08:74:E5:0E:F5:70:9C:78:B2:EE:67:AC:86:BE:4C:3D
-> ```
-> The SHA256 and MD5 hashes of the individual APK files are also available in the `checksum.txt`
-> file for each release.
+## Building from source
+
+### Android
+
+- **Windows:** run `build_windows.bat`, `build_windows.bat install`, `build_windows.bat release`
+  or `build_windows.bat releaseinstall`.
+- **macOS / Linux:** run `./build_android.sh`, `./build_android.sh install`,
+  `./build_android.sh release` or `./build_android.sh releaseinstall`.
+
+Both scripts find a JDK and the Android SDK, write `local.properties` when needed, and keep
+`build_log.txt` / `build_errors.txt` for troubleshooting. You need JDK 17+ and Android SDK
+platform 36.
+
+### iOS
+
+The app has a Kotlin Multiplatform core (`shared`) consumed by the Android app and by a native
+SwiftUI iOS shell. On macOS with Xcode:
+
+```bash
+./build_ios.sh              # install tools, build, install and launch in the simulator
+./build_ios.sh device       # signed device build (set DEVELOPMENT_TEAM=ABCDE12345)
+```
+
+See [BUILD_IOS.md](BUILD_IOS.md) for the full prerequisites, manual Xcode workflow and
+troubleshooting. iOS binaries must be built on macOS + Xcode; Linux and Windows can build the
+Android APK only.
+
+## Curator feed
+
+The **Curators** screen reads a public JSON file from the repository root:
+
+```text
+https://raw.githubusercontent.com/PatrickJamesDev/WikiRandomizer-P/main/curators.json
+```
+
+If GitHub cannot be reached, the app shows the bundled copy in
+`app/src/main/assets/curators.json` and tells you that it is offline. Following a curator only
+stores their ID in the local `followed-curators` preference; no account is required and no
+reading data is uploaded.
+
+### `curators.json` format
+
+```json
+{
+  "version": 1,
+  "curators": [
+    {
+      "id": "your-stable-id",
+      "name": "Your name",
+      "bio": "One or two sentences about what you like to read.",
+      "github": "https://github.com/your-handle",
+      "picks": [
+        {
+          "title": "Athyriaceae",
+          "lang": "en",
+          "note": "Why this article is worth opening."
+        }
+      ]
+    }
+  ]
+}
+```
+
+- `id` must be stable and unique; it is what the app stores when someone follows you.
+- `lang` is the Wikipedia language code used to open the pick (for example `en`, `de`, `ja`).
+- `picks` is an ordered list; each pick opens the article in the app.
+- Add your entry with a pull request to `curators.json`. Keep the file valid JSON and do not
+  remove other curators.
+
+## Translation
+
+The app UI is translated through Android string resources. To help translate
+WikiRandomizer-P into your language, open an issue or a pull request at
+[github.com/PatrickJamesDev/WikiRandomizer-P](https://github.com/PatrickJamesDev/WikiRandomizer-P)
+and include the language code and the translated `strings.xml`.
 
 ## Donate
 
-You can support WikiReader's development
-through [my GitHub Sponsors page](https://github.com/sponsors/nsh07)
-or [my BuyMeACoffee page](https://coff.ee/nsh07):
+You can support Patrick James's work on GitHub:
 
-<a href="https://github.com/sponsors/nsh07">
-  <img src=".github/repo_photos/sponsors.png" width="128px">
-</a>
-<a href="https://coff.ee/nsh07">
-  <img src=".github/repo_photos/bmc_qr.png" width="128px">
-</a>
+[github.com/PatrickJamesDev](https://github.com/PatrickJamesDev)
 
-## Special Thanks
+## Credits
 
-- [Wikimedia Foundation](https://wikimediafoundation.org/): For
-  providing [Wikipedia](https://wikipedia.org), the largest and most-read reference work in history,
-  for free
-- All the Wikipedia volunteers, contributors and donors
+- [WikiReader](https://github.com/nsh07/WikiReader) by nsh07 — the upstream project this fork is
+  based on.
+- [Wikimedia Foundation](https://wikimediafoundation.org/) and the Wikipedia volunteers,
+  contributors and donors for providing Wikipedia.
+- [Retrofit 2](https://square.github.io/retrofit/) — REST APIs
+- [OkHttp](https://square.github.io/okhttp/) — networking
+- [Coil](https://coil-kt.github.io/coil/) — image loading
+- [MaterialKolor](https://github.com/jordond/MaterialKolor) — custom colour themes
+- [ComposeCharts](https://github.com/ehsannarmani/ComposeCharts) — view-count history graph
+- [Latex2Unicode](https://github.com/tomtung/latex2unicode) — math to Unicode conversion
 
-This app was made possible by the following libraries:
+## License
 
-- [Retrofit 2](https://square.github.io/retrofit/) - REST APIs
-- [OkHttp](https://square.github.io/okhttp/) - Networking
-- [Coil](https://coil-kt.github.io/coil/) - Loading images from the web
-- [MaterialKolor](https://github.com/jordond/MaterialKolor) - For custom color themes
-- [ComposeCharts](https://github.com/ehsannarmani/ComposeCharts) - For the view-count history graph in the feed
-- [Latex2Unicode](https://github.com/tomtung/latex2unicode) - For converting math into Unicode text
-
-## Star History
-
-<a href="https://star-history.com/#nsh07/wikireader&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=nsh07/wikireader&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=nsh07/wikireader&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=nsh07/wikireader&type=Date" />
- </picture>
-</a>
+WikiRandomizer-P is free software under the
+[GNU General Public License v3.0](https://github.com/PatrickJamesDev/WikiRandomizer-P/blob/main/LICENSE).

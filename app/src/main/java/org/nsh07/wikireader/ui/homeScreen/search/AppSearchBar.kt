@@ -1,5 +1,8 @@
 package org.nsh07.wikireader.ui.homeScreen.search
 
+import androidx.compose.foundation.background
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.shape.CircleShape
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -19,6 +22,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
@@ -28,11 +33,8 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.ButtonDefaults
@@ -55,7 +57,9 @@ import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarState
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.SearchBarValue
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -70,6 +74,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
@@ -78,7 +83,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -94,8 +101,8 @@ import org.nsh07.wikireader.R
 import org.nsh07.wikireader.data.SearchHistoryItem
 import org.nsh07.wikireader.data.UserLanguage
 import org.nsh07.wikireader.data.WikiPrefixSearchResult
-import org.nsh07.wikireader.data.WikiSearchResult
 import org.nsh07.wikireader.ui.homeScreen.viewModel.AppSearchBarState
+import org.nsh07.wikireader.ui.homeScreen.viewModel.ArticleTextMatch
 import org.nsh07.wikireader.ui.homeScreen.viewModel.HomeAction
 import org.nsh07.wikireader.ui.image.FeedImage
 import org.nsh07.wikireader.ui.settingsScreen.LanguageBottomSheet
@@ -125,6 +132,7 @@ fun AppSearchBar(
     onAction: (HomeAction) -> Unit,
     onSettingsAction: (SettingsAction) -> Unit,
     onSearchBarExpandedChange: (Boolean) -> Unit,
+    onNavigateToRandomTopics: () -> Unit = {},
     removeHistoryItem: (SearchHistoryItem) -> Unit,
     clearHistory: () -> Unit,
     onMenuIconClicked: () -> Unit,
@@ -135,6 +143,7 @@ fun AppSearchBar(
     val scope = rememberCoroutineScope()
     val colorScheme = colorScheme
     val size = searchHistory.size
+    val inArticleListState = rememberLazyListState()
     val compactWindow =
         !windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
 
@@ -153,6 +162,17 @@ fun AppSearchBar(
 
     LaunchedEffect(textFieldState.text) {
         onAction(HomeAction.LoadSearchResultsDebounced(textFieldState.text.toString()))
+    }
+
+    // The bottom reading toolbar asks for search by bumping focusRequest. Expand first:
+    // focusing the field while the SearchBar is still collapsed did nothing on some devices.
+    LaunchedEffect(appSearchBarState.focusRequest) {
+        if (appSearchBarState.focusRequest > 0) {
+            if (searchBarState.currentValue != SearchBarValue.Expanded) {
+                searchBarState.animateToExpanded()
+            }
+            focusRequester.requestFocus()
+        }
     }
 
     val inputField =
@@ -263,19 +283,30 @@ fun AppSearchBar(
             }
         },
         actions = {
-            FilledTonalIconButton(
-                shapes = IconButtonDefaults.shapes(),
-                onClick = { onAction(HomeAction.LoadRandom) },
-                modifier = Modifier.padding(
-                    top = TopAppBarDefaults.windowInsets.asPaddingValues()
-                        .calculateTopPadding(),
-                    start = 4.dp,
-                    end = 4.dp
-                )
+                val topicsLabel = stringResource(R.string.randomTopicsTitle)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .padding(
+                        top = TopAppBarDefaults.windowInsets.asPaddingValues()
+                            .calculateTopPadding(),
+                        start = 4.dp,
+                        end = 4.dp
+                    )
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(colorScheme.secondaryContainer)
+                    .combinedClickable(
+                        role = Role.Button,
+                        onClick = { onAction(HomeAction.LoadRandom) },
+                        onLongClick = { onNavigateToRandomTopics() },
+                        onLongClickLabel = topicsLabel
+                    )
             ) {
                 Icon(
                     painterResource(R.drawable.shuffle),
-                    contentDescription = null
+                    contentDescription = stringResource(R.string.randomArticle),
+                    tint = colorScheme.onSecondaryContainer
                 )
             }
         },
@@ -321,6 +352,13 @@ fun AppSearchBar(
                     delay(1000)
                     enabled = true
                 }
+            }
+        } else {
+            // SearchBar does not install its own back handler on modern Android. Without this,
+            // Back was swallowed by the expanded overlay and the only way out was the tiny
+            // clear button, which made search feel stuck.
+            BackHandler(enabled = searchBarState.targetValue == SearchBarValue.Expanded) {
+                onSearchBarExpandedChange(false)
             }
         }
 
@@ -374,346 +412,299 @@ fun AppSearchBar(
                         }
                     }
 
-                else ->
-                    if (!compactWindow) {
-                        LazyVerticalGrid(columns = GridCells.Fixed(2)) {
-                            item(span = { GridItemSpan(2) }) {
-                                Box(Modifier.padding(vertical = 8.dp)) {
-                                    FlowRow(
-                                        Modifier.padding(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        userLangs.fastForEach { filterOption ->
-                                            val filterChipInteractionSource =
-                                                remember { MutableInteractionSource() }
-                                            Box {
-                                                FilterChip(
-                                                    selected = filterOption.selected,
-                                                    onClick = {},
-                                                    label = { Text(filterOption.langName) },
-                                                    leadingIcon =
-                                                        if (filterOption.selected) {
-                                                            {
-                                                                Icon(
-                                                                    painterResource(R.drawable.check),
-                                                                    contentDescription = null
-                                                                )
-                                                            }
-                                                        } else null,
-                                                    interactionSource = filterChipInteractionSource
-                                                )
-                                                Box( // Workaround to enable
-                                                    modifier = Modifier
-                                                        .matchParentSize()
-                                                        .combinedClickable(
-                                                            onClick = {
-                                                                scope.launch {
-                                                                    onAction(
-                                                                        HomeAction.MarkUserLanguageSelected(
-                                                                            filterOption.lang
-                                                                        )
-                                                                    )
-                                                                    haptic.performHapticFeedback(
-                                                                        HapticFeedbackType.ToggleOn
-                                                                    )
-                                                                    onAction(
-                                                                        HomeAction.LoadSearchResultsDebounced(
-                                                                            textFieldState.text.toString()
-                                                                        )
-                                                                    )
-                                                                }
-                                                            },
-                                                            onLongClick = {
-                                                                haptic.performHapticFeedback(
-                                                                    HapticFeedbackType.LongPress
-                                                                )
-                                                                if (userLangs.size > 1)
-                                                                    onAction(
-                                                                        HomeAction.DeleteUserLanguage(
-                                                                            filterOption.lang
-                                                                        )
-                                                                    )
-                                                            },
-                                                            interactionSource = filterChipInteractionSource,
-                                                            indication = null,
-                                                        )
-                                                )
-                                            }
-                                        }
-                                        InputChip(
-                                            onClick = { setShowLanguageSheet(true) },
-                                            label = {},
-                                            leadingIcon = {
-                                                Icon(
-                                                    painterResource(R.drawable.add),
-                                                    "Add language"
-                                                )
-                                            },
-                                            selected = false,
-                                            modifier = Modifier.width(40.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            items(
-                                appSearchBarState.prefixSearchResults ?: emptyList(),
-                                key = { "${it.title}-prefix" }
-                            ) {
-                                ListItem(
-                                    headlineContent = {
-                                        Text(
-                                            it.title,
-                                            softWrap = false,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    },
-                                    supportingContent = if (it.terms != null) {
-                                        {
-                                            Text(
-                                                it.terms.description[0],
-                                                softWrap = true,
-                                                maxLines = 2,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
-                                    } else null,
-                                    trailingContent = {
-                                        if (it.thumbnail != null && !preferencesState.dataSaver)
-                                            FeedImage(
-                                                source = it.thumbnail.source,
-                                                contentScale = ContentScale.Crop,
-                                                loadingIndicator = true,
-                                                background = preferencesState.imageBackground,
-                                                modifier = Modifier
-                                                    .padding(vertical = 4.dp)
-                                                    .size(56.dp)
-                                                    .clip(shapes.large)
-                                            )
-                                        else null
-                                    },
-                                    colors = ListItemDefaults
-                                        .colors(containerColor = SearchBarDefaults.colors().containerColor),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(shapes.large)
-                                        .clickable(
-                                            onClick = {
-                                                onSearchBarExpandedChange(false)
-                                                onAction(HomeAction.LoadPage(it.title))
-                                            }
-                                        )
-                                        .animateItem()
-                                )
-                            }
-                            items(
-                                appSearchBarState.searchResults ?: emptyList(),
-                                key = { "${it.title}-search" }) {
-                                ListItem(
-                                    overlineContent = if (it.redirectTitle != null) {
-                                        {
-                                            Text(
-                                                stringResource(
-                                                    R.string.redirectedFrom,
-                                                    it.redirectTitle
-                                                ),
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
-                                    } else null,
-                                    headlineContent = {
-                                        Text(
-                                            AnnotatedString.fromHtml(
-                                                it.titleSnippet.ifEmpty { it.title }
-                                            ),
-                                            softWrap = false,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    },
-                                    supportingContent = {
-                                        Text(
-                                            AnnotatedString.fromHtml(it.snippet),
-                                            softWrap = true,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    },
-                                    trailingContent = {
-                                        if (it.thumbnail != null && !preferencesState.dataSaver)
-                                            FeedImage(
-                                                source = it.thumbnail.source,
-                                                contentScale = ContentScale.Crop,
-                                                loadingIndicator = true,
-                                                background = preferencesState.imageBackground,
-                                                modifier = Modifier
-                                                    .padding(vertical = 4.dp)
-                                                    .size(56.dp)
-                                                    .clip(shapes.large)
-                                            )
-                                        else null
-                                    },
-                                    colors = ListItemDefaults
-                                        .colors(containerColor = SearchBarDefaults.colors().containerColor),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(shapes.large)
-                                        .clickable(
-                                            onClick = {
-                                                onSearchBarExpandedChange(false)
-                                                onAction(HomeAction.LoadPage(it.title))
-                                            }
-                                        )
-                                        .animateItem()
-                                )
-                            }
-                            item(span = { GridItemSpan(2) }) {
-                                Spacer(
-                                    Modifier.height(
-                                        WindowInsets.systemBars.asPaddingValues()
-                                            .calculateBottomPadding() + 152.dp
-                                    )
-                                )
-                            }
+                else -> {
+                    var tabIndex by rememberSaveable { mutableStateOf(0) }
+                    Column(Modifier.fillMaxSize()) {
+                        PrimaryTabRow(selectedTabIndex = tabIndex) {
+                            Tab(
+                                selected = tabIndex == 0,
+                                onClick = { tabIndex = 0 },
+                                text = { Text(stringResource(R.string.searchTabArticles)) }
+                            )
+                            Tab(
+                                selected = tabIndex == 1,
+                                onClick = { tabIndex = 1 },
+                                text = { Text(stringResource(R.string.searchTabInArticle)) }
+                            )
                         }
-                    } else {
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
-                            state = searchListState
-                        ) {
-                            item {
-                                FlowRow(
-                                    Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    userLangs.fastForEach { filterOption ->
-                                        val filterChipInteractionSource =
-                                            remember { MutableInteractionSource() }
-                                        Box {
-                                            FilterChip(
-                                                selected = filterOption.selected,
-                                                onClick = {},
-                                                label = { Text(filterOption.langName) },
-                                                leadingIcon =
-                                                    if (filterOption.selected) {
-                                                        {
-                                                            Icon(
-                                                                painterResource(R.drawable.check),
-                                                                contentDescription = null
-                                                            )
-                                                        }
-                                                    } else null,
-                                                interactionSource = filterChipInteractionSource
-                                            )
-                                            Box( // Workaround to enable
-                                                modifier = Modifier
-                                                    .matchParentSize()
-                                                    .combinedClickable(
-                                                        onClick = {
-                                                            scope.launch {
-                                                                onAction(
-                                                                    HomeAction.MarkUserLanguageSelected(
-                                                                        filterOption.lang
-                                                                    )
-                                                                )
-                                                                haptic.performHapticFeedback(
-                                                                    HapticFeedbackType.ToggleOn
-                                                                )
-                                                                onAction(
-                                                                    HomeAction.LoadSearchResultsDebounced(
-                                                                        textFieldState.text.toString()
-                                                                    )
-                                                                )
-                                                            }
-                                                        },
-                                                        onLongClick = {
-                                                            haptic.performHapticFeedback(
-                                                                HapticFeedbackType.LongPress
-                                                            )
-                                                            if (userLangs.size > 1)
-                                                                onAction(
-                                                                    HomeAction.DeleteUserLanguage(
-                                                                        filterOption.lang
-                                                                    )
-                                                                )
-                                                        },
-                                                        interactionSource = filterChipInteractionSource,
-                                                        indication = null,
-                                                    )
-                                            )
-                                        }
-                                    }
-                                    InputChip(
-                                        onClick = { setShowLanguageSheet(true) },
-                                        label = {},
-                                        leadingIcon = {
-                                            Icon(painterResource(R.drawable.add), "Add language")
-                                        },
-                                        selected = false,
-                                        modifier = Modifier.width(40.dp)
-                                    )
-                                }
-                            }
-                            item {
-                                Text(
-                                    text = stringResource(R.string.titleMatches),
-                                    modifier = Modifier.padding(
-                                        horizontal = 32.dp,
-                                        vertical = 14.dp
-                                    ),
-                                    style = typography.labelLarge
-                                )
-                            }
-                            itemsIndexed(
-                                appSearchBarState.prefixSearchResults ?: emptyList(),
-                                key = { index: Int, it: WikiPrefixSearchResult -> "${it.title}-prefix" }
-                            ) { index: Int, it: WikiPrefixSearchResult ->
-                                PrefixSearchResultListItem(
-                                    item = it,
-                                    dataSaver = preferencesState.dataSaver,
-                                    imageBackground = preferencesState.imageBackground,
-                                    onSearchBarExpandedChange = onSearchBarExpandedChange,
-                                    onAction = onAction,
-                                    items = appSearchBarState.prefixSearchResults?.size ?: 0,
-                                    index = index
-                                )
-                            }
-                            item {
-                                Text(
-                                    text = stringResource(R.string.inArticleMatches),
-                                    modifier = Modifier.padding(
-                                        horizontal = 32.dp,
-                                        vertical = 14.dp
-                                    ),
-                                    style = typography.labelLarge
-                                )
-                            }
-                            itemsIndexed(
-                                appSearchBarState.searchResults ?: emptyList(),
-                                key = { index: Int, it: WikiSearchResult -> "${it.title}-search" }
-                            ) { index: Int, it: WikiSearchResult ->
-                                SearchResultListItem(
-                                    it = it,
-                                    index = index,
-                                    items = appSearchBarState.searchResults?.size ?: 0,
-                                    dataSaver = preferencesState.dataSaver,
-                                    imageBackground = preferencesState.imageBackground,
-                                    onSearchBarExpandedChange = onSearchBarExpandedChange,
-                                    onAction = onAction
-                                )
-                            }
-                            item {
-                                Spacer(
-                                    Modifier.height(
-                                        WindowInsets.systemBars.asPaddingValues()
-                                            .calculateBottomPadding() + 152.dp
-                                    )
-                                )
-                            }
+                        if (tabIndex == 0) {
+                            ArticlesSearchResults(
+                                appSearchBarState = appSearchBarState,
+                                preferencesState = preferencesState,
+                                userLangs = userLangs,
+                                searchListState = searchListState,
+                                textFieldState = textFieldState,
+                                setShowLanguageSheet = setShowLanguageSheet,
+                                onSearchBarExpandedChange = onSearchBarExpandedChange,
+                                onAction = onAction
+                            )
+                        } else {
+                            InArticleSearchResults(
+                                matches = appSearchBarState.articleMatches,
+                                hasCurrentArticle = appSearchBarState.hasCurrentArticle,
+                                listState = inArticleListState,
+                                onSearchBarExpandedChange = onSearchBarExpandedChange,
+                                onAction = onAction
+                            )
                         }
                     }
+                }
             }
         }
     }
+}
+
+@Composable
+private fun ArticlesSearchResults(
+    appSearchBarState: AppSearchBarState,
+    preferencesState: PreferencesState,
+    userLangs: List<UserLanguage>,
+    searchListState: LazyListState,
+    textFieldState: TextFieldState,
+    setShowLanguageSheet: (Boolean) -> Unit,
+    onSearchBarExpandedChange: (Boolean) -> Unit,
+    onAction: (HomeAction) -> Unit
+) {
+    val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    Column(Modifier.fillMaxSize()) {
+        FlowRow(
+            Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            userLangs.fastForEach { filterOption ->
+                val filterChipInteractionSource = remember { MutableInteractionSource() }
+                Box {
+                    FilterChip(
+                        selected = filterOption.selected,
+                        onClick = {},
+                        label = { Text(filterOption.langName) },
+                        leadingIcon =
+                            if (filterOption.selected) {
+                                {
+                                    Icon(
+                                        painterResource(R.drawable.check),
+                                        contentDescription = null
+                                    )
+                                }
+                            } else null,
+                        interactionSource = filterChipInteractionSource
+                    )
+                    Box( // Workaround to enable long-press on a FilterChip
+                        modifier = Modifier
+                            .matchParentSize()
+                            .combinedClickable(
+                                onClick = {
+                                    scope.launch {
+                                        onAction(
+                                            HomeAction.MarkUserLanguageSelected(
+                                                filterOption.lang
+                                            )
+                                        )
+                                        haptic.performHapticFeedback(
+                                            HapticFeedbackType.ToggleOn
+                                        )
+                                        onAction(
+                                            HomeAction.LoadSearchResultsDebounced(
+                                                textFieldState.text.toString()
+                                            )
+                                        )
+                                    }
+                                },
+                                onLongClick = {
+                                    haptic.performHapticFeedback(
+                                        HapticFeedbackType.LongPress
+                                    )
+                                    if (userLangs.size > 1)
+                                        onAction(
+                                            HomeAction.DeleteUserLanguage(
+                                                filterOption.lang
+                                            )
+                                        )
+                                },
+                                interactionSource = filterChipInteractionSource,
+                                indication = null,
+                            )
+                    )
+                }
+            }
+            InputChip(
+                onClick = { setShowLanguageSheet(true) },
+                label = {},
+                leadingIcon = {
+                    Icon(painterResource(R.drawable.add), "Add language")
+                },
+                selected = false,
+                modifier = Modifier.width(40.dp)
+            )
+        }
+
+        LazyColumn(
+            state = searchListState,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            // The user's own history and saved articles are the fastest way back to
+            // something they already read, so they come first.
+            item(key = "hdr-local") {
+                SearchSectionHeader(stringResource(R.string.historyAndSaved))
+            }
+            if (appSearchBarState.localMatches.isEmpty()) {
+                item(key = "empty-local") {
+                    Text(
+                        text = stringResource(R.string.noLocalMatches),
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                        style = typography.bodyMedium,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                itemsIndexed(
+                    appSearchBarState.localMatches,
+                    key = { _, match -> "local-${match.lang}-${match.title}-${match.saved}" }
+                ) { index, match ->
+                    LocalSearchResultListItem(
+                        item = match,
+                        index = index,
+                        items = appSearchBarState.localMatches.size,
+                        dataSaver = preferencesState.dataSaver,
+                        imageBackground = preferencesState.imageBackground,
+                        onSearchBarExpandedChange = onSearchBarExpandedChange,
+                        onAction = onAction
+                    )
+                }
+            }
+
+            item(key = "hdr-titles") {
+                SearchSectionHeader(stringResource(R.string.titleMatches))
+            }
+            val titles = appSearchBarState.prefixSearchResults
+            if (titles.isNullOrEmpty()) {
+                item(key = "empty-titles") {
+                    Text(
+                        text = stringResource(R.string.noTitleMatches),
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                        style = typography.bodyMedium,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                itemsIndexed(
+                    titles,
+                    key = { _, it: WikiPrefixSearchResult -> "prefix-${it.title}" }
+                ) { index: Int, it: WikiPrefixSearchResult ->
+                    PrefixSearchResultListItem(
+                        item = it,
+                        dataSaver = preferencesState.dataSaver,
+                        imageBackground = preferencesState.imageBackground,
+                        onSearchBarExpandedChange = onSearchBarExpandedChange,
+                        onAction = onAction,
+                        items = titles.size,
+                        index = index
+                    )
+                }
+            }
+
+            item(key = "bottom-spacer") {
+                Spacer(
+                    Modifier.height(
+                        WindowInsets.systemBars.asPaddingValues()
+                            .calculateBottomPadding() + 152.dp
+                    )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InArticleSearchResults(
+    matches: List<ArticleTextMatch>,
+    hasCurrentArticle: Boolean,
+    listState: LazyListState,
+    onSearchBarExpandedChange: (Boolean) -> Unit,
+    onAction: (HomeAction) -> Unit
+) {
+    LazyColumn(
+        state = listState,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        if (matches.isEmpty()) {
+            item {
+                Text(
+                    text = stringResource(
+                        if (hasCurrentArticle) R.string.noInArticleMatches
+                        else R.string.inArticleSearchHint
+                    ),
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                    style = typography.bodyMedium,
+                    color = colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            itemsIndexed(
+                matches,
+                key = { index, match -> "in-${match.sectionIndex}-${match.sectionTitle}-$index" }
+            ) { _, match ->
+                ArticleMatchListItem(
+                    match = match,
+                    onSearchBarExpandedChange = onSearchBarExpandedChange,
+                    onAction = onAction
+                )
+            }
+        }
+        item {
+            Spacer(
+                Modifier.height(
+                    WindowInsets.systemBars.asPaddingValues()
+                        .calculateBottomPadding() + 152.dp
+                )
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ArticleMatchListItem(
+    match: ArticleTextMatch,
+    onSearchBarExpandedChange: (Boolean) -> Unit,
+    onAction: (HomeAction) -> Unit
+) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    ListItem(
+        headlineContent = {
+            Text(
+                text = match.sectionTitle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        supportingContent = {
+            Text(
+                text = match.snippet,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        colors = ListItemDefaults.colors(containerColor = SearchBarDefaults.colors().containerColor),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shapes.large)
+            .clickable {
+                // Drop IME focus first: an expanded SearchBar whose text field still owns focus
+                // can immediately re-expand after the collapse animation, leaving the result
+                // overlay on screen even though the article already scrolled.
+                focusManager.clearFocus(force = true)
+                keyboardController?.hide()
+                onSearchBarExpandedChange(false)
+                onAction(HomeAction.ScrollToSection(match.sectionIndex))
+            }
+    )
 }
 
 @Composable

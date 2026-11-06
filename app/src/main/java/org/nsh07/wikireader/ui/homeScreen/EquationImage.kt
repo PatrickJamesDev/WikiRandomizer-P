@@ -1,11 +1,13 @@
 package org.nsh07.wikireader.ui.homeScreen
 
 import android.content.Context
+import android.net.Uri
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
@@ -25,14 +27,15 @@ fun EquationImage(
     fontSize: Int,
     darkTheme: Boolean
 ) {
+    // The formula goes into a URL query: unescaped '+', '&', '#', '%' or spaces changed its meaning
+    // (e.g. "x+1" rendered as "x 1") or made the URL invalid. Encode it.
+    val formula = remember(latex, dpi, fontSize) {
+        Uri.encode("\\dpi{${(dpi * 160 * (fontSize / 16.0)).toInt()}}${latex.trim()}")
+    }
     Box(modifier = Modifier.horizontalScroll(rememberScrollState())) {
         AsyncImage(
             model = ImageRequest.Builder(context)
-                .data(
-                    "https://latex.codecogs.com/png.image?\\dpi{${
-                        (dpi * 160 * (fontSize / 16.0)).toInt()
-                    }}${latex}"
-                )
+                .data("https://latex.codecogs.com/png.image?$formula")
                 .size(Size.ORIGINAL)
                 .build(),
             placeholder = painterResource(R.drawable.more_horiz),

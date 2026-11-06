@@ -1,0 +1,36 @@
+{{clade
+|2={{clade|''[[Lycium]]''|''[[Nicotiana]]''}}
+|1={{clade
+   |2={{clade|''[[Datura]]''|''[[Nicandra]]''}}
+   |1={{clade
+      |2={{clade|{{clade|''[[Lycianthes]]''|''[[Physalis]]''}}|''[[Jaltomata]]''}}
+      |label1=''Solanum''
+      |1=<!--
+-->{{clade
+|grouplabel1=Grade I
+|bar1=red
+|1={{clade
+   |2={{clade|Moreilloid ("Maurella", "Morella")|Dulcamaroid}}
+   |1={{clade
+      |2=Basarthrum
+      |1={{clade
+         |2=Anarrhicomenum
+         |1={{clade|1=Tomato (= sect. ''Lycopersicon'')|3=Etuberosum|2=Petota (Tomato × Etuberosum)}}
+      }}
+   }}
+}}
+|grouplabel2=Clade II
+|bar2=green
+|2={{clade
+   |1={{clade|Brevantherum|Geminata}}
+   |grouplabel2="Spiny" (≈ subgen. ''Leptostemonum'')
+   |bar2=blue
+   |2={{clade
+      |2={{Clade|Androceras|Eastern Hemisphere Spiny}}
+      |1={{Clade
+         |1={{clade|Crinitum|Sisymbriifolium}}
+         |2={{clade|Acanthophora|Lasiocarpa}}
+        }}
+      }}
+   }}
+}}}}}}}}

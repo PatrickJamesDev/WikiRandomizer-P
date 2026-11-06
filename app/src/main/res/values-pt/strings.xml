@@ -3,7 +3,7 @@
     <string name="about">Sobre</string>
     <string name="app">App</string>
     <string name="appTagline">Leia artigos da Wikipédia livre de distrações</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="articleDeleted">Artigo apagado</string>
     <string name="articlesSize">%1$s artigos, %2$s idiomas</string>
     <string name="author">Autor</string>
@@ -73,7 +73,7 @@
     <string name="sections">Secções</string>
     <string name="selectedLabel">Selecionados</string>
     <string name="setAsDefault">Definir como padrão</string>
-    <string name="setAsDefaultDesc">Pode definir o WikiReader como a sua app padrão para abrir ligações da Wikipédia. Toque nos botões abaixo para saber mais ou abrir as configurações.</string>
+    <string name="setAsDefaultDesc">Pode definir o WikiRandomizer-P como a sua app padrão para abrir ligações da Wikipédia. Toque nos botões abaixo para saber mais ou abrir as configurações.</string>
     <string name="settingAppLanguage">Idioma da app</string>
     <string name="settingBlackTheme">Tema preto</string>
     <string name="settingBlackThemeDesc">Usar um tema preto escuro</string>
@@ -114,7 +114,7 @@
     <string name="titleMatches">Correspondências no título</string>
     <string name="topArticlesOTD">Artigos mais vistos diariamente</string>
     <string name="translate">Traduzir</string>
-    <string name="translateDesc">Ajude a traduzir o WikiReader para o seu idioma</string>
+    <string name="translateDesc">Ajude a traduzir o WikiRandomizer-P para o seu idioma</string>
     <string name="trendingArticles">Artigos em alta</string>
     <string name="unableToDeleteArticle">Não foi possível apagar o artigo: %1$s</string>
     <string name="up_arrow">Ir para o topo</string>

@@ -36,7 +36,7 @@ object CustomColors {
         @Composable get() = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainer)
 
     val listItemColors: ListItemColors
-        @Composable get() = ListItemDefaults.colors(containerColor = colorScheme.surfaceBright)
+        @Composable get() = ListItemDefaults.colors(containerColor = colorScheme.surfaceContainerLow)
 }
 
 object ColorConstants {

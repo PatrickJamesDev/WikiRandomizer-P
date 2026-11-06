@@ -15,7 +15,7 @@
     <string name="image">Resim</string>
     <string name="setAsDefault">Varsayılan olarak ayarla</string>
     <string name="articleDeleted">Madde silindi</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="articlesSize">%1$s madde, %2$s dil</string>
     <string name="author">Yazar</string>
     <string name="app">Uygulama</string>
@@ -76,7 +76,7 @@
     <string name="settingFontStyle">Yazı tipi stili</string>
     <string name="settingFeed">Akış</string>
     <string name="settingFeedDesc">Uygulama başlangıcında trend makaleler, haberler ve daha fazlasından oluşan bir akış gösterin</string>
-    <string name="setAsDefaultDesc">Vikipedi bağlantılarını açmak için WikiReader\'ı varsayılan uygulamanız olarak ayarlayabilirsiniz. Daha fazla bilgi edinmek veya ayarları açmak için aşağıdaki düğmelere tıklayın.</string>
+    <string name="setAsDefaultDesc">Vikipedi bağlantılarını açmak için WikiRandomizer-P\'ı varsayılan uygulamanız olarak ayarlayabilirsiniz. Daha fazla bilgi edinmek veya ayarları açmak için aşağıdaki düğmelere tıklayın.</string>
     <string name="settingDataSaver">Veri tasarufu</string>
     <string name="settingDataSaverDesc">Resimleri ve akışı devre dışı bırakın. Sayfa resimleri açıklama kartına tıklanarak açılabilir.</string>
     <string name="settingImageBackground">Resim arka planı</string>
@@ -103,7 +103,7 @@
     <string name="themeLight">Aydınlık</string>
     <string name="themeSystemDefault">Sistem varsayılanı</string>
     <string name="translate">Çevir</string>
-    <string name="translateDesc">WikiReader\'ı kendi dilinize çevirmeye yardımcı olun</string>
+    <string name="translateDesc">WikiRandomizer-P\'ı kendi dilinize çevirmeye yardımcı olun</string>
     <string name="unableToDeleteArticle">Madde silinemiyor: %1$s</string>
     <string name="version">Sürüm</string>
     <string name="wikipedia">Vikipedi</string>

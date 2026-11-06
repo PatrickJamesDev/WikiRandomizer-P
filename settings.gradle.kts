@@ -19,6 +19,8 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "WikiReader"
+rootProject.name = "WikiRandomizer-P"
 include(":app")
 include(":baselineprofile")
+// Platform-neutral code shared by the Android app and the SwiftUI iOS app.
+include(":shared")

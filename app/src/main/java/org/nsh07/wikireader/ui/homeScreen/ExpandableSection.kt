@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.motionScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,7 +41,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import org.nsh07.wikireader.R
 import org.nsh07.wikireader.ui.theme.WRShapeDefaults.cardShape
-import org.nsh07.wikireader.ui.theme.WikiReaderTheme
+import org.nsh07.wikireader.ui.theme.WikiRandomizerPTheme
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
@@ -58,10 +59,44 @@ fun ExpandableSection(
     imageBackground: Boolean,
     modifier: Modifier = Modifier,
     onLinkClick: (String) -> Unit,
+    onLinkLongClick: (String) -> Unit = {},
     onGalleryImageClick: (String, String) -> Unit,
-    showRef: (String) -> Unit
+    showRef: (String) -> Unit,
+    boldText: Boolean = false,
+    highlights: List<String> = emptyList(),
+    staged: Boolean = false,
+    checkFirstImage: Boolean = false,
+    pageImageUri: String? = null
 ) {
-    var expanded by rememberSaveable { mutableStateOf(expanded) }
+    org.nsh07.wikireader.data.TrackRecompositions("ExpandableSection")
+    // A section whose only content is a cladogram looks empty when collapsed (just a heading),
+    // which is why plant articles seemed to have no tree. Start those sections open.
+    val containsClade = remember(body) {
+        body.any { it.blockStartsWith("{{clade", ignoreCase = true) }
+    }
+    // References/Notes always start collapsed, even when "expand sections" is on.
+    val headingText = remember(title) {
+        var out = ""
+        title.fastForEach {
+            out += it
+        }
+        out.replace(htmlTagRegex, "")
+    }
+    val collapseByDefault = remember(headingText) { isReferencesTitle(headingText) }
+    var expanded by rememberSaveable {
+        mutableStateOf((expanded && !collapseByDefault) || containsClade)
+    }
+    // Sections are parsed progressively. If the cladogram arrives after this section was first
+    // composed (or after it was scrolled out and back), the saved `false` used to win forever and
+    // the tree stayed hidden. Auto-open once when a clade first appears; a manual collapse is
+    // still respected afterwards.
+    var autoExpandedForClade by rememberSaveable { mutableStateOf(containsClade) }
+    LaunchedEffect(containsClade) {
+        if (containsClade && !autoExpandedForClade) {
+            expanded = true
+            autoExpandedForClade = true
+        }
+    }
     val arrowRotation by animateFloatAsState(
         if (expanded) 180f else 0f,
         animationSpec = motionScheme.defaultSpatialSpec()
@@ -94,15 +129,10 @@ fun ExpandableSection(
             )
 
             Text(
-                text = remember {
-                    var out = ""
-                    title.fastForEach {
-                        out += it
-                    }
-                    out.replace("<.+>".toRegex(), "")
-                },
+                text = headingText,
                 style = MaterialTheme.typography.headlineMediumEmphasized,
-                fontFamily = FontFamily.Serif,
+                // Follows the font chosen in Settings (it used to be hard-wired to a serif).
+                fontFamily = fontFamily,
                 fontSize = (28 * (fontSize / 16.0)).toInt().sp,
                 lineHeight = (36 * (fontSize / 16.0)).toInt().sp,
                 modifier = Modifier
@@ -127,8 +157,14 @@ fun ExpandableSection(
                 dataSaver = dataSaver,
                 background = imageBackground,
                 onLinkClick = onLinkClick,
+                onLinkLongClick = onLinkLongClick,
                 onGalleryImageClick = onGalleryImageClick,
-                showRef = showRef
+                showRef = showRef,
+                boldText = boldText,
+                highlights = highlights,
+                staged = staged,
+                checkFirstImage = checkFirstImage,
+                pageImageUri = pageImageUri
             )
         }
     }
@@ -138,7 +174,7 @@ fun ExpandableSection(
 @Preview
 @Composable
 fun ExpandableSectionPreview() {
-    WikiReaderTheme {
+    WikiRandomizerPTheme {
         SharedTransitionLayout {
             ExpandableSection(
                 title = listOf(buildAnnotatedString { append("Title") }),
@@ -159,3 +195,6 @@ fun ExpandableSectionPreview() {
         }
     }
 }
+
+
+private val htmlTagRegex = "<.+>".toRegex()

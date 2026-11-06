@@ -10,7 +10,7 @@
     <string name="ok">好</string>
     <string name="about">關於</string>
     <string name="appTagline">無干擾地閱讀維基百科</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="author">作者</string>
     <string name="articlesSize">%1$s 個條目，%2$s 種語言</string>
     <string name="app">應用</string>
@@ -88,7 +88,7 @@
     <string name="titleMatches">標題匹配</string>
     <string name="topArticlesOTD">今日熱門條目</string>
     <string name="translate">翻譯</string>
-    <string name="translateDesc">幫助將 WikiReader 翻譯成您的語言</string>
+    <string name="translateDesc">幫助將 WikiRandomizer-P 翻譯成您的語言</string>
     <string name="trendingArticles">熱門條目</string>
     <string name="unableToDeleteArticle">無法刪除條目：%1$s</string>
     <string name="up_arrow">回到頂部</string>
@@ -107,7 +107,7 @@
     <string name="pageIndicator">第 %1$s 頁，共 %2$s 頁</string>
     <string name="dialogDeleteSearchHistoryDesc">刪除您的搜尋記錄？</string>
     <string name="snackbarArticleSaved">條目已儲存可供離線閱讀</string>
-    <string name="setAsDefaultDesc">您可以將 WikiReader 設定為開啟維基百科連結的預設應用程式，點擊下方按鈕以了解更多或打開設定。</string>
+    <string name="setAsDefaultDesc">您可以將 WikiRandomizer-P 設定為開啟維基百科連結的預設應用程式，點擊下方按鈕以了解更多或打開設定。</string>
     <string name="sharePage">分享頁面</string>
     <string name="snackbarUnableToDelete">無法刪除條目：%1$s</string>
     <string name="settingImmersiveMode">沉浸模式</string>

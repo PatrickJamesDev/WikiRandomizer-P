@@ -31,7 +31,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,7 +47,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastForEach
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import org.nsh07.wikireader.data.DebugLog
 import org.nsh07.wikireader.R
 import org.nsh07.wikireader.parser.parseInfobox
 import org.nsh07.wikireader.ui.theme.CustomColors.cardColors
@@ -69,14 +69,23 @@ fun AsyncInfobox(
     val colorScheme = colorScheme
     val typography = typography
     val extensions = listOf(".jpg", ".jpeg", ".png", ".svg", ".gif")
-    val scope = rememberCoroutineScope()
     var infobox by remember { mutableStateOf(emptyList<Pair<AnnotatedString, AnnotatedString>>()) }
     var title: AnnotatedString? by remember { mutableStateOf(AnnotatedString(context.getString(R.string.infobox))) }
 
     LaunchedEffect(text) {
-        scope.launch(Dispatchers.IO) {
-            infobox = parseInfobox(text, colorScheme, typography, onLinkClick, showRef, fontSize)
-            title = infobox.find { it.first.toString() == "Name" }?.second
+        // Run inside the effect itself (parseInfobox switches to Dispatchers.IO internally) so it is
+        // cancelled when `text` changes or the screen leaves, and so a parser exception on odd
+        // wikitext is handled. It used to be scope.launch(Dispatchers.IO) with NO handler: any
+        // exception thrown by the hand-written parser was uncaught and killed the whole app.
+        try {
+            val parsed = parseInfobox(text, colorScheme, typography, onLinkClick, showRef, fontSize)
+            infobox = parsed
+            title = parsed.find { it.first.toString() == "Name" }?.second
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            DebugLog.e("Infobox", "could not parse infobox (showing it empty)", e)
+            infobox = emptyList()
         }
     }
 
@@ -165,7 +174,7 @@ fun AsyncInfobox(
                                         .widthIn(max = 256.dp)
                                         .weight(1f)
                                 )
-                                if (item.second.matches("\\[\\[.{1,6}:.+]]".toRegex()) ||
+                                if (item.second.matches(infoboxImageRegex) ||
                                     extensions.fastAny { item.second.endsWith(it) }
                                 ) {
                                     ImageWithCaption(
@@ -212,3 +221,5 @@ fun AsyncInfobox(
         }
     }
 }
+
+private val infoboxImageRegex = "\\[\\[.{1,6}:.+]]".toRegex()

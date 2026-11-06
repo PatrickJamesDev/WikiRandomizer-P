@@ -38,7 +38,7 @@ import org.nsh07.wikireader.data.UserLanguage
 import org.nsh07.wikireader.data.langCodeToName
 import org.nsh07.wikireader.data.langCodeToWikiName
 import org.nsh07.wikireader.ui.homeScreen.LanguageListItem
-import org.nsh07.wikireader.ui.theme.WikiReaderTheme
+import org.nsh07.wikireader.ui.theme.WikiRandomizerPTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -206,7 +206,7 @@ fun LanguageBottomSheet(
 @Preview
 @Composable
 fun LanguageSheetPreview() {
-    WikiReaderTheme {
+    WikiRandomizerPTheme {
         LanguageBottomSheet(
             emptyList(), lang = "en", searchStr = "", searchQuery = "",
             {}, {}, {})

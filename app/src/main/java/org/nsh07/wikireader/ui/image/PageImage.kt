@@ -1,5 +1,7 @@
 package org.nsh07.wikireader.ui.image
 
+import org.nsh07.wikireader.ui.theme.isDark
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
@@ -49,8 +51,8 @@ fun SharedTransitionScope.PageImage(
                         animatedVisibilityScope = LocalNavAnimatedContentScope.current
                     )
                     .then(modifier)
-                    .aspectRatio(photo.width.toFloat() / photo.height.toFloat())
-                    .background(if (background) Color.White else Color.Transparent)
+                    .aspectRatio(safeAspectRatio(photo.width, photo.height))
+                    .background(if (imageNeedsWhiteBackground(photo.source, background)) Color.White else Color.Transparent)
             )
         }
 
@@ -60,7 +62,7 @@ fun SharedTransitionScope.PageImage(
                 modifier = modifier
                     .fillMaxWidth()
                     .aspectRatio(
-                        photo.width.toFloat() / photo.height.toFloat()
+                        safeAspectRatio(photo.width, photo.height)
                     )
             ) {
                 CircularWavyProgressIndicator()
@@ -73,7 +75,7 @@ fun SharedTransitionScope.PageImage(
                 modifier = modifier
                     .fillMaxWidth()
                     .aspectRatio(
-                        photo.width.toFloat() / photo.height.toFloat()
+                        safeAspectRatio(photo.width, photo.height)
                     )
             ) {
                 Icon(
@@ -112,7 +114,7 @@ fun SharedTransitionScope.PageImage(
                         animatedVisibilityScope = LocalNavAnimatedContentScope.current
                     )
                     .then(modifier)
-                    .background(if (background) Color.White else Color.Transparent)
+                    .background(if (imageNeedsWhiteBackground(uri, background)) Color.White else Color.Transparent)
             )
         }
 
@@ -143,4 +145,26 @@ fun SharedTransitionScope.PageImage(
             }
         }
     }
+}
+
+/**
+ * Width / height that is always a valid aspect ratio. A 0 or missing dimension used to make
+ * Modifier.aspectRatio throw (NaN / Infinity / 0), which crashed the whole app mid-draw.
+ */
+fun safeAspectRatio(width: Int, height: Int): Float {
+    val r = width.toFloat() / height.toFloat()
+    return if (r.isFinite() && r > 0f) r else 1.5f
+}
+
+/**
+ * Transparent images (SVG chemical structures and diagrams, transparent PNGs) are drawn in black
+ * and become unreadable on a dark background. In a dark theme they get a white backing; the
+ * "image background" setting still forces it for every image.
+ */
+@Composable
+fun imageNeedsWhiteBackground(source: String?, background: Boolean): Boolean {
+    if (background) return true
+    if (source == null || !MaterialTheme.colorScheme.isDark()) return false
+    val ext = source.substringBefore('?').substringAfterLast('.', "").lowercase()
+    return ext == "svg" || ext == "png" || ext == "gif" || ext == "webp"
 }

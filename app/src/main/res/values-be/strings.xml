@@ -6,7 +6,7 @@
     <string name="about">Аб</string>
     <string name="app">Прыкладанне</string>
     <string name="appTagline">Чытайце старонкі ў Вікіпедыі не адцягваючыся</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="articleDeleted">Артыкул выдалены</string>
     <string name="articlesSize">%1$s артыкулаў, на %2$s мовах</string>
     <string name="author">Аўтар</string>
@@ -77,7 +77,7 @@
     <string name="openInBrowser">Адкрыць у браўзеры</string>
     <string name="scrollRight">Пракруціце направа</string>
     <string name="setAsDefault">Усталяваць па змаўчанні</string>
-    <string name="setAsDefaultDesc">Вы можаце ўсталяваць WikiReader у якасці праграмы па змаўчанні для адкрыцця спасылак на Вікіпедыю. Націсніце на кнопкі ніжэй, каб даведацца больш або адкрыць налады.</string>
+    <string name="setAsDefaultDesc">Вы можаце ўсталяваць WikiRandomizer-P у якасці праграмы па змаўчанні для адкрыцця спасылак на Вікіпедыю. Націсніце на кнопкі ніжэй, каб даведацца больш або адкрыць налады.</string>
     <string name="settingDataSaverDesc">Адключыць выявы і стужку. Выявы старонкі ўсё яшчэ можна адкрыць, націснуўшы картку з апісаннем.</string>
     <string name="settingExpandSections">Разгарнуць раздзелы</string>
     <string name="settingExpandSectionsDesc">Разгартываць усе раздзелы па змаўчанні</string>
@@ -116,7 +116,7 @@
     <string name="themeSystemDefault">Сістэмная</string>
     <string name="titleMatches">Супадзенні па назвах</string>
     <string name="topArticlesOTD">Галоўныя артыкулы дня</string>
-    <string name="translateDesc">Дапамажыце перакласці WikiReader на вашу мову</string>
+    <string name="translateDesc">Дапамажыце перакласці WikiRandomizer-P на вашу мову</string>
     <string name="trendingArticles">Тэндэнцыйныя артыкулы</string>
     <string name="up_arrow">Перайсці ўверх</string>
     <string name="translate">Перакласці</string>

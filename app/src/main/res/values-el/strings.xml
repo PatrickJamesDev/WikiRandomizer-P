@@ -2,7 +2,7 @@
 <resources>
     <string name="cancel">Ακύρωση</string>
     <string name="app">Εφαρμογή</string>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="articlesSize">%1$s άρθρα %2$s γλώσσες</string>
     <string name="author">Συντάκτης</string>
     <string name="chooseColorScheme">Επέλεξε σύστημα χρωμάτων</string>
@@ -73,7 +73,7 @@
     <string name="sections">Τμήματα</string>
     <string name="selectedLabel">Επιλέχθηκε</string>
     <string name="setAsDefault">Ορισμός ως προεπιλογή</string>
-    <string name="setAsDefaultDesc">Μπορείτε να ρυθμίσετε το WikiReader ως τη προεπιλεγμένη εφαρμογή σας για να ανοίγετε συνδέσμους Βικιπαίδεια. Κάντε κλικ στα κουμπιά παρακάτω για να μάθετε περισσότερα ή να ανοίξετε τις ρυθμίσεις.</string>
+    <string name="setAsDefaultDesc">Μπορείτε να ρυθμίσετε το WikiRandomizer-P ως τη προεπιλεγμένη εφαρμογή σας για να ανοίγετε συνδέσμους Βικιπαίδεια. Κάντε κλικ στα κουμπιά παρακάτω για να μάθετε περισσότερα ή να ανοίξετε τις ρυθμίσεις.</string>
     <string name="settingAppLanguage">Γλώσσα εφαρμογής</string>
     <string name="settingBlackTheme">Μαύρο θέμα</string>
     <string name="settingBlackThemeDesc">Χρήση καθαρού μαύρου θέματος</string>
@@ -114,7 +114,7 @@
     <string name="titleMatches">Αντιστοιχίες τίτλου</string>
     <string name="topArticlesOTD">Τα καλύτερα άρθρα της ημέρας</string>
     <string name="translate">Μετάφραση</string>
-    <string name="translateDesc">Βοηθήστε να μεταφραστεί το WikiReader στη γλώσσα σας</string>
+    <string name="translateDesc">Βοηθήστε να μεταφραστεί το WikiRandomizer-P στη γλώσσα σας</string>
     <string name="trendingArticles">Άρθρα σε τάση</string>
     <string name="unableToDeleteArticle">Αδυναμία διαγραφής άρθρου: %1$s</string>
     <string name="up_arrow">Άλμα στη κορυφή</string>

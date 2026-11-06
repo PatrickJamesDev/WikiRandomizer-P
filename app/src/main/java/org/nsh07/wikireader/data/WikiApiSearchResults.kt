@@ -17,10 +17,11 @@ data class WikiSearchResultsQuery(
 data class WikiSearchResult(
     val ns: Int = 0,
     val title: String,
-    @SerialName("titlesnippet") val titleSnippet: String,
+    // Defaults: one result missing an optional field must not make the whole search response fail
+    @SerialName("titlesnippet") val titleSnippet: String = "",
     @SerialName("pageid") val pageId: Int,
-    val snippet: String,
-    val index: Int,
+    val snippet: String = "",
+    val index: Int = 0,
     @SerialName("redirecttitle") val redirectTitle: String? = null,
     val thumbnail: WikiPhoto? = null
 )
@@ -40,12 +41,14 @@ data class WikiPrefixSearchResult(
     @SerialName("pageid") val pageId: Int,
     val ns: Int = 0,
     val title: String,
-    val index: Int,
+    val index: Int = 0,
     val thumbnail: WikiPhoto? = null,
     val terms: WikiPrefixSearchPageTerms? = null
 )
 
 @Serializable
 data class WikiPrefixSearchPageTerms(
-    val description: List<String>
+    // Optional in the API response (a page can have terms without a description): a required field
+    // made the whole search-suggestion response fail to parse.
+    val description: List<String> = emptyList()
 )

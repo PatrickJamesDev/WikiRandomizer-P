@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">WikiReader</string>
+    <string name="app_name">WikiRandomizer-P</string>
     <string name="clear">Очистить</string>
     <string name="search">Найти</string>
     <string name="cancel">Отмена</string>
@@ -46,7 +46,7 @@
     <string name="picOfTheDay">Изображение дня</string>
     <string name="redirectedFrom">Перенаправлено с %1$s</string>
     <string name="releases">Версии</string>
-    <string name="releasesDesc">Проверьте новые версии WikiReader</string>
+    <string name="releasesDesc">Проверьте новые версии WikiRandomizer-P</string>
     <string name="scrollLeft">Проведите влево</string>
     <string name="scrollRight">Проведите вправо</string>
     <string name="scroll_to_top">Прокрутить в начало</string>
@@ -80,7 +80,7 @@
     <string name="titleMatches">Совпадения по названию</string>
     <string name="topArticlesOTD">Популярные статьи дня</string>
     <string name="translate">Перевести</string>
-    <string name="translateDesc">Помогите перевести WikiReader на ваш язык</string>
+    <string name="translateDesc">Помогите перевести WikiRandomizer-P на ваш язык</string>
     <string name="trendingArticles">Популярные статьи</string>
     <string name="wikipedia">Википедия</string>
     <string name="wikipediaWebsiteDesc">Посетить сайт Википедии</string>
@@ -111,7 +111,7 @@
     <string name="savedArticles">Сохранённые статьи</string>
     <string name="selectedLabel">Выбрано</string>
     <string name="settingTheme">Тема</string>
-    <string name="setAsDefaultDesc">Вы можете установить WikiReader как приложение по умолчанию для открытия ссылок Википедии. Нажмите кнопки ниже чтобы узнать больше или открыть настройки.</string>
+    <string name="setAsDefaultDesc">Вы можете установить WikiRandomizer-P как приложение по умолчанию для открытия ссылок Википедии. Нажмите кнопки ниже чтобы узнать больше или открыть настройки.</string>
     <string name="themeLight">Светлая</string>
     <string name="themeSystemDefault">Системная</string>
     <string name="fontStyleSerif">С засечками</string>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">WikiReader</string>
-    <string name="translateDesc">Ajude a traduzir o WikiReader para o seu idioma</string>
+    <string name="app_name">WikiRandomizer-P</string>
+    <string name="translateDesc">Ajude a traduzir o WikiRandomizer-P para o seu idioma</string>
     <string name="searchWikipedia">Pesquisar na Wikipédia</string>
     <string name="resetSettingsIconDesc">Redefinir as configurações para o padrão</string>
     <string name="deleteAllArticles">Deletar todos os artigos?</string>
@@ -23,7 +23,7 @@
     <string name="scroll_to_top">Rolar para o topo</string>
     <string name="search">Pesquisar</string>
     <string name="searchLanguages">Pesquisar idiomas</string>
-    <string name="setAsDefaultDesc">Você pode definir o WikiReader como seu app padrão para abrir links da Wikipédia. Toque nos botões abaixo para saber mais ou abrir as configurações.</string>
+    <string name="setAsDefaultDesc">Você pode definir o WikiRandomizer-P como seu app padrão para abrir links da Wikipédia. Toque nos botões abaixo para saber mais ou abrir as configurações.</string>
     <string name="selectedLabel">Selecionados</string>
     <string name="setAsDefault">Definir como padrão</string>
     <string name="settingDataSaver">Economizador de dados</string>

@@ -23,12 +23,31 @@ public final class HostSelectionInterceptor implements Interceptor {
         this.host = host;
     }
 
+    public String getHost() {
+        return host;
+    }
+
+    /** The Wikipedia language the next requests go to ("ja" for "ja.wikipedia.org"), or null. */
+    public String getLang() {
+        String h = host;
+        if (h == null) return null;
+        int dot = h.indexOf('.');
+        return dot > 0 ? h.substring(0, dot) : null;
+    }
+
     @NonNull
     @Override
     public okhttp3.Response intercept(Chain chain) throws IOException {
         Request request = chain.request();
         String host = this.host;
-        if (host != null) {
+        // Wiktionary and Wikimedia Commons are separate projects. Rewriting their host to the
+        // selected Wikipedia language made dictionary/Commons requests hit the wrong wiki.
+        String requestedHost = request.url().host();
+        boolean otherWikimediaProject = requestedHost != null &&
+                (requestedHost.endsWith(".wiktionary.org") ||
+                 requestedHost.endsWith(".wikimedia.org") ||
+                 requestedHost.endsWith(".wikidata.org"));
+        if (host != null && !otherWikimediaProject) {
             HttpUrl newUrl = request.url().newBuilder()
                     .host(host)
                     .build();
