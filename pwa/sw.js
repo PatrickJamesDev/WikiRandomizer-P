@@ -1,5 +1,5 @@
 /* WikiRandomizer-P service worker: installable app shell + offline article cache. */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL_CACHE = `wikireader-shell-${VERSION}`;
 const RUNTIME_CACHE = `wikireader-runtime-${VERSION}`;
 const ARTICLE_CACHE = `wikireader-articles-${VERSION}`;

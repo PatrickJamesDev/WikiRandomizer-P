@@ -43,10 +43,12 @@ A useful check sequence:
 
 1. Open the app and confirm the home feed loads.
 2. Open a featured or random article. The full article is downloaded and cached.
-3. Save the article, then find it under **Saved**.
-4. Turn the network off and reopen the article, then reload the app.
-5. Use the browser's install button or **Settings → Install**.
-6. In **Settings → Offline & storage**, confirm cached-article counts and storage usage.
+3. Select a passage in an article and save it as a highlight.
+4. Save the article, then find it under **Saved**; reopen it from **Tabs**.
+5. Turn the network off and reopen the article, then reload the app.
+6. Use the browser's install button or **Settings → About → Install app**.
+7. In **Settings → Data & privacy**, confirm cached-article counts and storage usage.
+8. Choose a random topic in **Settings → Reading & topics**, then use the shuffle button.
 
 The PWA cannot be tested reliably by opening `pwa/index.html` directly from the filesystem because
 ES modules, `fetch` and service workers need an HTTP origin.
@@ -68,7 +70,7 @@ relative URLs, it works from a repository subpath as well as from a custom domai
 - `shared/src/commonMain/` contains URL, title and text helpers shared with Android and iOS.
 - `shared/src/wasmJsMain/` exposes those helpers to JavaScript through `WikiWasmExports.kt`.
 - `pwa/app.js` contains the reader UI, feed/search/article loading, saved articles, history,
-  settings, statistics and backup/restore.
+  highlights, tabs, random topics, settings, statistics and backup/restore.
 - `pwa/sw.js` caches the app shell plus visited article HTML, API responses and images.
 - `pwa/manifest.webmanifest` supplies the install metadata, icons and shortcuts.
 
@@ -97,7 +99,8 @@ The PWA is a lightweight web reader, not a replacement for every native capabili
 
 - Kiwix/ZIM offline libraries, Android intents, widgets, background work and other native
   integrations remain in the Android app.
-- Native Material You dynamic colours and Compose-specific layouts are not reproduced.
+- The web app offers its own Material 3-style colour schemes and typography settings rather than
+  Android Material You dynamic colours and Compose-specific layouts.
 - The PWA interface is English; article language follows the language picker.
 - Some complex Wikipedia content (for example certain math or interactive elements) may be
   simplified by the article HTML sanitizer.
