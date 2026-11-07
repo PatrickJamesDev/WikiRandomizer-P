@@ -85,6 +85,7 @@
       </button>
       <div class="topbar-actions">
         <span id="offlineBadge" class="offline-badge" hidden>Offline</span>
+        <button class="icon-button refresh-home" data-action="refresh-home" aria-label="Refresh feed" title="Refresh feed"><svg aria-hidden="true"><use href="#i-refresh"></use></svg></button>
         <button class="shuffle-button" data-action="random" aria-label="Random article" title="Random article">
           <svg aria-hidden="true"><use href="#i-shuffle"></use></svg>
         </button>
@@ -98,12 +99,12 @@
       </div>
       <nav class="rail-nav">
         <button class="nav-item" data-action="tab" data-tab="home"><svg aria-hidden="true"><use href="#i-home"></use></svg><span>Home</span></button>
-        <button class="nav-item" data-action="tab" data-tab="search"><svg aria-hidden="true"><use href="#i-search"></use></svg><span>Search</span></button>
         <button class="nav-item" data-action="tab" data-tab="saved"><svg aria-hidden="true"><use href="#i-bookmark"></use></svg><span>Saved</span></button>
-        <button class="nav-item" data-action="tab" data-tab="highlights"><svg aria-hidden="true"><use href="#i-highlight"></use></svg><span>Highlights</span></button>
+        <button class="nav-item" data-action="tab" data-tab="highlights"><svg aria-hidden="true"><use href="#i-highlight"></use></svg><span>Saved highlights</span></button>
         <button class="nav-item" data-action="tab" data-tab="history"><svg aria-hidden="true"><use href="#i-history"></use></svg><span>History</span></button>
         <button class="nav-item" data-action="tab" data-tab="tabs"><svg aria-hidden="true"><use href="#i-tabs"></use></svg><span>Tabs</span></button>
         <button class="nav-item" data-action="tab" data-tab="settings"><svg aria-hidden="true"><use href="#i-settings"></use></svg><span>Settings</span></button>
+        <button class="nav-item" data-action="open-about"><svg aria-hidden="true"><use href="#i-info"></use></svg><span>About</span></button>
       </nav>
       <div class="rail-sections">
         <p class="nav-label">Sections</p>
@@ -114,7 +115,6 @@
         <button class="section-link" data-action="scroll-section" data-section="onthisday"><svg aria-hidden="true"><use href="#i-chevron"></use></svg>On this day</button>
       </div>
       <div class="rail-footer">
-        <button class="nav-item compact" data-action="open-about"><svg aria-hidden="true"><use href="#i-info"></use></svg><span>About</span></button>
         <span class="core-status"><span class="status-dot"></span><span id="railCoreStatus">Starting core…</span></span>
       </div>
     </aside>
@@ -131,12 +131,12 @@
         </div>
         <nav class="drawer-nav">
           <button class="nav-item" data-action="tab" data-tab="home"><svg aria-hidden="true"><use href="#i-home"></use></svg><span>Home</span></button>
-          <button class="nav-item" data-action="tab" data-tab="search"><svg aria-hidden="true"><use href="#i-search"></use></svg><span>Search</span></button>
           <button class="nav-item" data-action="tab" data-tab="saved"><svg aria-hidden="true"><use href="#i-bookmark"></use></svg><span>Saved</span></button>
-          <button class="nav-item" data-action="tab" data-tab="highlights"><svg aria-hidden="true"><use href="#i-highlight"></use></svg><span>Highlights</span></button>
+          <button class="nav-item" data-action="tab" data-tab="highlights"><svg aria-hidden="true"><use href="#i-highlight"></use></svg><span>Saved highlights</span></button>
           <button class="nav-item" data-action="tab" data-tab="history"><svg aria-hidden="true"><use href="#i-history"></use></svg><span>History</span></button>
           <button class="nav-item" data-action="tab" data-tab="tabs"><svg aria-hidden="true"><use href="#i-tabs"></use></svg><span>Tabs</span></button>
           <button class="nav-item" data-action="tab" data-tab="settings"><svg aria-hidden="true"><use href="#i-settings"></use></svg><span>Settings</span></button>
+          <button class="nav-item" data-action="open-about"><svg aria-hidden="true"><use href="#i-info"></use></svg><span>About</span></button>
         </nav>
         <div class="rail-sections">
           <p class="nav-label">Sections</p>
@@ -147,7 +147,6 @@
           <button class="section-link" data-action="scroll-section" data-section="onthisday"><svg aria-hidden="true"><use href="#i-chevron"></use></svg>On this day</button>
         </div>
         <div class="drawer-footer">
-          <button class="nav-item compact" data-action="open-about"><svg aria-hidden="true"><use href="#i-info"></use></svg><span>About</span></button>
           <span class="core-status"><span class="status-dot"></span><span id="drawerCoreStatus">Starting core…</span></span>
         </div>
       </div>
@@ -155,18 +154,11 @@
 
     <main id="main" class="main" tabindex="-1">
       <section id="view-home" class="view home-view" data-view="home">
-        <div class="home-heading">
-          <div>
-            <p class="eyebrow">From Wikipedia</p>
-            <h1>Today’s reading</h1>
-          </div>
-          <button class="icon-button refresh-home" data-action="refresh-home" aria-label="Refresh feed" title="Refresh feed"><svg aria-hidden="true"><use href="#i-refresh"></use></svg></button>
-        </div>
         <div id="homeContent" class="home-content" aria-live="polite"></div>
       </section>
 
       <section id="view-search" class="view search-view" data-view="search" hidden>
-        <div class="view-heading"><div><p class="eyebrow">Wikipedia</p><h1>Search</h1></div></div>
+        <div class="view-heading"><div><h1>Search</h1></div></div>
         <form id="searchForm" class="search-form" role="search">
           <svg aria-hidden="true"><use href="#i-search"></use></svg>
           <input id="searchInput" type="search" name="q" placeholder="Search Wikipedia…" autocomplete="off" enterkeyhint="search" aria-label="Search Wikipedia">
@@ -177,7 +169,7 @@
 
       <section id="view-saved" class="view" data-view="saved" hidden>
         <div class="view-heading">
-          <div><p class="eyebrow">Your library</p><h1>Saved articles</h1><p id="savedSummary" class="view-subtitle"></p></div>
+          <div><h1>Saved articles</h1><p id="savedSummary" class="view-subtitle"></p></div>
           <button class="text-button destructive" data-action="clear-saved" hidden id="clearSavedButton">Delete all</button>
         </div>
         <div id="savedFilters" class="chip-row" aria-label="Filter saved articles by language"></div>
@@ -186,7 +178,7 @@
 
       <section id="view-history" class="view" data-view="history" hidden>
         <div class="view-heading">
-          <div><p class="eyebrow">Pick up where you left off</p><h1>History</h1><p id="historySummary" class="view-subtitle"></p></div>
+          <div><h1>History</h1><p id="historySummary" class="view-subtitle"></p></div>
           <button class="text-button destructive" data-action="clear-history" hidden id="clearHistoryButton">Delete all</button>
         </div>
         <div id="historyContent" class="list-stack" aria-live="polite"></div>
@@ -194,7 +186,7 @@
 
       <section id="view-highlights" class="view" data-view="highlights" hidden>
         <div class="view-heading">
-          <div><p class="eyebrow">Passages you kept</p><h1>Saved highlights</h1><p id="highlightsSummary" class="view-subtitle"></p></div>
+          <div><h1>Saved highlights</h1><p id="highlightsSummary" class="view-subtitle"></p></div>
           <button class="text-button destructive" data-action="clear-highlights" hidden id="clearHighlightsButton">Delete all</button>
         </div>
         <div id="highlightsContent" class="list-stack" aria-live="polite"></div>
@@ -202,7 +194,7 @@
 
       <section id="view-tabs" class="view" data-view="tabs" hidden>
         <div class="view-heading">
-          <div><p class="eyebrow">Keep exploring</p><h1>Open tabs</h1><p id="tabsSummary" class="view-subtitle"></p></div>
+          <div><h1>Tabs</h1><p id="tabsSummary" class="view-subtitle"></p></div>
           <button class="text-button destructive" data-action="clear-tabs" hidden id="clearTabsButton">Close all</button>
         </div>
         <div id="tabsContent" class="list-stack" aria-live="polite"></div>

@@ -49,7 +49,7 @@ const STORAGE = {
   saveOffline: 'wr.saveOffline', hapticFeedback: 'wr.hapticFeedback', saved: 'wr.saved',
   history: 'wr.history', highlights: 'wr.highlights', tabs: 'wr.tabs', stats: 'wr.stats',
   searches: 'wr.searches', recentLangs: 'wr.recentLangs', topics: 'wr.topics',
-  installDismissed: 'wr.installDismissed'
+  customTopics: 'wr.customTopics', installDismissed: 'wr.installDismissed'
 };
 const SHELL_CACHE_PREFIX = 'wikireader-shell-';
 const ARTICLE_CACHE_PREFIX = 'wikireader-articles-';
@@ -96,6 +96,17 @@ const timeAgo = (timestamp) => {
   return new Date(timestamp).toLocaleDateString(undefined, { dateStyle: 'medium' });
 };
 const normalizeTheme = (value) => value === 'system' ? 'auto' : ['auto', 'light', 'dark'].includes(value) ? value : 'auto';
+const normalizeCustomTopic = (value) => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+const normalizeCustomTopics = (value) => {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value.map(normalizeCustomTopic).filter((topic) => {
+    const key = topic.toLowerCase();
+    if (!topic || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 30);
+};
 
 function encodeWikiTitle(title) {
   const normalized = (title || '').trim().replace(/ /g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
@@ -172,6 +183,7 @@ const state = {
   recentSearches: readJson(STORAGE.searches, []),
   recentLangs: readJson(STORAGE.recentLangs, ['en']),
   topics: readJson(STORAGE.topics, []),
+  customTopics: normalizeCustomTopics(readJson(STORAGE.customTopics, [])),
   article: null,
   articleToken: 0,
   saved: readJson(STORAGE.saved, []),
@@ -808,11 +820,11 @@ async function updateCacheStats() {
 }
 
 const SETTINGS_CATEGORIES = [
-  { id: 'reading', icon: 'book', title: 'Reading & topics', desc: 'Topics, article layout and offline reading', count: 7 },
-  { id: 'appearance', icon: 'palette', title: 'Appearance', desc: 'Theme, colors, typography, images and motion', count: 9 },
-  { id: 'behaviour', icon: 'translate', title: 'Language & behaviour', desc: 'Wikipedia language, feed, data and navigation', count: 7 },
-  { id: 'data', icon: 'database', title: 'Data & privacy', desc: 'Statistics, backups, history and storage', count: 6 },
-  { id: 'about', icon: 'info', title: 'About', desc: 'Source, install, core status and reset options', count: 4 }
+  { id: 'reading', icon: 'book', title: 'Reading & topics', desc: 'Choose topics, manage reading and offline articles', count: 13 },
+  { id: 'appearance', icon: 'palette', title: 'Appearance', desc: 'Theme, colors, typography, images and motion', count: 10 },
+  { id: 'behaviour', icon: 'translate', title: 'Language & behaviour', desc: 'Wikipedia and app language, navigation and data use', count: 4 },
+  { id: 'data', icon: 'database', title: 'Data & privacy', desc: 'Vocabulary, statistics, backups and history', count: 6 },
+  { id: 'about', icon: 'info', title: 'About', desc: 'Tutorial, default app, debugging and reset options', count: 5 }
 ];
 
 function settingSwitch(key, title, support, iconName) {
@@ -861,14 +873,13 @@ function renderSettingsCategory(categoryId) {
   const category = SETTINGS_CATEGORIES.find((item) => item.id === categoryId) || SETTINGS_CATEGORIES[0];
   let body = '';
   if (category.id === 'reading') {
-    const topicChips = TOPICS.map((topic) => `<button class="chip topic-chip ${state.topics.includes(topic.id) ? 'active' : ''}" data-action="set-setting" data-setting="topics" data-value="${topic.id}">${state.topics.includes(topic.id) ? icon('check') : ''}${escapeHtml(topic.label)}</button>`).join('');
-    body = settingGroup('Random article topics', [
-      `<div class="setting-stack">
-        <span class="setting-title">Choose what the shuffle button finds</span>
-        <p class="setting-hint" style="margin:0 0 10px">Select any number of topics. With none selected, random articles come from all of Wikipedia. Long-press or use Settings to change this at any time.</p>
-        <div class="topic-grid">${topicChips}</div>
-        <p class="setting-hint" style="margin:10px 0 0">${state.topics.length ? `${state.topics.length} topic${state.topics.length === 1 ? '' : 's'} selected` : 'No topics selected — fully random articles'}</p>
-      </div>`
+    const topicCount = state.topics.length + state.customTopics.length;
+    body = settingGroup('Topics', [
+      `<button class="setting-item clickable" data-action="open-topics">
+        <span class="setting-icon">${icon('book')}</span>
+        <span class="setting-copy"><span class="setting-title">Random article topics</span><span class="setting-support">${topicCount ? `${topicCount} topic${topicCount === 1 ? '' : 's'} selected` : 'Choose topics or add your own'}</span></span>
+        <span class="setting-control">${icon('chevron')}</span>
+      </button>`
     ]) + settingGroup('Article reading', [
       settingSwitch('onlyImages', 'Only show articles with images', 'Skip random topic articles that do not have a lead image.', 'image'),
       settingSwitch('expandedSections', 'Open contents by default', 'Expand the table of contents when an article opens.', 'book'),
@@ -937,13 +948,54 @@ function renderSettingsCategory(categoryId) {
   return `<div class="settings-category-header"><button class="icon-button" data-action="settings-home" aria-label="Back to settings">${icon('back')}</button><div><h1>${escapeHtml(category.title)}</h1><p>${escapeHtml(category.desc)}</p></div></div>${body}`;
 }
 
+function renderTopicsSettings() {
+  const builtInChips = TOPICS.map((topic) => `<button class="chip topic-chip ${state.topics.includes(topic.id) ? 'active' : ''}" data-action="set-setting" data-setting="topics" data-value="${topic.id}">${state.topics.includes(topic.id) ? icon('check') : ''}${escapeHtml(topic.label)}</button>`).join('');
+  const customChips = state.customTopics.map((topic) => `<button class="chip topic-chip custom-topic-chip active" data-action="remove-custom-topic" data-topic="${escapeAttr(topic)}" aria-label="Remove ${escapeAttr(topic)}">${escapeHtml(topic)}${icon('close')}</button>`).join('');
+  const count = state.topics.length + state.customTopics.length;
+  const summary = count
+    ? `${count} topic${count === 1 ? '' : 's'} selected`
+    : 'No topics selected — random articles will come from all of Wikipedia';
+  return `<div class="settings-category-header">
+      <button class="icon-button" data-action="open-settings-category" data-category="reading" aria-label="Back to Reading & topics">${icon('back')}</button>
+      <div><h1>Random article topics</h1><p>Choose what the shuffle button finds.</p></div>
+    </div>
+    <section class="topic-intro">
+      <p>Select topics you’re interested in. The random article button will only show articles from your chosen topics. Leave all unselected for fully random articles.</p>
+    </section>
+    ${settingGroup('Topics', [
+      `<div class="topic-grid">${builtInChips}</div>`
+    ])}
+    ${settingGroup('Custom topics', [
+      `<div class="setting-stack">
+        <span class="setting-title">Add your own topic</span>
+        <p class="setting-hint" style="margin:0 0 10px">Any phrase works — for example “succulent plants”, “jazz drummers” or “medieval castles”. Custom topics find matching articles by Wikipedia search.</p>
+        ${customChips ? `<div class="topic-grid custom-topic-list">${customChips}</div>` : ''}
+        <form id="customTopicForm" class="custom-topic-form">
+          <input id="customTopicInput" type="text" maxlength="80" autocomplete="off" placeholder="e.g. succulent plants" aria-label="Custom topic">
+          <button class="pill-button primary" type="submit">${icon('plus')}Add</button>
+        </form>
+      </div>`
+    ])}
+    ${settingGroup('Selection', [
+      `<div class="setting-stack">
+        <p class="setting-hint" style="margin:0 0 12px">${escapeHtml(summary)}</p>
+        <button class="pill-button primary" data-action="open-settings-category" data-category="reading">Save topics</button>
+      </div>`
+    ])}`;
+}
+
 function renderSettings() {
   const container = $('#settingsContent');
   if (!container) return;
   const active = document.activeElement;
   const wasSearching = active?.id === 'settingsSearch';
   const cursor = wasSearching ? active.selectionStart : null;
-  container.innerHTML = state.settingsCategory === 'root' ? renderSettingsRoot() : renderSettingsCategory(state.settingsCategory);
+  const content = state.settingsCategory === 'topics'
+    ? renderTopicsSettings()
+    : state.settingsCategory === 'root'
+      ? renderSettingsRoot()
+      : renderSettingsCategory(state.settingsCategory);
+  container.innerHTML = content;
   populateLanguages();
   renderStats();
   updateCacheStats();
@@ -1199,9 +1251,13 @@ function showTab(tab, category = 'root') {
   hideSelectionToolbar();
   document.body.dataset.view = state.tab;
   $$('.view').forEach((view) => { view.hidden = view.dataset.view !== state.tab; });
-  $$('[data-action="tab"]').forEach((button) => button.classList.toggle('active', button.dataset.tab === state.tab));
-  const titles = { home: 'WikiReader', search: 'Search · WikiReader', saved: 'Saved · WikiReader', history: 'History · WikiReader', highlights: 'Highlights · WikiReader', tabs: 'Tabs · WikiReader', settings: 'Settings · WikiReader' };
-  document.title = titles[state.tab] || 'WikiReader';
+  $$('[data-action="tab"]').forEach((button) => {
+    const settingsActive = button.dataset.tab === 'settings' && state.settingsCategory !== 'about';
+    button.classList.toggle('active', button.dataset.tab === state.tab && (button.dataset.tab !== 'settings' || settingsActive));
+  });
+  $$('[data-action="open-about"]').forEach((button) => button.classList.toggle('active', state.tab === 'settings' && state.settingsCategory === 'about'));
+  const titles = { home: 'WikiReader', search: 'Search · WikiReader', saved: 'Saved · WikiReader', history: 'History · WikiReader', highlights: 'Saved highlights · WikiReader', tabs: 'Tabs · WikiReader', settings: 'Settings · WikiReader' };
+  document.title = state.tab === 'settings' && state.settingsCategory === 'topics' ? 'Random article topics · WikiReader' : titles[state.tab] || 'WikiReader';
   updateArticleActions();
   const progress = $('#readingProgress');
   if (progress) progress.style.width = '0%';
@@ -1227,6 +1283,7 @@ function parseHash() {
     return { type: 'article', lang: cleanLang(parts[1]), title: parts.slice(2).join('/').replace(/_/g, ' ') };
   }
   if (parts[0] === 'settings') {
+    if (parts[1] === 'topics') return { type: 'tab', tab: 'settings', category: 'topics' };
     const category = parts[1] && SETTINGS_CATEGORIES.some((item) => item.id === parts[1]) ? parts[1] : 'root';
     return { type: 'tab', tab: 'settings', category };
   }
@@ -1453,7 +1510,31 @@ function importData(file) {
   reader.readAsText(file);
 }
 
-async function randomTopicTitle() {
+function addCustomTopic(value) {
+  const topic = normalizeCustomTopic(value);
+  if (!topic) return false;
+  if (state.customTopics.some((item) => item.toLowerCase() === topic.toLowerCase())) {
+    showToast('That topic is already in your list');
+    return false;
+  }
+  state.customTopics = [...state.customTopics, topic];
+  writeJson(STORAGE.customTopics, state.customTopics);
+  haptic();
+  showToast(`Added “${topic}”`);
+  return true;
+}
+
+function removeCustomTopic(topic) {
+  state.customTopics = state.customTopics.filter((item) => item !== topic);
+  writeJson(STORAGE.customTopics, state.customTopics);
+  haptic();
+}
+
+function randomItem(items) {
+  return items.length ? items[Math.floor(Math.random() * items.length)] : null;
+}
+
+async function randomBuiltInTopicTitle() {
   if (!state.topics.length) return null;
   const selected = TOPICS.filter((topic) => state.topics.includes(topic.id));
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -1472,9 +1553,40 @@ async function randomTopicTitle() {
   return null;
 }
 
+async function randomCustomTopicTitle(topic) {
+  const phrase = normalizeCustomTopic(topic);
+  if (!phrase) return null;
+  const url = `${apiOrigin()}/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent(phrase)}&gsrnamespace=0&gsrlimit=20&prop=pageimages&piprop=thumbnail&pithumbsize=320`;
+  const data = await fetchJson(url);
+  const pages = Object.values(data?.query?.pages || {});
+  const matches = pages.filter((page) => {
+    if (!page?.title || page.missing !== undefined) return false;
+    if (state.onlyImages && !page.thumbnail?.source) return false;
+    return !/^(list of|outline of|index of)/i.test(page.title);
+  });
+  return randomItem(matches)?.title || null;
+}
+
+async function randomTopicTitle() {
+  const sources = [];
+  if (state.topics.length) sources.push('built-in');
+  if (state.customTopics.length) sources.push('custom');
+  if (!sources.length) return null;
+  const source = randomItem(sources);
+  if (source === 'custom') {
+    const phrases = [...state.customTopics].sort(() => Math.random() - 0.5);
+    for (const phrase of phrases.slice(0, 3)) {
+      const title = await randomCustomTopicTitle(phrase);
+      if (title) return title;
+    }
+    return state.topics.length ? randomBuiltInTopicTitle() : null;
+  }
+  return randomBuiltInTopicTitle();
+}
+
 async function openRandom() {
   try {
-    if (state.topics.length) {
+    if (state.topics.length || state.customTopics.length) {
       try {
         const topical = await randomTopicTitle();
         if (topical) {
@@ -1719,6 +1831,13 @@ function onAction(action, element) {
     case 'open-settings-category':
       location.hash = `#/settings/${element.dataset.category}`;
       break;
+    case 'open-topics':
+      location.hash = '#/settings/topics';
+      break;
+    case 'remove-custom-topic':
+      removeCustomTopic(element.dataset.topic);
+      renderSettings();
+      break;
     case 'settings-home':
       location.hash = '#/settings';
       break;
@@ -1829,6 +1948,15 @@ function bindEvents() {
   $('#searchForm')?.addEventListener('submit', (event) => {
     event.preventDefault();
     doSearch($('#searchInput')?.value || '');
+  });
+  document.addEventListener('submit', (event) => {
+    if (event.target.id !== 'customTopicForm') return;
+    event.preventDefault();
+    const input = $('#customTopicInput');
+    if (addCustomTopic(input?.value)) {
+      renderSettings();
+      $('#customTopicInput')?.focus();
+    }
   });
   document.addEventListener('input', (event) => {
     const target = event.target;

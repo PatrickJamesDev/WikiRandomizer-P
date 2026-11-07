@@ -48,7 +48,8 @@ A useful check sequence:
 5. Turn the network off and reopen the article, then reload the app.
 6. Use the browser's install button or **Settings → About → Install app**.
 7. In **Settings → Data & privacy**, confirm cached-article counts and storage usage.
-8. Choose a random topic in **Settings → Reading & topics**, then use the shuffle button.
+8. Open **Settings → Reading & topics → Random article topics**, choose a built-in topic, and add
+   a custom topic phrase. Use the shuffle button to check both paths.
 
 The PWA cannot be tested reliably by opening `pwa/index.html` directly from the filesystem because
 ES modules, `fetch` and service workers need an HTTP origin.
@@ -70,7 +71,7 @@ relative URLs, it works from a repository subpath as well as from a custom domai
 - `shared/src/commonMain/` contains URL, title and text helpers shared with Android and iOS.
 - `shared/src/wasmJsMain/` exposes those helpers to JavaScript through `WikiWasmExports.kt`.
 - `pwa/app.js` contains the reader UI, feed/search/article loading, saved articles, history,
-  highlights, tabs, random topics, settings, statistics and backup/restore.
+  highlights, tabs, built-in and custom random topics, settings, statistics and backup/restore.
 - `pwa/sw.js` caches the app shell plus visited article HTML, API responses and images.
 - `pwa/manifest.webmanifest` supplies the install metadata, icons and shortcuts.
 
@@ -101,6 +102,8 @@ The PWA is a lightweight web reader, not a replacement for every native capabili
   integrations remain in the Android app.
 - The web app offers its own Material 3-style colour schemes and typography settings rather than
   Android Material You dynamic colours and Compose-specific layouts.
+- Built-in topics use Wikipedia categories. Custom topics use Wikipedia search, because the web
+  app does not build the native on-device topic index.
 - The PWA interface is English; article language follows the language picker.
 - Some complex Wikipedia content (for example certain math or interactive elements) may be
   simplified by the article HTML sanitizer.
