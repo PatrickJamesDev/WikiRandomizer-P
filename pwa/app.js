@@ -820,11 +820,11 @@ async function updateCacheStats() {
 }
 
 const SETTINGS_CATEGORIES = [
-  { id: 'reading', icon: 'book', title: 'Reading & topics', desc: 'Choose topics, manage reading and offline articles', count: 13 },
-  { id: 'appearance', icon: 'palette', title: 'Appearance', desc: 'Theme, colors, typography, images and motion', count: 10 },
-  { id: 'behaviour', icon: 'translate', title: 'Language & behaviour', desc: 'Wikipedia and app language, navigation and data use', count: 4 },
-  { id: 'data', icon: 'database', title: 'Data & privacy', desc: 'Vocabulary, statistics, backups and history', count: 6 },
-  { id: 'about', icon: 'info', title: 'About', desc: 'Tutorial, default app, debugging and reset options', count: 5 }
+  { id: 'reading', icon: 'book', title: 'Reading & topics', desc: 'Choose topics, manage reading and offline articles', keywords: 'topics random library shuffle save offline articles images bold sections preload data saver', count: 13 },
+  { id: 'appearance', icon: 'palette', title: 'Appearance', desc: 'Theme, colors, typography, images and motion', keywords: 'theme dark light black amoled color colour scheme font text size typography image motion animation', count: 10 },
+  { id: 'behaviour', icon: 'translate', title: 'Language & behaviour', desc: 'Wikipedia and app language, navigation and data use', keywords: 'language wikipedia english feed home search history browsing menu side navigation haptic data saver', count: 4 },
+  { id: 'data', icon: 'database', title: 'Data & privacy', desc: 'Vocabulary, statistics, backups and history', keywords: 'stats statistics reading time streak words articles charts vocabulary definitions backup restore export import storage cache privacy history', count: 6 },
+  { id: 'about', icon: 'info', title: 'About', desc: 'Tutorial, default app, debugging and reset options', keywords: 'tutorial help install default debug logs reset version source licenses', count: 5 }
 ];
 
 function settingSwitch(key, title, support, iconName) {
@@ -856,7 +856,7 @@ function settingsSearchBox() {
 function renderSettingsRoot() {
   const query = state.settingsQuery.trim().toLowerCase();
   const categories = SETTINGS_CATEGORIES.filter((category) =>
-    !query || `${category.title} ${category.desc}`.toLowerCase().includes(query));
+    !query || `${category.title} ${category.desc} ${category.keywords}`.toLowerCase().includes(query));
   return `${settingsSearchBox()}
     <h1 class="settings-hub-title">Settings</h1>
     <p class="settings-hub-desc">Choose a category to change how WikiReader looks and works.</p>

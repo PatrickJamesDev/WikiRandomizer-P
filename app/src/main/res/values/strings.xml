@@ -135,6 +135,7 @@
     <string name="libraryTotals">%1$s articles in %3$d topics (%2$s not seen yet)</string>
     <string name="libraryTapToExpand">Tap for a breakdown per topic</string>
     <string name="libraryTopicLine">%1$s articles · %2$s with images · %3$s Good · %4$s Featured</string>
+    <string name="libraryTopicRead">%1$s read · %2$s left</string>
     <string name="settingSaveOffline">Save articles for offline reading</string>
     <string name="settingSaveOfflineDesc">Off: saving only bookmarks the article and opens it online. On: the article text is also stored on your device.</string>
     <string name="settingStrictness">Topic strictness</string>

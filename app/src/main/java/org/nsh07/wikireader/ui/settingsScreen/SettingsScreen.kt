@@ -1499,6 +1499,27 @@ fun SettingsScreen(
                     )
                     add(
                         SettingsSearchEntry(
+                            context.getString(string.statistics),
+                            context.getString(string.statsSettingsDesc),
+                            "stats statistics reading time streak words articles charts history", R.drawable.history
+                        ) { onNavigateToStatistics() }
+                    )
+                    add(
+                        SettingsSearchEntry(
+                            context.getString(string.vocabulary),
+                            context.getString(string.vocabularyEmpty),
+                            "words definitions dictionary vocabulary builder", R.drawable.view_list
+                        ) { onNavigateToVocabulary() }
+                    )
+                    add(
+                        SettingsSearchEntry(
+                            context.getString(string.backup),
+                            context.getString(string.backupDesc),
+                            "backup backups restore export import data storage", R.drawable.download_done
+                        ) { onBackup() }
+                    )
+                    add(
+                        SettingsSearchEntry(
                             context.getString(string.setAsDefault),
                             context.getString(string.setAsDefaultDesc),
                             "links default browser", R.drawable.filled_info

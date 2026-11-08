@@ -103,7 +103,7 @@ fun SharedTransitionScope.FullScreenGallery(
     // The zoom of the picture on screen. While it is zoomed in, a horizontal drag pans the picture;
     // otherwise it turns the page.
     var currentScale by remember { mutableFloatStateOf(1f) }
-    val showBars = barsRequested && currentScale <= 1.1f
+    val showBars = barsRequested
 
     LaunchedEffect(showBars) {
         if (showBars) {
@@ -164,7 +164,12 @@ fun SharedTransitionScope.FullScreenGallery(
                 background = background,
                 doubleTapSpec = doubleTapSpec,
                 onTap = { barsRequested = !barsRequested },
-                onScaleChanged = { scale -> if (page == pagerState.currentPage) currentScale = scale }
+                onScaleChanged = { scale ->
+                    if (page == pagerState.currentPage) {
+                        if (scale > 1.1f && currentScale <= 1.1f) barsRequested = false
+                        currentScale = scale
+                    }
+                }
             )
         }
 

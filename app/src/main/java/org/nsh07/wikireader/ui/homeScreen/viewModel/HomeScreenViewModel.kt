@@ -966,6 +966,15 @@ class HomeScreenViewModel(
         }
     }
 
+    fun onAppForegrounded() {
+        schedulePrefetch()
+    }
+
+    fun onAppBackgrounded() {
+        prefetchJob?.cancel()
+        prefetchJob = null
+    }
+
     /**
      * While the user reads, quietly pick the next random articles and download their text and first
      * pictures, so the Random button feels instant. Nothing is marked as seen until an article is

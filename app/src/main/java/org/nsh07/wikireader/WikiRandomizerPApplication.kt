@@ -20,6 +20,8 @@ import okhttp3.OkHttpClient
 import org.nsh07.wikireader.data.AppContainer
 import org.nsh07.wikireader.data.DebugLog
 import org.nsh07.wikireader.data.DefaultAppContainer
+import org.nsh07.wikireader.ui.image.ImageRetryInterceptor
+import java.util.concurrent.TimeUnit
 
 class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
     lateinit var container: AppContainer
@@ -92,8 +94,17 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
             override fun onActivityDestroyed(a: Activity) = c(a, "destroyed")
         })
         registerComponentCallbacks(object : ComponentCallbacks2 {
-            override fun onTrimMemory(level: Int) = DebugLog.crumb("onTrimMemory level=$level ${DebugLog.memory()}")
-            override fun onLowMemory() = DebugLog.crumb("onLowMemory ${DebugLog.memory()}")
+            override fun onTrimMemory(level: Int) {
+                DebugLog.crumb("onTrimMemory level=$level ${DebugLog.memory()}")
+                if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+                    runCatching { SingletonImageLoader.get(this@WikiRandomizerPApplication).memoryCache?.clear() }
+                }
+            }
+
+            override fun onLowMemory() {
+                DebugLog.crumb("onLowMemory ${DebugLog.memory()}")
+                runCatching { SingletonImageLoader.get(this@WikiRandomizerPApplication).memoryCache?.clear() }
+            }
             override fun onConfigurationChanged(newConfig: Configuration) {}
         })
     }
@@ -109,6 +120,9 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
                                 maxRequests = 64
                                 maxRequestsPerHost = 10
                             })
+                            .connectTimeout(15, TimeUnit.SECONDS)
+                            .readTimeout(30, TimeUnit.SECONDS)
+                            .callTimeout(60, TimeUnit.SECONDS)
                             .addNetworkInterceptor { chain ->
                                 chain.proceed(
                                     chain.request()
@@ -123,6 +137,7 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
                             .build()
                     )
                 )
+                add(ImageRetryInterceptor())
                 add(SvgDecoder.Factory(scaleToDensity = true))
                 if (SDK_INT >= 28) {
                     add(AnimatedImageDecoder.Factory())

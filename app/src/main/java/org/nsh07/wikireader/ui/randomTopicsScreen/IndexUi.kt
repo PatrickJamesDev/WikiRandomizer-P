@@ -248,7 +248,18 @@ fun LibraryCard(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(name, style = typography.titleSmall, modifier = Modifier.weight(1f))
+                            Column(Modifier.weight(1f)) {
+                                Text(name, style = typography.titleSmall)
+                                Text(
+                                    stringResource(
+                                        R.string.libraryTopicRead,
+                                        num(t.readCount),
+                                        num(t.remaining)
+                                    ),
+                                    style = typography.bodySmall,
+                                    color = colorScheme.onSurfaceVariant
+                                )
+                            }
                             // Off keeps the downloaded library; check it again to use it instantly.
                             androidx.compose.material3.Switch(
                                 checked = t.enabled,

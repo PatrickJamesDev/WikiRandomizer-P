@@ -105,8 +105,14 @@ class MainActivity : ComponentActivity() {
         return super.dispatchTouchEvent(ev)
     }
 
+    override fun onStart() {
+        super.onStart()
+        viewModel.onAppForegrounded()
+    }
+
     override fun onStop() {
         super.onStop()
+        viewModel.onAppBackgrounded()
         // Remember the open article so the next launch can reopen it.
         viewModel.saveSessionState()
     }

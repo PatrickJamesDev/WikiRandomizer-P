@@ -17,8 +17,11 @@ data class TopicStat(
     /** False while article details are still being collected (build interrupted / running). */
     val complete: Boolean,
     /** Whether this topic takes part in random picks. Disabling keeps its downloaded library. */
-    val enabled: Boolean = true
-)
+    val enabled: Boolean = true,
+    val readCount: Int = 0
+) {
+    val remaining: Int get() = (indexed - readCount).coerceAtLeast(0)
+}
 
 data class LibraryStats(
     /** Size of the library database on disk. */
@@ -773,9 +776,11 @@ class TopicIndex private constructor(context: Context, val lang: String) :
         readableDatabase.rawQuery(
             "SELECT t.topic, t.resolved, t.article_count, t.built_at, t.complete, COUNT(a.title), " +
                     "COALESCE(SUM(a.img), 0), COALESCE(SUM(a.tier = 1), 0), COALESCE(SUM(a.tier = 2), 0), " +
-                    "t.enabled " +
+                    "t.enabled, COALESCE(SUM(s.title IS NOT NULL), 0) " +
                     "FROM topics t LEFT JOIN membership m ON m.topic = t.topic " +
-                    "LEFT JOIN articles a ON a.title = m.title AND a.bytes >= 0 GROUP BY t.topic ORDER BY t.topic",
+                    "LEFT JOIN articles a ON a.title = m.title AND a.bytes >= 0 " +
+                    "LEFT JOIN seen s ON s.title = a.title " +
+                    "GROUP BY t.topic ORDER BY t.topic",
             null
         ).use { c ->
             while (c.moveToNext()) {
@@ -784,7 +789,7 @@ class TopicIndex private constructor(context: Context, val lang: String) :
                         topic = c.getString(0), resolved = c.getString(1), discovered = c.getInt(2),
                         builtAt = c.getLong(3), complete = c.getInt(4) == 1, indexed = c.getInt(5),
                         withImages = c.getInt(6), good = c.getInt(7), featured = c.getInt(8),
-                        enabled = c.getInt(9) == 1
+                        enabled = c.getInt(9) == 1, readCount = c.getInt(10)
                     )
                 )
             }

@@ -150,10 +150,7 @@ object ImagePrefetcher {
         val loader = SingletonImageLoader.get(context)
         for ((index, u) in urls.withIndex()) {
             enqueueWarm(loader, context, u)
-            // The full-screen viewer asks for a 1920 px rendition. Warming that URL as well makes
-            // opening a picture instant instead of a fresh multi-megabyte download. Limited to the
-            // first few pictures so preparing an article stays cheap.
-            if (index < 8) largeVariant(u)?.let { enqueueWarm(loader, context, it) }
+            if (index < 2) largeVariant(u)?.let { enqueueWarm(loader, context, it) }
         }
     }
 
@@ -212,8 +209,7 @@ object ImagePrefetcher {
         for ((index, u) in fresh.withIndex()) {
             done.add(u)
             enqueueWarm(loader, context, u)
-            // Pre-cache the full-screen rendition too (first few pictures only).
-            if (index < 12) largeVariant(u)?.let { done.add(it); enqueueWarm(loader, context, it) }
+            if (index < 3) largeVariant(u)?.let { done.add(it); enqueueWarm(loader, context, it) }
             delay(60) // gentle: don't hit the server with 80 requests at once
         }
     }
