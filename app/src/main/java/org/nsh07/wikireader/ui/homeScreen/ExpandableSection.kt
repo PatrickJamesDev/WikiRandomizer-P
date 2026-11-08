@@ -1,6 +1,8 @@
 package org.nsh07.wikireader.ui.homeScreen
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
@@ -64,6 +66,7 @@ fun ExpandableSection(
     showRef: (String) -> Unit,
     boldText: Boolean = false,
     highlights: List<String> = emptyList(),
+    missingLinks: Set<String> = emptySet(),
     staged: Boolean = false,
     checkFirstImage: Boolean = false,
     pageImageUri: String? = null
@@ -81,6 +84,11 @@ fun ExpandableSection(
             out += it
         }
         out.replace(htmlTagRegex, "")
+    }
+    // Expanding a 50 000-character section vertically forces the whole body to lay out on every
+    // animation frame. Snap those sections open/closed instead; short sections keep the animation.
+    val animateExpansion = remember(body) {
+        body.sumOf { it.length } <= MAX_ANIMATED_SECTION_CHARS
     }
     val collapseByDefault = remember(headingText) { isReferencesTitle(headingText) }
     var expanded by rememberSaveable {
@@ -143,8 +151,12 @@ fun ExpandableSection(
 
         AnimatedVisibility(
             expanded,
-            enter = expandVertically(expandFrom = Alignment.CenterVertically) + fadeIn(),
-            exit = shrinkVertically(shrinkTowards = Alignment.CenterVertically) + fadeOut()
+            enter = if (animateExpansion) {
+                expandVertically(expandFrom = Alignment.CenterVertically) + fadeIn()
+            } else EnterTransition.None,
+            exit = if (animateExpansion) {
+                shrinkVertically(shrinkTowards = Alignment.CenterVertically) + fadeOut()
+            } else ExitTransition.None
         ) {
             ParsedBodyText(
                 body = body,
@@ -162,6 +174,7 @@ fun ExpandableSection(
                 showRef = showRef,
                 boldText = boldText,
                 highlights = highlights,
+                missingLinks = missingLinks,
                 staged = staged,
                 checkFirstImage = checkFirstImage,
                 pageImageUri = pageImageUri
@@ -169,6 +182,8 @@ fun ExpandableSection(
         }
     }
 }
+
+private const val MAX_ANIMATED_SECTION_CHARS = 8_000
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Preview

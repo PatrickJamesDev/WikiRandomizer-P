@@ -71,6 +71,13 @@ private const val CATEGORY_SEARCH_QUERY =
 private const val PAGE_INFO_QUERY =
     "w/api.php?format=json&action=query&prop=info|pageimages|categories|description&piprop=thumbnail&pithumbsize=60&pilicense=any&clcategories=Category:Good_articles|Category:Featured_articles&cllimit=max&redirects=1&formatversion=2&maxage=3600&smaxage=3600"
 
+/**
+ * Main-namespace pages linked from an article, with existence information. Used to paint wiki
+ * links to pages that do not exist red, matching desktop Wikipedia's "red link" convention.
+ */
+private const val LINKED_PAGES_QUERY =
+    "w/api.php?format=json&action=query&generator=links&gplnamespace=0&gpllimit=max&prop=info&formatversion=2&maxlag=5&maxage=3600&smaxage=3600"
+
 private const val API_QUERY =
     "w/api.php?format=json&action=query&prop=pageimages|description|langlinks&piprop=thumbnail|original&pithumbsize=960&pilicense=any&lllimit=max&redirects=1&formatversion=2&maxage=900&smaxage=900"
 
@@ -152,6 +159,13 @@ interface WikipediaApiService {
      */
     @GET(PAGE_INFO_QUERY)
     suspend fun getPageInfo(@Query("titles") titles: String): WikiApiPageInfoResponse
+
+    /** Pages linked from [title]; continue with [gplcontinue] until the response has no continuation. */
+    @GET(LINKED_PAGES_QUERY)
+    suspend fun getLinkedPagesInfo(
+        @Query("titles") title: String,
+        @Query("gplcontinue") gplcontinue: String? = null
+    ): WikiApiPageInfoResponse
 
     @GET(PREFIX_SEARCH_QUERY)
     suspend fun getPrefixSearchResults(@Query("gpssearch") query: String): WikiApiPrefixSearchResults

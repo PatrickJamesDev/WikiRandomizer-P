@@ -66,6 +66,7 @@ data class WikiCategoryInfo(val size: Int = 0, val pages: Int = 0, val subcats: 
 @Serializable
 data class WikiContinue(
     val cmcontinue: String? = null,
+    val gplcontinue: String? = null,
     @SerialName("continue") val cont: String? = null
 )
 
@@ -1160,7 +1161,8 @@ data class WikiCategorySearchResult(
 // ── Page-info response (action=query&prop=info|pageimages) ── stub + image detection ──
 @Serializable
 data class WikiApiPageInfoResponse(
-    val query: WikiPageInfoQuery? = null
+    val query: WikiPageInfoQuery? = null,
+    @SerialName("continue") val cont: WikiContinue? = null
 )
 
 @Serializable
@@ -1177,6 +1179,8 @@ data class WikiPageInfoQuery(
 @Serializable
 data class WikiPageInfo(
     val pageid: Int = 0,
+    /** MediaWiki namespace id (0 = main/article namespace). */
+    val ns: Int = 0,
     val title: String = "",
     val length: Int = 0,
     val missing: Boolean = false,

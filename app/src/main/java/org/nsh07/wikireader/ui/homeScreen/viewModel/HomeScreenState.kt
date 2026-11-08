@@ -63,6 +63,24 @@ data class DictionaryLookup(
 /** Stable key for the per-article like/dislike state kept in [HomeScreenState.articleVotes]. */
 internal fun articleVoteKey(lang: String, title: String): String = "$lang\u0001$title"
 
+/**
+ * MediaWiki canonicalises the first letter of an article title while leaving the rest case
+ * sensitive. Link targets written as `[[photosynthesis]]` therefore refer to
+ * `Photosynthesis`; compare titles in that form so red-link matches do not depend on how the
+ * writer capitalised the link.
+ */
+internal fun normalizeArticleLinkTitle(title: String): String {
+    val clean = title
+        .replace('_', ' ')
+        .substringBefore('#')
+        .trim()
+        .removePrefix(":")
+    if (clean.isEmpty()) return clean
+    return clean.replaceFirstChar {
+        if (it.isLowerCase()) it.titlecase() else it.toString()
+    }
+}
+
 /** One open article tab. Title + language reopen it; the scroll fields restore the exact place. */
 @Immutable
 data class ArticleTab(
@@ -121,6 +139,11 @@ sealed class HomeSubscreen {
         val savedStatus: SavedStatus = SavedStatus.NOT_SAVED,
         /** Text of passages the user saved as highlights for this article. */
         val highlights: List<String> = emptyList(),
+        /**
+         * Normalised titles of linked main-namespace pages that do not exist. Rendered in the
+         * error colour, matching Wikipedia's red links; empty until the background lookup finishes.
+         */
+        val missingLinks: Set<String> = emptySet(),
         /**
          * Stable per load. This is the navigation content key (`article-<uid>`), so progressive
          * text updates and save-state changes must keep it unchanged. Two different loads still

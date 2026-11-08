@@ -43,6 +43,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.nsh07.wikireader.data.perfMeasure
 import org.nsh07.wikireader.parser.HTML_INFOBOX_MARKER
 import org.nsh07.wikireader.parser.ReferenceData.infoboxTemplates
+import org.nsh07.wikireader.ui.homeScreen.viewModel.normalizeArticleLinkTitle
 import kotlin.text.Typography.nbsp
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -68,6 +69,8 @@ fun ParsedBodyText(
     boldText: Boolean = false,
     /** Texts of saved highlights, tinted when they occur in this body. */
     highlights: List<String> = emptyList(),
+    /** Normalised titles of links to pages that do not exist; those links render red. */
+    missingLinks: Set<String> = emptySet(),
     /**
      * Compose a long section in slices over a few frames instead of all at once (laying out dozens
      * of paragraphs in one frame is a visible stall). Only for content that appears at the top of
@@ -205,9 +208,23 @@ fun ParsedBodyText(
                 // (navigate) and a long press (open in a background tab). Reference links keep
                 // their LinkAnnotation.Url and are still handled by Text itself.
                 val linkColor = MaterialTheme.colorScheme.primary
+                val missingLinkColor = MaterialTheme.colorScheme.error
                 val highlightColor = MaterialTheme.colorScheme.tertiaryContainer
-                val displayText = remember(it, linkColor, highlights, highlightColor) {
-                    it.toTappableArticleLinks(linkColor, highlights, highlightColor)
+                val displayText = remember(
+                    it,
+                    linkColor,
+                    missingLinkColor,
+                    missingLinks,
+                    highlights,
+                    highlightColor
+                ) {
+                    it.toTappableArticleLinks(
+                        linkColor,
+                        highlights,
+                        highlightColor,
+                        missingLinks,
+                        missingLinkColor
+                    )
                 }
                 var textLayout by remember(displayText) {
                     mutableStateOf<TextLayoutResult?>(null)
@@ -363,7 +380,10 @@ val LocalLinkTapGuard = staticCompositionLocalOf { LinkTapGuard { false } }
 internal fun AnnotatedString.toTappableArticleLinks(
     linkColor: Color,
     highlights: List<String> = emptyList(),
-    highlightColor: Color = Color.Unspecified
+    highlightColor: Color = Color.Unspecified,
+    /** Already normalised with [normalizeArticleLinkTitle]. */
+    missingLinks: Set<String> = emptySet(),
+    missingLinkColor: Color = linkColor
 ): AnnotatedString {
     if (isEmpty()) return this
     val links = getLinkAnnotations(0, length)
@@ -400,7 +420,10 @@ internal fun AnnotatedString.toTappableArticleLinks(
             is LinkAnnotation.Clickable -> {
                 val tag = link.tag
                 if (!tag.isNullOrBlank()) {
-                    builder.addStyle(SpanStyle(color = linkColor), range.start, range.end)
+                    val color =
+                        if (normalizeArticleLinkTitle(tag) in missingLinks) missingLinkColor
+                        else linkColor
+                    builder.addStyle(SpanStyle(color = color), range.start, range.end)
                     builder.addStringAnnotation(
                         ARTICLE_LINK_TAG,
                         tag,
@@ -418,7 +441,10 @@ internal fun AnnotatedString.toTappableArticleLinks(
                 // navigation gesture instead of letting Text hand them to a browser.
                 val title = wikiArticleTitle(link.url)
                 if (title != null) {
-                    builder.addStyle(SpanStyle(color = linkColor), range.start, range.end)
+                    val color =
+                        if (normalizeArticleLinkTitle(title) in missingLinks) missingLinkColor
+                        else linkColor
+                    builder.addStyle(SpanStyle(color = color), range.start, range.end)
                     builder.addStringAnnotation(ARTICLE_LINK_TAG, title, range.start, range.end)
                 } else {
                     builder.addLink(link, range.start, range.end)

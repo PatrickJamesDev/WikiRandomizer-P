@@ -91,6 +91,9 @@ class LanguagePinnedWikipediaRepository(
     override suspend fun getPageInfo(titles: List<String>): WikiApiPageInfoResponse =
         onWiki { delegate.getPageInfo(titles) }
 
+    override suspend fun getMissingLinkedArticles(title: String): Set<String> =
+        onWiki { delegate.getMissingLinkedArticles(title) }
+
     override suspend fun getFeed(date: String): FeedApiResponse =
         onWiki { delegate.getFeed(date) }
 }

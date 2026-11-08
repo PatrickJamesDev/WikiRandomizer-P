@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
@@ -183,13 +183,13 @@ fun PageContent(
         // article whose list has not been measured on the first composition.
         LaunchedEffect(content.uid, content.pendingScrollExtractIndex) {
             val extractIndex = content.pendingScrollExtractIndex ?: return@LaunchedEffect
-            // LazyColumn layout: 0 = title, 1 = intro/description, then one item per extract slot
-            // (extract[0] is an empty placeholder, extract[1] is the first heading).
+            // LazyColumn layout: 0 = title, 1 = intro/description, then one item per heading
+            // (extract[1] is the first heading, extract[3] the second, and so on).
             val itemIndex = if (extractIndex <= 0) {
                 1
             } else {
                 val headingIndex = if (extractIndex % 2 == 0) extractIndex - 1 else extractIndex
-                headingIndex + 2
+                2 + (headingIndex - 1) / 2
             }
             snapshotFlow { content.listState.layoutInfo.totalItemsCount }
                 .first { it > itemIndex }
@@ -256,6 +256,12 @@ fun PageContent(
                 index % 2 == 1 &&
                         isReferencesTitle(content.extract[index].joinToString("") { part -> part.text })
             } ?: -1
+        }
+        // Only heading slots become LazyColumn items: the even slots are extract bodies, and the
+        // heading already renders its following body. The old list emitted an empty item for every
+        // body slot, doubling the item count and making scroll/layout work larger than necessary.
+        val sectionHeadingIndices = remember(content.extract) {
+            content.extract.indices.filter { it % 2 == 1 }
         }
         // The article may still be growing section by section; without a References heading the
         // gallery waits until the section count stops changing so it does not jump around.
@@ -436,17 +442,15 @@ fun PageContent(
                             pageImageUri = (content.thumbnail ?: photo)?.source,
                             boldText = preferencesState.boldArticleText,
                             highlights = highlights,
+                            missingLinks = content.missingLinks,
                             staged = stageSections
                         )
                 }
-                itemsIndexed(
-                    content.extract,
-                    key = { i, it -> "$pageId.$lang#$i" },
-                    // Section headers and the (empty) even slots are different kinds of items: lets the
-                    // list reuse compositions of the same kind while scrolling.
-                    contentType = { i, _ -> i % 2 }
-                ) { i: Int, it: List<AnnotatedString> ->// Expandable sections logic
-                    if (i % 2 == 1) Column {
+                items(
+                    sectionHeadingIndices,
+                    key = { i -> "$pageId.$lang#$i" }
+                ) { i ->
+                    Column {
                         // The Commons gallery sits at the end of the article, right before References.
                         if (commonsGallery != null && i == referencesIndex)
                             CommonsCategoryGalleryStrip(
@@ -480,6 +484,7 @@ fun PageContent(
                             showRef = { onAction(HomeAction.UpdateRef(it)) },
                             boldText = preferencesState.boldArticleText,
                             highlights = highlights,
+                            missingLinks = content.missingLinks,
                             staged = stageSections,
                             checkFirstImage = true,
                             pageImageUri = (content.thumbnail ?: photo)?.source

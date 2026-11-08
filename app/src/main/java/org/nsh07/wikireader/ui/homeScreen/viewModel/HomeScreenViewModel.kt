@@ -2331,10 +2331,12 @@ class HomeScreenViewModel(
                 val text = action.text.trim()
                 if (text.isEmpty()) return@launch
                 val articleLang = top.currentLang ?: preferencesState.value.lang
-                val topic = try {
-                    topicIndexProvider(articleLang).topicsForTitle(top.title).firstOrNull()
-                } catch (e: Exception) {
-                    null
+                val topic = withContext(Dispatchers.IO) {
+                    try {
+                        topicIndexProvider(articleLang).topicsForTitle(top.title).firstOrNull()
+                    } catch (e: Exception) {
+                        null
+                    }
                 }
                 try {
                     // Auto-save and the manual Highlight action can race; keep one row per
@@ -2472,7 +2474,12 @@ class HomeScreenViewModel(
         }
 
         val t0 = System.nanoTime()
-        val articleMatches = buildArticleTextMatches(q)
+        // Snapshot the article on the main thread, then scan its parsed text off the main thread.
+        // A long article has hundreds of paragraphs; matching them on the main thread made the
+        // search-as-you-type field stutter.
+        val article = backStack.lastOrNull { it is HomeSubscreen.Article } as? HomeSubscreen.Article
+        val articleMatches = if (article == null) emptyList()
+        else withContext(Dispatchers.Default) { buildArticleTextMatches(article, q) }
         _appSearchBarState.update { currentState ->
             currentState.copy(
                 articleMatches = articleMatches,
@@ -2564,9 +2571,10 @@ class HomeScreenViewModel(
      * Finds [query] in the article the user is reading. Search used to fire a second full-text
      * API request and label those global results "in article", which was both slower and wrong.
      */
-    private fun buildArticleTextMatches(query: String): List<ArticleTextMatch> {
-        val article = backStack.lastOrNull { it is HomeSubscreen.Article } as? HomeSubscreen.Article
-            ?: return emptyList()
+    private fun buildArticleTextMatches(
+        article: HomeSubscreen.Article,
+        query: String
+    ): List<ArticleTextMatch> {
         val normalizedQuery = query.trim()
         if (normalizedQuery.isEmpty()) return emptyList()
         val out = ArrayList<ArticleTextMatch>()
@@ -3097,6 +3105,7 @@ class HomeScreenViewModel(
 
                     // Ensure final state is always committed.
                     updateTopArticle(shownTitle, parsedExtract.toList(), articleSections.toList())
+                    refreshMissingLinks(shownTitle, setLang)
                     schedulePrefetch()
                     // Donation milestones count deliberate article opens, not history/tab replays.
                     if (!fromRestore && !fromHistory && !fromTabSwitch) noteArticleOpened()
@@ -3257,6 +3266,35 @@ class HomeScreenViewModel(
         if (top.title != expectedTitle) return
         if (top.extract == extract && top.sections == sections) return // nothing new
         mutateTopArticle(expectedTitle) { it.copy(extract = extract, sections = sections) }
+    }
+
+    /**
+     * Wikipedia paints links to pages that were never created red. The wikitext itself does not
+     * say whether a target exists, so ask the API for the article's linked pages in the background
+     * and update the already-visible article when the answer arrives. Failure is non-fatal: the
+     * links simply stay in the normal link colour.
+     */
+    private fun refreshMissingLinks(title: String, lang: String) {
+        if (title.isBlank() || title == "Error") return
+        viewModelScope.launch(errorHandler) {
+            val missing = try {
+                withContext(Dispatchers.IO) {
+                    withHost(lang) { wikipediaRepository.getMissingLinkedArticles(title) }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLog.w("Links", "could not check red links for '$title': ${e.message}")
+                return@launch
+            }
+            if (missing.isEmpty()) return@launch
+            val normalized = missing.mapTo(HashSet(), ::normalizeArticleLinkTitle)
+            mutateTopArticle(title) { article ->
+                // A newer navigation may have replaced the article while the request was in flight.
+                if (article.currentLang == lang) article.copy(missingLinks = normalized)
+                else article
+            }
+        }
     }
 
     private fun reloadPage(
@@ -3574,6 +3612,7 @@ class HomeScreenViewModel(
 
                 // Ensure final state committed.
                 updateTopArticle(savedTitle, parsedExtract.toList(), articleSections.toList())
+                refreshMissingLinks(savedTitle, savedArticle.lang)
 
                 return@withContext WRStatus.SUCCESS
             } else return@withContext WRStatus.DATABASE_ERROR

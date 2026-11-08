@@ -32,10 +32,11 @@ class BaselineProfileGenerator {
             startActivityAndWait()
             device.wait(Until.hasObject(By.text("Featured article")), 5000)
 
-            device.findObject(By.text("Search Wikipedia")).click()
-            Thread.sleep(1000)
-            device.pressBack()
-            device.pressBack()
+            // Article reading is the main user journey: open a real article, scroll through its
+            // sections, expand one, and open the lead picture. This brings the parser, article
+            // list, section animation, Coil and the gallery into the baseline profile instead of
+            // profiling only the feed/settings chrome.
+            openArticle("Photosynthesis", device)
 
             device.findObject(By.descContains("language")).click()
             Thread.sleep(1000)
@@ -46,6 +47,38 @@ class BaselineProfileGenerator {
             navigateTo("Settings", device)
             navigateTo("About", device)
         }
+    }
+
+    private fun openArticle(title: String, device: UiDevice) {
+        val search = device.wait(Until.findObject(By.text("Search Wikipedia")), 5000) ?: return
+        search.click()
+        val field = device.wait(Until.findObject(By.focused(true)), 3000) ?: return
+        field.text = title
+        device.pressEnter()
+        // Section headers only exist inside the article, so this also proves the parser finished.
+        if (!device.wait(Until.hasObject(By.descContains("Expand section")), 15_000)) return
+        Thread.sleep(1500)
+
+        val width = device.displayWidth
+        val height = device.displayHeight
+        repeat(3) {
+            device.swipe(width / 2, (height * 0.78f).toInt(), width / 2, (height * 0.25f).toInt(), 24)
+            Thread.sleep(700)
+        }
+
+        device.findObject(By.descContains("Expand section"))?.click()
+        Thread.sleep(1200)
+        device.swipe(width / 2, (height * 0.75f).toInt(), width / 2, (height * 0.3f).toInt(), 24)
+        Thread.sleep(700)
+
+        // The lead picture's semantics description is the article title; opening and closing it
+        // warms the full-screen image path too.
+        device.findObject(By.desc(title))?.click()
+        Thread.sleep(1200)
+        device.pressBack()
+        Thread.sleep(800)
+        device.pressBack()
+        Thread.sleep(800)
     }
 
     fun navigateTo(text: String, device: UiDevice) {

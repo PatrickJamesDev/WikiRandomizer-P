@@ -47,7 +47,6 @@ fun FeedImage(
         model = ImageRequest.Builder(context)
             // Old stored addresses can carry a thumbnail width Wikimedia no longer serves.
             .data(ImagePrefetcher.standardThumbnailUrl(source))
-            .crossfade(true)
             .build(),
         contentScale = contentScale,
     )

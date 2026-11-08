@@ -60,7 +60,6 @@ fun SharedTransitionScope.ImageCard(
     val painter = rememberAsyncImagePainter(
         model = ImageRequest.Builder(context)
             .data(ImagePrefetcher.standardThumbnailUrl(photo?.source))
-            .crossfade(true)
             .build(),
         contentScale = contentScale,
     )

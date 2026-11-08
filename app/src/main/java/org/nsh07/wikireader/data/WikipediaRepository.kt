@@ -14,6 +14,9 @@ import java.net.URLEncoder
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+/** Upper bound on generator=links pages fetched for one article (500 links each). */
+private const val MAX_LINKED_PAGE_REQUESTS = 6
+
 interface WikipediaRepository {
     suspend fun getPrefixSearchResults(query: String): WikiApiPrefixSearchResults
     suspend fun getSearchResults(query: String): WikiApiSearchResults
@@ -68,6 +71,12 @@ interface WikipediaRepository {
      * [titles] is a list of article titles (batched internally in groups of 50).
      */
     suspend fun getPageInfo(titles: List<String>): WikiApiPageInfoResponse
+
+    /**
+     * Titles of main-namespace pages linked from [title] that do not exist yet. Used to render
+     * Wikipedia-style red links. Returns an empty set when the lookup fails or is unavailable.
+     */
+    suspend fun getMissingLinkedArticles(title: String): Set<String>
     suspend fun getFeed(
         date: String = LocalDate.now()
             .format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
@@ -329,6 +338,24 @@ class NetworkWikipediaRepository(
         withContext(ioDispatcher) {
             // MediaWiki accepts up to 50 titles per prop=info call; caller batches if needed
             wikipediaApiService.getPageInfo(titles.joinToString("|"))
+        }
+
+    override suspend fun getMissingLinkedArticles(title: String): Set<String> =
+        withContext(ioDispatcher) {
+            val missing = LinkedHashSet<String>()
+            var continuation: String? = null
+            var requests = 0
+            do {
+                val response = wikipediaApiService.getLinkedPagesInfo(title, continuation)
+                response.query?.pages?.forEach { page ->
+                    if (page.missing && page.ns == 0 && page.title.isNotBlank()) {
+                        missing += page.title
+                    }
+                }
+                continuation = response.cont?.gplcontinue
+                requests++
+            } while (continuation != null && requests < MAX_LINKED_PAGE_REQUESTS)
+            missing
         }
 
     override suspend fun getFeed(date: String): FeedApiResponse =
