@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="app/src/main/ic_launcher-playstore.png" width="128">
+<img src="ic_launcher-playstore.png" width="128">
 
 # WikiRandomizer-P
 
@@ -22,8 +22,8 @@ improvements.
 - **Random by topic:** Build on-device libraries for plants, history, physics, music, or any
   category you choose. Random picks come from those libraries, not from all of Wikipedia.
 - **Relevance that improves:** Title, short description and article introductions are scored
-  against your topic. Like/dislike votes and reading behaviour gently refine future picks. All
-  learning stays on the device.
+  against your topic. Like/dislike votes and reading behaviour gently refine future picks.
+  Personalization stays on the device; optional cloud sync only copies reading history.
 - **Never a dead end:** If a topic library is still building, exhausted, or temporarily has no
   usable article, the app falls back to a general Wikipedia random article instead of showing an
   error page.
@@ -31,6 +31,8 @@ improvements.
   news and “on this day”, or search Wikipedia in your chosen language.
 - **Saved and History:** Keep articles for later, sort by date or topic, and switch between list
   and 2/3/4-column grid layouts.
+- **Search your library:** Find saved articles, notes, folders, highlights, reading history and
+  past searches in one free local search.
 - **Curated picks:** Follow readers whose taste matches yours and open their curated Wikipedia
   articles. The list is hosted on GitHub, so it can grow without an app update.
 - **Reading comfort:** Wikitext rendering by default (HTML is optional), open sections by default,
@@ -49,6 +51,29 @@ improvements.
   and tables get more columns before they need scrolling.
 - **Material 3 Expressive:** Light/dark themes, dynamic Material You colours, and smooth
   animations.
+
+## Optional cloud sync
+
+Reading history can be merged across devices with Firebase Auth + Firestore. It is opt-in,
+supporter-only (or unlocked in developer mode), and the free app keeps working without it.
+
+Build with these Gradle properties or environment variables:
+
+```text
+FIREBASE_PROJECT_ID=your-project
+FIREBASE_APPLICATION_ID=1:1234567890:android:abcdef
+FIREBASE_API_KEY=your-web-api-key
+# optional:
+FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+```
+
+Enable Email/Password sign-in in Firebase Authentication, create a Firestore database, and deploy
+the owner-only rules in [`firestore.rules`](firestore.rules) with `firebase deploy --only firestore:rules`.
+In Play Console, create an auto-renewing subscription with the product id `sync_subscription` (the
+existing one-time `supporter` product also unlocks sync). No `google-services.json` is required. The
+app initializes Firebase manually and disables sync when the properties are absent. Cloud snapshots
+are gzip-compressed before upload; records are merged by article id and timestamp instead of
+replacing the remote copy.
 
 ## Download
 
@@ -150,7 +175,7 @@ and include the language code and the translated `strings.xml`.
 
 ## Project docs
 
-- **Privacy policy:** [PRIVACY_POLICY.md](PRIVACY_POLICY.md) — no accounts, no ads, no tracking.
+- **Privacy policy:** [PRIVACY_POLICY.md](PRIVACY_POLICY.md) — no ads or tracking; an account is only needed for optional cloud sync.
 - **Play Store launch checklist:** [PLAY_STORE_CHECKLIST.md](PLAY_STORE_CHECKLIST.md).
 - **Optional donations setup:** [DONATION_SETUP.md](DONATION_SETUP.md).
 

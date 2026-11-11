@@ -38,6 +38,8 @@ data class DonationState(
     val connected: Boolean = false,
     val products: List<DonationProduct> = emptyList(),
     val supporter: Boolean = false,
+    val subscription: Boolean = false,
+    val subscriptionProduct: DonationProduct? = null,
     val busyProductId: String? = null,
     val message: String? = null,
     val error: String? = null
@@ -60,7 +62,10 @@ class DonationBilling(context: Context) {
     private val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     private val _state = MutableStateFlow(
-        DonationState(supporter = prefs.getBoolean(KEY_SUPPORTER, false))
+        DonationState(
+            supporter = prefs.getBoolean(KEY_SUPPORTER, false),
+            subscription = prefs.getBoolean(KEY_SUBSCRIPTION, false)
+        )
     )
     val state: StateFlow<DonationState> = _state.asStateFlow()
 
@@ -128,7 +133,9 @@ class DonationBilling(context: Context) {
                 if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                     _state.update { it.copy(connected = true, connecting = false, error = null) }
                     queryProducts()
+                    querySubscriptionProduct()
                     queryPurchases()
+                    querySubscriptionPurchases()
                 } else {
                     DebugLog.w(
                         "Donation",
@@ -159,7 +166,9 @@ class DonationBilling(context: Context) {
         }
         if (billingClient.isReady) {
             queryProducts()
+            querySubscriptionProduct()
             queryPurchases()
+            querySubscriptionPurchases()
         } else {
             // A previous connection was lost: recreate the client instead of silently doing
             // nothing, so the Retry button in the dialog actually retries.
@@ -188,7 +197,6 @@ class DonationBilling(context: Context) {
                 return@queryProductDetailsAsync
             }
             val list = queryResult.productDetailsList
-            detailsById.clear()
             list.forEach { detailsById[it.productId] = it }
             val ordered = ALL_PRODUCT_IDS.mapNotNull { id ->
                 detailsById[id]?.let { details ->
@@ -205,9 +213,42 @@ class DonationBilling(context: Context) {
             _state.update {
                 it.copy(
                     products = ordered,
-                    error = if (ordered.isEmpty()) {
+                    error = if (ordered.isEmpty() && it.subscriptionProduct == null) {
                         "No donation products are configured in Play Console yet"
                     } else null
+                )
+            }
+        }
+    }
+
+    private fun querySubscriptionProduct() {
+        val billingClient = client ?: return
+        val product = QueryProductDetailsParams.Product.newBuilder()
+            .setProductId(PRODUCT_SYNC_SUBSCRIPTION)
+            .setProductType(BillingClient.ProductType.SUBS)
+            .build()
+        val params = QueryProductDetailsParams.newBuilder()
+            .setProductList(listOf(product))
+            .build()
+        billingClient.queryProductDetailsAsync(params) { result, queryResult ->
+            if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+                DebugLog.w("Donation", "subscription query failed: ${result.responseCode} ${result.debugMessage}")
+                return@queryProductDetailsAsync
+            }
+            val details = queryResult.productDetailsList?.firstOrNull() ?: return@queryProductDetailsAsync
+            val offer = details.subscriptionOfferDetails?.firstOrNull()
+                ?: return@queryProductDetailsAsync
+            detailsById[details.productId] = details
+            val price = offer.pricingPhases?.pricingPhaseList?.lastOrNull()?.formattedPrice.orEmpty()
+            _state.update {
+                it.copy(
+                    subscriptionProduct = DonationProduct(
+                        id = details.productId,
+                        title = details.name,
+                        description = details.description,
+                        price = price
+                    ),
+                    error = null
                 )
             }
         }
@@ -225,6 +266,22 @@ class DonationBilling(context: Context) {
         }
     }
 
+    private fun querySubscriptionPurchases() {
+        val billingClient = client ?: return
+        val params = QueryPurchasesParams.newBuilder()
+            .setProductType(BillingClient.ProductType.SUBS)
+            .build()
+        billingClient.queryPurchasesAsync(params) { result, purchases ->
+            if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                val active = purchases.any {
+                    it.products.contains(PRODUCT_SYNC_SUBSCRIPTION) &&
+                        it.purchaseState == Purchase.PurchaseState.PURCHASED
+                }
+                if (active) purchases.forEach(::handlePurchase) else clearSubscription()
+            }
+        }
+    }
+
     /** Starts the Play purchase sheet for [productId]. */
     fun donate(activity: Activity, productId: String) {
         val billingClient = client
@@ -238,6 +295,12 @@ class DonationBilling(context: Context) {
         _state.update { it.copy(busyProductId = productId, error = null, message = null) }
         val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
             .setProductDetails(details)
+            .apply {
+                // Subscription purchases must name the base-plan offer token.
+                details.subscriptionOfferDetails?.firstOrNull()?.offerToken
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { setOfferToken(it) }
+            }
             .build()
         val flowParams = BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(listOf(productDetailsParams))
@@ -256,6 +319,29 @@ class DonationBilling(context: Context) {
             return
         }
         val products = purchase.products
+        if (products.contains(PRODUCT_SYNC_SUBSCRIPTION)) {
+            if (!purchase.isAcknowledged) {
+                val params = AcknowledgePurchaseParams.newBuilder()
+                    .setPurchaseToken(purchase.purchaseToken)
+                    .build()
+                client?.acknowledgePurchase(params) { result ->
+                    if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+                        DebugLog.w(
+                            "Donation",
+                            "could not acknowledge sync subscription: ${result.responseCode}"
+                        )
+                    }
+                }
+            }
+            markSubscription()
+            _state.update {
+                it.copy(
+                    busyProductId = null,
+                    message = "Cloud sync subscription is active"
+                )
+            }
+            return
+        }
         if (products.contains(PRODUCT_SUPPORTER)) {
             if (!purchase.isAcknowledged) {
                 val params = AcknowledgePurchaseParams.newBuilder()
@@ -300,6 +386,18 @@ class DonationBilling(context: Context) {
         _state.update { it.copy(supporter = true) }
     }
 
+    private fun markSubscription() {
+        if (!_state.value.subscription) {
+            prefs.edit().putBoolean(KEY_SUBSCRIPTION, true).apply()
+        }
+        _state.update { it.copy(subscription = true) }
+    }
+
+    private fun clearSubscription() {
+        prefs.edit().remove(KEY_SUBSCRIPTION).apply()
+        _state.update { it.copy(subscription = false) }
+    }
+
     /** Debug-menu helper: pretend a purchase completed, without contacting Play. */
     fun debugSimulatePurchase() {
         markSupporter()
@@ -310,9 +408,15 @@ class DonationBilling(context: Context) {
 
     /** Debug-menu helper: forget the local supporter flag and all debug messages. */
     fun debugReset() {
-        prefs.edit().remove(KEY_SUPPORTER).apply()
+        prefs.edit().remove(KEY_SUPPORTER).remove(KEY_SUBSCRIPTION).apply()
         _state.update {
-            it.copy(supporter = false, message = null, error = null, busyProductId = null)
+            it.copy(
+                supporter = false,
+                subscription = false,
+                message = null,
+                error = null,
+                busyProductId = null
+            )
         }
     }
 
@@ -338,11 +442,23 @@ class DonationBilling(context: Context) {
         /** Optional permanent supporter product (non-consumable). */
         const val PRODUCT_SUPPORTER = "supporter"
 
+        /** Monthly supporter subscription that also unlocks cross-device sync. */
+        const val PRODUCT_SYNC_SUBSCRIPTION = "sync_subscription"
+
         /** Consumable one-time donation tiers. Create these in Play Console. */
         val DONATION_PRODUCT_IDS = listOf("donation_small", "donation_medium", "donation_large")
         private val ALL_PRODUCT_IDS = DONATION_PRODUCT_IDS + PRODUCT_SUPPORTER
 
         private const val PREFS = "donations"
         private const val KEY_SUPPORTER = "supporter"
+        private const val KEY_SUBSCRIPTION = "sync_subscription"
+
+        fun isSupporterActive(context: Context): Boolean =
+            context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getBoolean(KEY_SUPPORTER, false)
+
+        fun isSubscriptionActive(context: Context): Boolean =
+            context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getBoolean(KEY_SUBSCRIPTION, false)
     }
 }

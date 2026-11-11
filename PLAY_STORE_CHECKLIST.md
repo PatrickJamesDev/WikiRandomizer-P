@@ -37,9 +37,14 @@ Version name/code: `BuildConfig.VERSION_NAME` / `versionCode` in `app/build.grad
 ## 3. App content / policy declarations
 
 - [ ] **Privacy policy:** public URL, linked in Play Console and inside the app (About/Settings).
-- [ ] **Data safety:** declare "No data collected" and "No data shared" — the app has no
-      analytics, ads or account. Network requests to Wikipedia/GitHub are user-initiated and
-      do not collect data for the developer. Donations are processed by Google Play.
+- [ ] **Data safety:** if you ship with Firebase cloud sync configured, declare the optional
+      account data: **email address** and **reading history** (article titles, language, timestamps,
+      descriptions, thumbnails and topics). Mark both as optional and used for app functionality.
+      Reading history is deletable through **Settings → Sync account → Delete cloud copy**; account
+      email deletion can be requested through the privacy-policy contact. Firebase Auth/Firestore is
+      processed by Google as a service provider; Google Play Billing handles payments. There are no
+      ads, analytics or tracking SDKs. If your build has no Firebase properties, declare no account
+      data collected and keep the cloud UI disabled.
 - [ ] **Ads:** "No ads".
 - [ ] **Content rating:** complete the questionnaire. The app shows user-selected Wikipedia
       content and may link to external sites; answer accordingly.

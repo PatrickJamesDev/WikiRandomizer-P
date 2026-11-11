@@ -22,6 +22,18 @@ android {
         versionCode = 54
         versionName = "1.0 beta"
 
+        // Optional Firebase config for cross-device reading-history sync. Supplying these through
+        // ~/.gradle/gradle.properties, CI secrets or -P flags keeps google-services.json optional.
+        fun config(name: String): String =
+            project.providers.gradleProperty(name)
+                .orElse(project.providers.environmentVariable(name))
+                .orElse("")
+                .get()
+        buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${config("FIREBASE_PROJECT_ID")}\"")
+        buildConfigField("String", "FIREBASE_APPLICATION_ID", "\"${config("FIREBASE_APPLICATION_ID")}\"")
+        buildConfigField("String", "FIREBASE_API_KEY", "\"${config("FIREBASE_API_KEY")}\"")
+        buildConfigField("String", "FIREBASE_AUTH_DOMAIN", "\"${config("FIREBASE_AUTH_DOMAIN")}\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -139,6 +151,10 @@ dependencies {
     implementation(libs.latex2unicode.x.x3)
     implementation(libs.androidx.profileinstaller)
     implementation(libs.androidx.billing.ktx)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -83,6 +83,7 @@ fun AppNavigationDrawer(
     historyEnabled: Boolean,
     isImageView: Boolean,
     onHistoryClick: () -> Unit,
+    onLibrarySearchClick: () -> Unit = {},
     onHomeClick: () -> Unit,
     onSavedArticlesClick: () -> Unit,
     onHighlightsClick: () -> Unit,
@@ -140,6 +141,15 @@ fun AppNavigationDrawer(
                 HistoryScreen::class,
                 onHistoryClick,
                 historyEnabled
+            )
+        )
+        add(
+            Item(
+                string.librarySearch,
+                painterResource(drawable.search),
+                painterResource(drawable.search),
+                LibrarySearchRoute::class,
+                onLibrarySearchClick
             )
         )
         // Curators stay fully wired but hidden while the feature is not ready for release.

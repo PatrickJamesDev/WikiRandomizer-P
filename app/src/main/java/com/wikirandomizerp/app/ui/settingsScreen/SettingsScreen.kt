@@ -101,6 +101,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import com.wikirandomizerp.app.BuildConfig
@@ -112,6 +113,7 @@ import com.wikirandomizerp.app.data.LibraryStats
 import com.wikirandomizerp.app.data.UpdateResult
 import com.wikirandomizerp.app.data.UpdateState
 import com.wikirandomizerp.app.data.langCodeToName
+import com.wikirandomizerp.app.data.sync.SyncAuthState
 import com.wikirandomizerp.app.data.toColor
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeAction
 import com.wikirandomizerp.app.ui.aboutScreen.UpdateDialog
@@ -275,6 +277,16 @@ fun SettingsScreen(
     var showUpdateDialog by remember { mutableStateOf(false) }
     val app = context.applicationContext as? WikiRandomizerPApplication
     val localSyncStore = app?.container?.localSyncStore
+    val cloudConfigured = localSyncStore?.cloudConfigured == true
+    val authState = if (localSyncStore != null) {
+        localSyncStore.authState.collectAsStateWithLifecycle(
+            initialValue = localSyncStore.currentAuth
+        ).value
+    } else {
+        SyncAuthState.NotConfigured
+    }
+    val cloudAccess = localSyncStore?.hasCloudAccess() == true
+    var showCloudSyncDialog by remember { mutableStateOf(false) }
     var autoSync by remember { mutableStateOf(localSyncStore?.autoSync ?: false) }
     var lastSyncAt by remember { mutableStateOf(localSyncStore?.lastSyncAt) }
     var syncing by remember { mutableStateOf(false) }
@@ -569,6 +581,16 @@ fun SettingsScreen(
             onColorChange = { onAction(SettingsAction.SaveColorScheme(it.toString())) },
             setShowDialog = setShowColorSchemeDialog
         )
+    if (showCloudSyncDialog && localSyncStore != null) {
+        CloudSyncAccountDialog(
+            store = localSyncStore,
+            onDismiss = {
+                showCloudSyncDialog = false
+                autoSync = localSyncStore.autoSync
+                lastSyncAt = localSyncStore.lastSyncAt
+            }
+        )
+    }
     if (showDebugLog) DebugLogDialog(onDismiss = { setShowDebugLog(false) })
     if (showBugReport) BugReportDialog(
         onDismiss = { setShowBugReport(false) },
@@ -954,9 +976,36 @@ fun SettingsScreen(
             }
             item { Spacer(Modifier.height(12.dp)) }
             item {
+                val supporting = when {
+                    !cloudConfigured -> context.getString(string.settingCloudNotConfiguredDesc)
+                    authState is SyncAuthState.SignedIn ->
+                        context.getString(
+                            string.settingCloudSignedIn,
+                            (authState as SyncAuthState.SignedIn).email
+                                ?: (authState as SyncAuthState.SignedIn).uid
+                        )
+                    else -> context.getString(string.settingCloudSignedOut)
+                }
                 ListItem(
                     leadingContent = {
-                        Icon(painterResource(R.drawable.update), contentDescription = null)
+                        Icon(painterResource(R.drawable.person), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(string.settingCloudAccount)) },
+                    supportingContent = { Text(supporting) },
+                    trailingContent = {
+                        Icon(painterResource(R.drawable.arrow_forward), contentDescription = null)
+                    },
+                    colors = listItemColors,
+                    modifier = Modifier
+                        .clip(topListItemShape)
+                        .clickable { showCloudSyncDialog = true }
+                )
+            }
+            item {
+                val syncReady = cloudConfigured && cloudAccess && authState is SyncAuthState.SignedIn
+                ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.cloud), contentDescription = null)
                     },
                     headlineContent = { Text(stringResource(string.settingSync)) },
                     supportingContent = { Text(stringResource(string.settingSyncDesc)) },
@@ -967,11 +1016,12 @@ fun SettingsScreen(
                                 autoSync = it
                                 localSyncStore?.setAutoSync(it)
                             },
+                            enabled = syncReady,
                             colors = switchColors
                         )
                     },
-                    colors = listItemColors,
-                    modifier = Modifier.clip(topListItemShape)
+                    colors = if (syncReady) listItemColors else disabledListColors,
+                    modifier = Modifier.clip(middleListItemShape)
                 )
             }
             item {
@@ -984,12 +1034,16 @@ fun SettingsScreen(
                 }
                 ListItem(
                     leadingContent = {
-                        Icon(painterResource(R.drawable.download_done), contentDescription = null)
+                        Icon(painterResource(R.drawable.cloud), contentDescription = null)
                     },
                     headlineContent = { Text(stringResource(string.settingSyncNow)) },
                     supportingContent = {
                         Text(
                             when {
+                                !cloudConfigured -> stringResource(string.settingCloudNotConfiguredDesc)
+                                !cloudAccess -> stringResource(string.settingSyncSupporterOnly)
+                                authState !is SyncAuthState.SignedIn ->
+                                    stringResource(string.settingCloudNeedSignIn)
                                 syncing -> stringResource(string.settingSyncRunning)
                                 lastSyncLabel != null ->
                                     stringResource(string.settingSyncLast, lastSyncLabel)
@@ -1005,27 +1059,40 @@ fun SettingsScreen(
                             )
                         }
                     } else null,
-                    colors = listItemColors,
+                    colors = if (cloudConfigured) listItemColors else disabledListColors,
                     modifier = Modifier
                         .clip(bottomListItemShape)
                         .clickable(enabled = !syncing && localSyncStore != null) {
                             val store = localSyncStore ?: return@clickable
-                            coroutineScope.launch {
-                                syncing = true
-                                val result = runCatching { store.syncNow() }.getOrNull()
-                                syncing = false
-                                if (result != null) {
-                                    lastSyncAt = result.lastSyncAt
+                            when {
+                                !cloudConfigured -> coroutineScope.launch {
                                     snackBarHostState.showSnackbar(
-                                        context.getString(
-                                            string.settingSyncComplete,
-                                            result.recordCount
+                                        context.getString(string.settingCloudNotConfiguredDesc)
+                                    )
+                                }
+                                !cloudAccess -> onOpenDonation()
+                                authState !is SyncAuthState.SignedIn -> showCloudSyncDialog = true
+                                else -> coroutineScope.launch {
+                                    syncing = true
+                                    val result = runCatching { store.syncNow() }
+                                    syncing = false
+                                    result.onSuccess { synced ->
+                                        lastSyncAt = synced.lastSyncAt
+                                        snackBarHostState.showSnackbar(
+                                            context.getString(
+                                                string.settingSyncComplete,
+                                                synced.recordCount
+                                            )
                                         )
-                                    )
-                                } else {
-                                    snackBarHostState.showSnackbar(
-                                        context.getString(string.settingSyncFailed)
-                                    )
+                                    }.onFailure { failure ->
+                                        snackBarHostState.showSnackbar(
+                                            context.getString(
+                                                string.settingSyncCloudError,
+                                                failure.message
+                                                    ?: context.getString(string.settingSyncFailed)
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }

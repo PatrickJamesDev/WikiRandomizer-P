@@ -133,7 +133,7 @@ fun AboutScreen(
                         }
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(painterResource(R.drawable.ic_launcher_foreground), null)
+                        Icon(painterResource(R.drawable.ic_launcher_custom_monochrome), null)
                         Text(
                             if (versionLabel == null) AnnotatedString(stringResource(R.string.app_name))
                             else buildAnnotatedString {

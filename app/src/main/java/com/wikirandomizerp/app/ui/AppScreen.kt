@@ -2,6 +2,8 @@ package com.wikirandomizerp.app.ui
 
 import android.app.Activity
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
 import android.content.ContextWrapper
 import android.view.View
 import android.view.ViewTreeObserver
@@ -141,6 +143,7 @@ import androidx.navigation.toRoute
 import androidx.window.core.layout.WindowSizeClass
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -152,6 +155,7 @@ import com.wikirandomizerp.app.WikiRandomizerPApplication
 import com.wikirandomizerp.app.data.DebugLog
 import com.wikirandomizerp.app.data.DeveloperMode
 import com.wikirandomizerp.app.data.billing.DonationState
+import com.wikirandomizerp.app.data.sync.SyncAuthState
 import com.wikirandomizerp.app.data.SearchHistoryItem
 import com.wikirandomizerp.app.data.UpdateResult
 import com.wikirandomizerp.app.data.UpdateState
@@ -169,6 +173,7 @@ import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeAction
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeScreenViewModel
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeSubscreen
 import com.wikirandomizerp.app.ui.savedArticlesScreen.SavedArticlesScreenRoot
+import com.wikirandomizerp.app.ui.searchScreen.LibrarySearchScreenRoot
 import com.wikirandomizerp.app.ui.commonsScreen.CommonsGalleryScreen
 import com.wikirandomizerp.app.ui.dictionaryScreen.DictionaryDialog
 import com.wikirandomizerp.app.ui.dictionaryScreen.VocabularyScreen
@@ -218,16 +223,26 @@ fun AppScreen(
     }
     val donationBilling = application?.container?.donationBilling
     val localSyncStore = application?.container?.localSyncStore
+    val syncAuth = if (localSyncStore != null) {
+        localSyncStore.authState.collectAsStateWithLifecycle(
+            initialValue = localSyncStore.currentAuth
+        ).value
+    } else {
+        SyncAuthState.NotConfigured
+    }
     var donationState by remember(donationBilling) {
         mutableStateOf(donationBilling?.state?.value ?: DonationState())
     }
     LaunchedEffect(donationBilling) {
         donationBilling?.state?.collect { donationState = it }
     }
+    LaunchedEffect(donationBilling, localSyncStore) {
+        if (localSyncStore?.cloudConfigured == true) donationBilling?.start()
+    }
     // A completed purchase unlocks the same supporter features the debug switch does. This only
     // ever turns the flag on: a temporary Billing disconnect must not revoke it.
-    LaunchedEffect(donationState.supporter) {
-        if (donationState.supporter && !preferencesState.supporterMode) {
+    LaunchedEffect(donationState.supporter, donationState.subscription) {
+        if ((donationState.supporter || donationState.subscription) && !preferencesState.supporterMode) {
             settingsViewModel.onAction(SettingsAction.SaveSupporterMode(true))
         }
     }
@@ -415,15 +430,34 @@ fun AppScreen(
         }
     }
 
-    // One background release check per process. The result is shared with Settings, so opening the
-    // update entry never repeats the network round-trip. A failed check stays silent: it must never
-    // interrupt reading or look like an app error.
-    LaunchedEffect(Unit) {
-        localSyncStore?.takeIf { it.autoSync }?.let { store ->
-            runCatching { store.syncNow() }
+    // Schedule the hourly sync and try once at start when the user opted in and is signed in.
+    LaunchedEffect(localSyncStore, syncAuth) {
+        val store = localSyncStore ?: return@LaunchedEffect
+        store.applyAutoSyncSchedule()
+        if (store.autoSync && store.hasCloudAccess() && syncAuth is SyncAuthState.SignedIn) {
+            runCatching { store.syncNowIfAllowed() }
         }
     }
 
+    DisposableEffect(localSyncStore) {
+        val store = localSyncStore
+        val connectivity = context.getSystemService(ConnectivityManager::class.java)
+        if (store == null || connectivity == null) return@DisposableEffect onDispose { }
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                if (!store.autoSync || !store.hasCloudAccess()) return
+                scope.launch(Dispatchers.IO) {
+                    runCatching { store.syncNowIfAllowed() }
+                }
+            }
+        }
+        runCatching { connectivity.registerDefaultNetworkCallback(callback) }
+        onDispose { runCatching { connectivity.unregisterNetworkCallback(callback) } }
+    }
+
+    // One background release check per process. The result is shared with Settings, so opening the
+    // update entry never repeats the network round-trip. A failed check stays silent: it must never
+    // interrupt reading or look like an app error.
     LaunchedEffect(Unit) {
         val app = context.applicationContext as? WikiRandomizerPApplication
             ?: return@LaunchedEffect
@@ -476,6 +510,9 @@ fun AppScreen(
                 launchSingleTop = true
                 restoreState = true
             }
+        },
+        onLibrarySearchClick = {
+            navController.navigate(LibrarySearchRoute) { launchSingleTop = true }
         },
         onHomeClick = {
             if (navBackStackEntry?.destination?.hasRoute(HomeScreen::class) == true) {
@@ -824,6 +861,19 @@ fun AppScreen(
                     openArticle = { title, lang ->
                         viewModel.onAction(HomeAction.LoadPage(title, lang))
                         navController.navigateUp()
+                    },
+                    onBack = navController::navigateUp
+                )
+            }
+            composable<LibrarySearchRoute> {
+                LibrarySearchScreenRoot(
+                    onOpenArticle = { title, lang ->
+                        viewModel.onAction(HomeAction.LoadPage(title, lang))
+                        navController.navigateUp()
+                    },
+                    onOpenSavedArticle = { pageId, lang ->
+                        navController.navigateUp()
+                        viewModel.onAction(HomeAction.LoadSavedArticle(pageId, lang))
                     },
                     onBack = navController::navigateUp
                 )
@@ -1736,6 +1786,9 @@ object HighlightsScreen
 
 @Serializable
 object HistoryScreen
+
+@Serializable
+object LibrarySearchRoute
 
 @Serializable
 object SettingsScreen

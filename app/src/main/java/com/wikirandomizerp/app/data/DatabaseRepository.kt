@@ -11,6 +11,7 @@ interface DatabaseRepository {
 
     suspend fun insertViewHistory(viewHistoryItem: ViewHistoryItem)
     suspend fun deleteViewHistory(viewHistoryItem: ViewHistoryItem)
+    suspend fun deleteViewHistoryByTitle(title: String, lang: String)
     suspend fun deleteAllViewHistory()
     suspend fun deleteOldViewHistory()
     fun getViewHistory(): Flow<List<ViewHistoryItem>>
@@ -97,6 +98,9 @@ class AppDatabaseRepository(
 
     override suspend fun deleteViewHistory(viewHistoryItem: ViewHistoryItem) =
         viewHistoryDao.delete(viewHistoryItem)
+
+    override suspend fun deleteViewHistoryByTitle(title: String, lang: String) =
+        viewHistoryDao.deleteByTitle(title, lang)
 
     override suspend fun deleteAllViewHistory() = viewHistoryDao.deleteAll()
     override suspend fun deleteOldViewHistory() = viewHistoryDao.deleteOld()

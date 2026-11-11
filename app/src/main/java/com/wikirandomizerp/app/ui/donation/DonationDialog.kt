@@ -84,6 +84,28 @@ fun DonationDialog(
                     }
                 }
 
+                if (state.subscription) {
+                    Surface(
+                        color = colorScheme.secondaryContainer,
+                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text(
+                                text = stringResource(R.string.donationSyncActive),
+                                style = typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.onSecondaryContainer
+                            )
+                            Text(
+                                text = stringResource(R.string.donationSyncDesc),
+                                style = typography.bodySmall,
+                                color = colorScheme.onSecondaryContainer
+                            )
+                        }
+                    }
+                }
+
                 when {
                     state.connecting -> Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -96,7 +118,7 @@ fun DonationDialog(
                         )
                     }
 
-                    state.products.isNotEmpty() -> {
+                    state.products.isNotEmpty() || state.subscriptionProduct != null -> {
                         state.products.forEach { product ->
                             FilledTonalButton(
                                 onClick = { onDonate(product.id) },
@@ -122,11 +144,54 @@ fun DonationDialog(
                                 }
                             }
                         }
-                        Text(
-                            text = stringResource(R.string.donationOneTime),
-                            style = typography.labelSmall,
-                            color = colorScheme.onSurfaceVariant
-                        )
+                        if (state.products.isNotEmpty()) {
+                            Text(
+                                text = stringResource(R.string.donationOneTime),
+                                style = typography.labelSmall,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        }
+                        state.subscriptionProduct?.let { product ->
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(R.string.donationSyncTitle),
+                                style = typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = stringResource(R.string.donationSyncDesc),
+                                style = typography.bodySmall,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                            if (!state.subscription) {
+                                FilledTonalButton(
+                                    onClick = { onDonate(product.id) },
+                                    enabled = state.busyProductId == null,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = product.title.ifBlank { product.id },
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        if (product.price.isNotBlank()) {
+                                            Text(
+                                                text = stringResource(
+                                                    R.string.donationPerMonth,
+                                                    product.price
+                                                ),
+                                                style = typography.bodySmall
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     else -> {
@@ -152,7 +217,7 @@ fun DonationDialog(
                         color = colorScheme.primary
                     )
                 }
-                if (state.products.isNotEmpty()) {
+                if (state.products.isNotEmpty() || state.subscriptionProduct != null) {
                     state.error?.let { errorText ->
                         Text(
                             text = errorText,

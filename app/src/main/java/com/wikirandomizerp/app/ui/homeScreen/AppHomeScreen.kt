@@ -342,7 +342,7 @@ fun AppHomeScreen(
                 entryProvider = entryProvider {
                     entry<HomeSubscreen.Logo> {
                         Icon(
-                            painterResource(R.drawable.ic_launcher_monochrome),
+                            painterResource(R.drawable.ic_launcher_custom_monochrome),
                             contentDescription = null,
                             modifier = modifier
                                 .size(400.dp)
