@@ -497,7 +497,9 @@
     <string name="donationPromptDesc">You have opened %1$d articles. If the app is useful to you, please consider supporting its development.</string>
     <string name="donateNow">Donate</string>
     <string name="settingSupporterMode">Supporter mode</string>
-    <string name="settingSupporterModeDesc">I have donated: unlocks the in-app bug reporter</string>
+    <string name="settingSupporterModeDesc">Unlocks feature requests and the in-app bug reporter</string>
+    <string name="featureReports">Feature requests &amp; bug reports</string>
+    <string name="featureReportsDesc">Tell the developer what to fix or add</string>
     <string name="reportBug">Report a bug</string>
     <string name="reportBugDesc">Send a bug report with a description and optional debug log</string>
     <string name="reportBugTitle">Report a bug</string>
@@ -611,7 +613,16 @@
     <string name="debugModeDisabled">Developer options disabled</string>
     <string name="debugMenuTitle">Developer options</string>
     <string name="debugMenuDesc">These tools are for testing only. Nothing here is shown to normal users.</string>
+    <string name="debugFeatureSection">Feature access</string>
+    <string name="debugSupporterFeatures">Supporter features (test)</string>
+    <string name="debugSupporterFeaturesDesc">Unlock feature requests and the bug reporter without donating</string>
+    <string name="debugFeatureRequests">Feature requests &amp; bug reports</string>
+    <string name="debugFeatureRequestsDesc">Open the in-app report sheet</string>
     <string name="debugDonationSection">Donations</string>
+    <string name="debugDonationPrompts">Donation prompts</string>
+    <string name="debugDonationPromptsDesc">Opt-in milestone prompt after 100/300/600/1000/2000 articles</string>
+    <string name="debugSuppressDonationPrompts">Force-hide donation prompts</string>
+    <string name="debugSuppressDonationPromptsDesc">Never show the milestone prompt, even if enabled above</string>
     <string name="debugBillingStatus">Billing status</string>
     <string name="debugBillingConnected">Connected to Google Play</string>
     <string name="debugBillingDisconnected">Not connected</string>
@@ -625,6 +636,8 @@
     <string name="debugResetDonation">Reset donation state</string>
     <string name="debugResetDonationDesc">Clears the local supporter flag and cached messages</string>
     <string name="debugDiagnosticsSection">Diagnostics</string>
+    <string name="debugDebugLogging">Debug logging</string>
+    <string name="debugDebugLoggingDesc">Record performance, network and error details on device</string>
     <string name="debugOpenLog">Open debug log</string>
     <string name="debugOpenLogDesc">Inspect network calls, timings and errors</string>
     <string name="debugDisable">Disable developer options</string>

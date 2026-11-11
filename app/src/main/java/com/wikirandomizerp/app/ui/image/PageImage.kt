@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
@@ -28,7 +26,7 @@ import coil3.compose.AsyncImagePainter
 import com.wikirandomizerp.app.R
 import com.wikirandomizerp.app.data.WikiPhoto
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun SharedTransitionScope.PageImage(
     photo: WikiPhoto,
@@ -57,16 +55,14 @@ fun SharedTransitionScope.PageImage(
         }
 
         is AsyncImagePainter.State.Loading -> {
+            // Static placeholder: an animated indicator per body picture caused visible frame
+            // drops while scrolling a long article.
             Box(
-                contentAlignment = Alignment.Center,
                 modifier = modifier
                     .fillMaxWidth()
-                    .aspectRatio(
-                        safeAspectRatio(photo.width, photo.height)
-                    )
-            ) {
-                CircularWavyProgressIndicator()
-            }
+                    .aspectRatio(safeAspectRatio(photo.width, photo.height))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            )
         }
 
         else -> {
@@ -91,7 +87,7 @@ fun SharedTransitionScope.PageImage(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun SharedTransitionScope.PageImage(
     uri: String,
@@ -120,12 +116,10 @@ fun SharedTransitionScope.PageImage(
 
         is AsyncImagePainter.State.Loading -> {
             Box(
-                contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-            ) {
-                CircularWavyProgressIndicator()
-            }
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            )
         }
 
         else -> {

@@ -19,6 +19,7 @@ import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import com.wikirandomizerp.app.data.AppContainer
+import com.wikirandomizerp.app.data.CacheConfig
 import com.wikirandomizerp.app.data.DebugLog
 import com.wikirandomizerp.app.data.DefaultAppContainer
 import com.wikirandomizerp.app.ui.image.ImageRetryInterceptor
@@ -116,10 +117,16 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
             // can be cleared by the system at any time). Article pictures therefore survive app
             // restarts and reopen instantly; the retention policy removes old body images
             // explicitly, and pinned History/Saved thumbnails are never touched.
+            // Both on-device caches share the same 200 MB budget by default.
             .diskCache(
                 coil3.disk.DiskCache.Builder()
                     .directory(java.io.File(filesDir, "image_cache").toOkioPath())
-                    .maxSizeBytes(512L * 1024 * 1024)
+                    .maxSizeBytes(CacheConfig.DISK_CACHE_BYTES)
+                    .build()
+            )
+            .memoryCache(
+                coil3.memory.MemoryCache.Builder()
+                    .maxSizePercent(this, 0.25)
                     .build()
             )
             .components {

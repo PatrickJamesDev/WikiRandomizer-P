@@ -17,6 +17,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -45,14 +46,26 @@ import com.wikirandomizerp.app.ui.theme.CustomColors.topBarColors
 @Composable
 fun DebugScreen(
     donationState: DonationState,
+    donationPrompts: Boolean,
+    debugLogging: Boolean,
+    supporterMode: Boolean,
+    donationPromptsSuppressed: Boolean,
     onBack: () -> Unit,
     onShowDonationPrompt: () -> Unit,
     onOpenDonationDialog: () -> Unit,
     onSimulatePurchase: () -> Unit,
     onResetDonation: () -> Unit,
+    onSetDonationPrompts: (Boolean) -> Unit,
+    onSetDebugLogging: (Boolean) -> Unit,
+    onSetSupporterMode: (Boolean) -> Unit,
+    onSetDonationPromptsSuppressed: (Boolean) -> Unit,
+    onOpenFeatureRequests: () -> Unit,
     onDisableDeveloperMode: () -> Unit
 ) {
     var showLog by remember { mutableStateOf(false) }
+    var suppressPrompts by remember(donationPromptsSuppressed) {
+        mutableStateOf(donationPromptsSuppressed)
+    }
 
     Scaffold(
         topBar = {
@@ -91,6 +104,25 @@ fun DebugScreen(
             }
 
             item {
+                SectionHeader(stringResource(R.string.debugFeatureSection))
+            }
+            item {
+                DebugSwitchRow(
+                    title = stringResource(R.string.debugSupporterFeatures),
+                    subtitle = stringResource(R.string.debugSupporterFeaturesDesc),
+                    checked = supporterMode,
+                    onCheckedChange = onSetSupporterMode
+                )
+            }
+            item {
+                DebugRow(
+                    title = stringResource(R.string.debugFeatureRequests),
+                    subtitle = stringResource(R.string.debugFeatureRequestsDesc),
+                    onClick = onOpenFeatureRequests
+                )
+            }
+
+            item {
                 SectionHeader(stringResource(R.string.debugDonationSection))
             }
             item {
@@ -109,6 +141,25 @@ fun DebugScreen(
                 DebugRow(
                     title = stringResource(R.string.debugBillingStatus),
                     subtitle = status + products
+                )
+            }
+            item {
+                DebugSwitchRow(
+                    title = stringResource(R.string.debugDonationPrompts),
+                    subtitle = stringResource(R.string.debugDonationPromptsDesc),
+                    checked = donationPrompts,
+                    onCheckedChange = onSetDonationPrompts
+                )
+            }
+            item {
+                DebugSwitchRow(
+                    title = stringResource(R.string.debugSuppressDonationPrompts),
+                    subtitle = stringResource(R.string.debugSuppressDonationPromptsDesc),
+                    checked = suppressPrompts,
+                    onCheckedChange = {
+                        suppressPrompts = it
+                        onSetDonationPromptsSuppressed(it)
+                    }
                 )
             }
             item {
@@ -142,6 +193,14 @@ fun DebugScreen(
 
             item {
                 SectionHeader(stringResource(R.string.debugDiagnosticsSection))
+            }
+            item {
+                DebugSwitchRow(
+                    title = stringResource(R.string.debugDebugLogging),
+                    subtitle = stringResource(R.string.debugDebugLoggingDesc),
+                    checked = debugLogging,
+                    onCheckedChange = onSetDebugLogging
+                )
             }
             item {
                 DebugRow(
@@ -183,6 +242,28 @@ private fun SectionHeader(text: String) {
         modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
         style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
         color = androidx.compose.material3.MaterialTheme.colorScheme.primary
+    )
+}
+
+@Composable
+private fun DebugSwitchRow(
+    title: String,
+    subtitle: String? = null,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = if (subtitle != null) {
+            { Text(subtitle) }
+        } else null,
+        trailingContent = {
+            Switch(checked = checked, onCheckedChange = onCheckedChange)
+        },
+        colors = listItemColors,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
     )
 }
 

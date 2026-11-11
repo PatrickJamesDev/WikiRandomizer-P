@@ -65,7 +65,9 @@ import com.wikirandomizerp.app.data.AppDatabaseRepository
 import com.wikirandomizerp.app.data.ArticleCache
 import com.wikirandomizerp.app.ui.image.ImagePrefetcher
 import com.wikirandomizerp.app.data.ArticleRow
+import com.wikirandomizerp.app.data.CacheConfig
 import com.wikirandomizerp.app.data.DebugLog
+import com.wikirandomizerp.app.data.DeveloperMode
 import com.wikirandomizerp.app.data.IndexKeepAliveService
 import com.wikirandomizerp.app.data.InterestMatch
 import com.wikirandomizerp.app.data.InterestResolver
@@ -149,7 +151,9 @@ private const val TOPIC_RANDOM_TIMEOUT_MS = 8_000L // hard ceiling on the whole 
 private const val MAX_BACKSTACK_ENTRIES = 8        // bounds memory when chaining random articles
 private const val MAX_CANDIDATE_FETCH_ATTEMPTS = 3 // retries if a chosen candidate's fetch fails
 private const val MAX_RECENTLY_CLOSED = 10         // closed tabs that can still be brought back
-private const val PREFETCH_TARGET = 8              // random articles kept ready in the background
+private const val PREFETCH_TARGET = 12             // random articles kept ready in the background
+private const val PREFETCH_WARM_IMAGES = 8         // body pictures warmed for a background page
+private const val PREFETCH_WARM_FULL_RES = 2       // full-screen renditions warmed in the background
 
 // Keep the text and body pictures of this many most-recently-read articles; older ones are
 // evicted from the caches (saved articles, offline downloads and open tabs are exempt).
@@ -832,7 +836,7 @@ class HomeScreenViewModel(
                             setTabThumbnail(tab.id, cover)
                             if (!preferencesState.value.dataSaver) {
                                 ImagePrefetcher.warmThumbnails(appContext, listOf(cover))
-                                warmImages(tab.lang, info, content)
+                                warmImages(tab.lang, info, content, full = false)
                             }
                         }
                     }
@@ -847,27 +851,51 @@ class HomeScreenViewModel(
         }
     }
 
-    /** Starts loading the first pictures of an article so they are on screen the moment it opens. */
-    private fun warmImages(lang: String, page: WikiApiPage, content: String) {
-        try {
-            val urls = ArrayList<String>()
-            // Both the thumbnail (article/infobox) and the original (full-screen viewer) so the
-            // viewer can open the lead picture instantly even before the body is scrolled.
-            ImagePrefetcher.standardThumbnailUrl(page.thumbnail?.source)?.let { urls.add(it) }
-            page.photo?.source?.let { urls.add(it) }
-            if (preferencesState.value.renderMode == "html") {
-                // REST HTML is converted to [[File:...]] blocks before rendering, so warm exactly
-                // those file names (the raw <img> src is not what the renderer requests).
-                val media = splitHtmlMediaBlocks(content)
-                    .filter { it.contains("[[File:", ignoreCase = true) }
-                    .joinToString("\n")
-                urls.addAll(ImagePrefetcher.firstImageUrls(lang, media, 4))
-            } else {
-                urls.addAll(ImagePrefetcher.firstImageUrls(lang, content, 4))
+    /**
+     * Starts loading a page's pictures so they are on screen the moment the article opens.
+     *
+     * A page the user actually reads warms every body picture at 960 px and all high-resolution
+     * 1920 px renditions. Background-prefetched pages warm only a handful, otherwise a dozen
+     * queued articles would download thousands of pictures and compete with the visible page.
+     */
+    private fun warmImages(
+        lang: String,
+        page: WikiApiPage,
+        content: String,
+        full: Boolean = true
+    ) {
+        // Scanning the article and building the Coil loader must not run on the caller's thread
+        // (article open / tab switch); it is pure background work.
+        viewModelScope.launch(Dispatchers.IO + errorHandler) {
+            try {
+                val urls = ArrayList<String>()
+                // Both the thumbnail (article/infobox) and the original (full-screen viewer) so the
+                // viewer can open the lead picture instantly even before the body is scrolled.
+                ImagePrefetcher.standardThumbnailUrl(page.thumbnail?.source)?.let { urls.add(it) }
+                page.photo?.source?.let { urls.add(it) }
+                val limit = if (full) CacheConfig.MAX_ARTICLE_IMAGES else PREFETCH_WARM_IMAGES
+                if (preferencesState.value.renderMode == "html") {
+                    // REST HTML is converted to [[File:...]] blocks before rendering, so warm
+                    // exactly those file names (the raw <img> src is not what the renderer
+                    // requests).
+                    val media = splitHtmlMediaBlocks(content)
+                        .filter { it.contains("[[File:", ignoreCase = true) }
+                        .joinToString("\n")
+                    urls.addAll(ImagePrefetcher.firstImageUrls(lang, media, limit))
+                } else {
+                    urls.addAll(ImagePrefetcher.firstImageUrls(lang, content, limit))
+                }
+                ImagePrefetcher.warm(
+                    appContext,
+                    urls,
+                    maxFullRes = if (full) CacheConfig.MAX_HIGH_RES_IMAGES
+                    else PREFETCH_WARM_FULL_RES
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                DebugLog.w("Prefetch", "could not warm pictures: ${e.message}")
             }
-            ImagePrefetcher.warm(appContext, urls)
-        } catch (e: Throwable) {
-            DebugLog.w("Prefetch", "could not warm pictures: ${e.message}")
         }
     }
 
@@ -879,10 +907,11 @@ class HomeScreenViewModel(
         requestedTitle: String?,
         contentKind: String
     ) {
-        // Remember every picture that belongs to this article so the retention policy can evict
-        // exactly these body images later, without touching pinned thumbnails.
-        val imageUrls = imageUrlsFor(lang, page, content, contentKind == "html")
         viewModelScope.launch(Dispatchers.IO + errorHandler) {
+            // Remember every picture that belongs to this article so the retention policy can
+            // evict exactly these body images later, without touching pinned thumbnails. The
+            // scan can walk the whole page, so it runs off the main thread too.
+            val imageUrls = imageUrlsFor(lang, page, content, contentKind == "html")
             articleCache.put(
                 lang = lang,
                 title = page.title,
@@ -1124,7 +1153,14 @@ class HomeScreenViewModel(
         prefetchJob = viewModelScope.launch(Dispatchers.IO + errorHandler) {
             try {
                 var failures = 0
-                while (failures < 5 && queuedCount() < PREFETCH_TARGET) {
+                var attempts = 0
+                // Duplicates are cheap (one title lookup) and should not exhaust the refill, so
+                // they have their own streak limit instead of counting as network failures.
+                var duplicateStreak = 0
+                while (failures < 8 && attempts < PREFETCH_TARGET * 6 &&
+                    queuedCount() < PREFETCH_TARGET
+                ) {
+                    attempts++
                     val key = prefetchKey()
                     val t0 = System.nanoTime()
                     // Topic libraries give better picks, but preloading must also work for plain
@@ -1138,9 +1174,11 @@ class HomeScreenViewModel(
                     val duplicate = title in sessionSeen ||
                             synchronized(prefetchLock) { prefetchQueue.any { it.page.title == title } }
                     if (duplicate) {
-                        failures++
+                        duplicateStreak++
+                        if (duplicateStreak >= 12) failures++
                         continue
                     }
+                    duplicateStreak = 0
                     val mode = preferencesState.value.renderMode
                     val prefetchLang = preferencesState.value.lang
                     val content = withHost(prefetchLang) {
@@ -1150,7 +1188,7 @@ class HomeScreenViewModel(
                     if (key != prefetchKey()) return@launch // settings changed meanwhile: start over later
                     val lang = prefetchLang
                     articleCache.put(lang, title, picked.first, content, contentKind = mode)
-                    warmImages(lang, picked.first, content)
+                    warmImages(lang, picked.first, content, full = false)
                     synchronized(prefetchLock) {
                         prefetchQueue.add(PrefetchedRandom(picked.first, picked.second, content, key))
                     }
@@ -2045,7 +2083,8 @@ class HomeScreenViewModel(
 
                 // Optional support prompts, disabled by default and never shown to supporters.
                 if (preferencesStateMutableFlow.value.donationPrompts &&
-                    !donationSupporterProvider()
+                    !donationSupporterProvider() &&
+                    !DeveloperMode.donationPromptsSuppressed(appContext)
                 ) {
                     val lastPrompt =
                         appPreferencesRepository.readIntPreference("donation-prompt-last") ?: 0
@@ -4056,7 +4095,10 @@ class HomeScreenViewModel(
                     articleCache = ArticleCache(application.applicationContext),
                     appContext = application.applicationContext,
                     donationSupporterProvider = {
-                        application.container.donationBilling.state.value.supporter
+                        // Billing state, or the local supporter flag unlocked by a purchase or the
+                        // developer menu.
+                        application.container.donationBilling.state.value.supporter ||
+                            preferencesStateMutableFlow.value.supporterMode
                     }
                 )
             }

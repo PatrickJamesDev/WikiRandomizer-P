@@ -6,28 +6,22 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FeedImage(
     source: String?,
@@ -61,7 +55,9 @@ fun FeedImage(
                 if (pinnedThumbnail) ImageCacheKeys.thumbnail(displaySource)
                 else ImageCacheKeys.body(displaySource)
             )
-            .crossfade(true)
+            // Crossfades add a second animated layer per picture; list covers and article bodies
+            // appear often enough that the fade is not worth the extra frames.
+            .crossfade(!pinnedThumbnail && !lightPlaceholder)
             .build(),
         contentScale = contentScale,
     )
@@ -95,17 +91,14 @@ fun FeedImage(
         }
 
         is AsyncImagePainter.State.Loading -> {
+            // A flat tinted block is both cheaper than an animated indicator (which redraws every
+            // frame) and a better height placeholder while a cached picture is decoded.
             Box(
-                contentAlignment = Alignment.Center,
                 modifier = modifier
                     .fillMaxWidth()
                     .aspectRatio(displayRatio)
-                    .then(if (lightPlaceholder) Modifier.background(placeholderColor) else Modifier)
-            ) {
-                if (lightPlaceholder) Unit
-                else if (loadingIndicator) LoadingIndicator()
-                else CircularWavyProgressIndicator()
-            }
+                    .background(placeholderColor)
+            )
         }
 
         else -> {

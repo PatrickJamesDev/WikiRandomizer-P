@@ -172,10 +172,12 @@ import com.wikirandomizerp.app.ui.savedArticlesScreen.SavedArticlesScreenRoot
 import com.wikirandomizerp.app.ui.commonsScreen.CommonsGalleryScreen
 import com.wikirandomizerp.app.ui.dictionaryScreen.DictionaryDialog
 import com.wikirandomizerp.app.ui.dictionaryScreen.VocabularyScreen
+import com.wikirandomizerp.app.ui.settingsScreen.BugReportDialog
 import com.wikirandomizerp.app.ui.settingsScreen.ReadingSettingsScreenRoot
 import com.wikirandomizerp.app.ui.statsScreen.StatisticsScreen
 import com.wikirandomizerp.app.ui.settingsScreen.SettingsScreenRoot
 import com.wikirandomizerp.app.ui.kiwix.KiwixScreen
+import com.wikirandomizerp.app.ui.settingsScreen.viewModel.SettingsAction
 import com.wikirandomizerp.app.ui.settingsScreen.viewModel.SettingsViewModel
 import com.wikirandomizerp.app.ui.randomTopicsScreen.RandomTopicsScreen
 import com.wikirandomizerp.app.ui.tutorial.WelcomeTutorial
@@ -221,7 +223,15 @@ fun AppScreen(
     LaunchedEffect(donationBilling) {
         donationBilling?.state?.collect { donationState = it }
     }
+    // A completed purchase unlocks the same supporter features the debug switch does. This only
+    // ever turns the flag on: a temporary Billing disconnect must not revoke it.
+    LaunchedEffect(donationState.supporter) {
+        if (donationState.supporter && !preferencesState.supporterMode) {
+            settingsViewModel.onAction(SettingsAction.SaveSupporterMode(true))
+        }
+    }
     var showDonationDialog by rememberSaveable { mutableStateOf(false) }
+    var showFeatureRequestDialog by rememberSaveable { mutableStateOf(false) }
     val hostActivity = remember(context) { context.findActivity() }
     val dictionaryLookup by viewModel.dictionaryLookup.collectAsStateWithLifecycle()
 
@@ -910,6 +920,10 @@ fun AppScreen(
             composable<DebugRoute> {
                 DebugScreen(
                     donationState = donationState,
+                    donationPrompts = preferencesState.donationPrompts,
+                    debugLogging = preferencesState.debugLogging,
+                    supporterMode = preferencesState.supporterMode,
+                    donationPromptsSuppressed = DeveloperMode.donationPromptsSuppressed(context),
                     onBack = navController::navigateUp,
                     onShowDonationPrompt = {
                         navController.navigateUp()
@@ -921,7 +935,24 @@ fun AppScreen(
                         showDonationDialog = true
                     },
                     onSimulatePurchase = { donationBilling?.debugSimulatePurchase() },
-                    onResetDonation = { donationBilling?.debugReset() },
+                    onResetDonation = {
+                        donationBilling?.debugReset()
+                        settingsViewModel.onAction(SettingsAction.SaveSupporterMode(false))
+                    },
+                    onSetDonationPrompts = {
+                        settingsViewModel.onAction(SettingsAction.SaveDonationPrompts(it))
+                    },
+                    onSetDebugLogging = {
+                        settingsViewModel.onAction(SettingsAction.SaveDebugLogging(it))
+                    },
+                    onSetSupporterMode = {
+                        settingsViewModel.onAction(SettingsAction.SaveSupporterMode(it))
+                    },
+                    onSetDonationPromptsSuppressed = {
+                        DeveloperMode.setDonationPromptsSuppressed(context, it)
+                        if (it) viewModel.dismissDonationPrompt()
+                    },
+                    onOpenFeatureRequests = { showFeatureRequestDialog = true },
                     onDisableDeveloperMode = {
                         DeveloperMode.setEnabled(context, false)
                         navController.navigateUp()
@@ -1098,6 +1129,13 @@ fun AppScreen(
                 }
             }
         }
+    }
+
+    if (showFeatureRequestDialog) {
+        BugReportDialog(
+            onDismiss = { showFeatureRequestDialog = false },
+            onCopied = { showFeatureRequestDialog = false }
+        )
     }
 
     if (showDonationDialog) {

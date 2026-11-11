@@ -9,6 +9,7 @@ import coil3.size.Size
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import com.wikirandomizerp.app.data.CacheConfig
 import com.wikirandomizerp.app.data.DebugLog
 import org.nsh07.wikireader.shared.WikiUrls
 
@@ -27,7 +28,7 @@ object ImageCacheKeys {
  * pictures instantly instead of when they come into view.
  */
 object ImagePrefetcher {
-    private const val MAX_IMAGES = 80
+    private const val MAX_IMAGES = CacheConfig.MAX_ARTICLE_IMAGES
 
     /** Image URLs (same form the article renderer uses) found in the parsed [extract]. */
     fun imageUrls(lang: String, extract: List<List<AnnotatedString>>): List<String> {
@@ -120,7 +121,7 @@ object ImagePrefetcher {
     }
 
     /**
-     * The first [FULL_RES_ALWAYS] pictures of an article (the lead picture first) are loaded at
+     * The first [MAX_HIGH_RES_IMAGES] pictures of an article (the lead picture first) are loaded at
      * their full-screen size right away, without waiting for the user to scroll, so opening one is
      * instant. Returns nothing; addresses already in [done] are skipped.
      */
@@ -136,7 +137,7 @@ object ImagePrefetcher {
             com.wikirandomizerp.app.ui.homeScreen.imageNameFromUrl(src)?.let { candidates.add(fileUrl(lang, it, 1920)) }
         }
         candidates.addAll(imageUrls(lang, extract).mapNotNull { largeVariant(it) })
-        val fresh = candidates.distinct().take(FULL_RES_ALWAYS).filter { done.add(it) }
+        val fresh = candidates.distinct().take(CacheConfig.MAX_HIGH_RES_IMAGES).filter { done.add(it) }
         if (fresh.isEmpty()) return@withContext
         val loader = SingletonImageLoader.get(context)
         for (u in fresh) enqueueWarm(loader, context, u, ImageCacheKeys.body(u))
@@ -144,28 +145,33 @@ object ImagePrefetcher {
 
     /**
      * Wikimedia Commons strip of an article: EVERY thumbnail goes into the disk cache (so the strip
-     * never shows grey boxes), and the first [FULL_RES_ALWAYS] pictures are also loaded at the size
-     * the full-screen viewer shows.
+     * never shows grey boxes), and the high-resolution viewer renditions are preloaded too.
      */
     fun preloadCommons(context: Context, gallery: com.wikirandomizerp.app.data.CommonsCategoryGallery) {
         val loader = SingletonImageLoader.get(context)
         gallery.images.forEachIndexed { index, image ->
             enqueueWarm(loader, context, image.thumbnailUrl, ImageCacheKeys.body(image.thumbnailUrl))
-            if (index < FULL_RES_ALWAYS) {
+            if (index < CacheConfig.MAX_HIGH_RES_IMAGES) {
                 enqueueWarm(loader, context, image.viewUrl, ImageCacheKeys.body(image.viewUrl))
             }
         }
     }
 
-    const val FULL_RES_ALWAYS = 3
-
-    /** Fire-and-forget: loads [urls] into the disk cache so they appear instantly later. */
-    fun warm(context: Context, urls: Collection<String>) {
+    /**
+     * Fire-and-forget: loads [urls] into the disk cache so they appear instantly later. Body
+     * pictures are stored at the 960 px step, and the full-screen 1920 px renditions are stored
+     * too (up to [CacheConfig.MAX_HIGH_RES_IMAGES]) so opening the viewer never waits.
+     */
+    fun warm(
+        context: Context,
+        urls: Collection<String>,
+        maxFullRes: Int = CacheConfig.MAX_HIGH_RES_IMAGES
+    ) {
         if (urls.isEmpty()) return
         val loader = SingletonImageLoader.get(context)
         for ((index, u) in urls.withIndex()) {
             enqueueWarm(loader, context, u, ImageCacheKeys.body(u))
-            if (index < 2) largeVariant(u)?.let {
+            if (index < maxFullRes) largeVariant(u)?.let {
                 enqueueWarm(loader, context, it, ImageCacheKeys.body(it))
             }
         }
@@ -251,18 +257,18 @@ object ImagePrefetcher {
         // All of this used to run on the UI thread: scanning every text block of the article
         // (AnnotatedString.toString() copies each one) froze scrolling for 100-150 ms, and the first
         // SingletonImageLoader.get() builds an OkHttp client (SSL setup).
-        val fresh = imageUrls(lang, extract).filter { it !in done }.take(MAX_IMAGES - done.size)
+        val fresh = imageUrls(lang, extract).filter { it !in done }.take(MAX_IMAGES)
         if (fresh.isEmpty()) return@withContext
         DebugLog.i("Prefetch", "queueing ${fresh.size} article images in the background (${done.size} already queued)")
         val loader = SingletonImageLoader.get(context)
         for ((index, u) in fresh.withIndex()) {
             done.add(u)
             enqueueWarm(loader, context, u, ImageCacheKeys.body(u))
-            if (index < 3) largeVariant(u)?.let {
+            if (index < CacheConfig.MAX_HIGH_RES_IMAGES) largeVariant(u)?.let {
                 done.add(it)
                 enqueueWarm(loader, context, it, ImageCacheKeys.body(it))
             }
-            delay(60) // gentle: don't hit the server with 80 requests at once
+            delay(50) // gentle: don't hit the server with a hundred requests at once
         }
     }
 }

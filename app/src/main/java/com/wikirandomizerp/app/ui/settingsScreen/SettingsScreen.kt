@@ -1246,6 +1246,25 @@ fun SettingsScreen(
                 )
             }
             item { Spacer(Modifier.height(12.dp)) }
+            if (preferencesState.supporterMode) {
+                item {
+                    ClickableListItem(
+                        leadingContent = {
+                            Icon(
+                                painterResource(R.drawable.note),
+                                tint = colorScheme.primary,
+                                contentDescription = null
+                            )
+                        },
+                        headlineContent = { Text(stringResource(string.featureReports)) },
+                        supportingContent = { Text(stringResource(string.featureReportsDesc)) },
+                        colors = listItemColors,
+                        items = 1,
+                        index = 0
+                    ) { setShowBugReport(true) }
+                }
+                item { Spacer(Modifier.height(12.dp)) }
+            }
             item {
                 ListItem(
                     leadingContent = {

@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Keeps downloaded articles (page info + raw content) on disk so that
@@ -162,8 +163,26 @@ class ArticleCache(context: Context) {
         }
     }
 
-    /** Keeps the cache bounded: oldest non-offline files go first. */
+    private val writesSinceTrim = AtomicInteger(0)
+
+    @Volatile
+    private var lastTrimAt = 0L
+
+    /**
+     * Keeps the cache bounded: oldest non-offline files go first.
+     *
+     * Writing every article used to list and stat the whole cache directory. With a large
+     * 200 MB budget that becomes visible while prefetching a batch, so a write only triggers a
+     * scan every few entries (or after ten seconds); the small overshoot is bounded by those
+     * few files.
+     */
     private fun trim() {
+        val now = System.currentTimeMillis()
+        if (writesSinceTrim.incrementAndGet() < TRIM_EVERY_WRITES &&
+            now - lastTrimAt < TRIM_INTERVAL_MS
+        ) return
+        writesSinceTrim.set(0)
+        lastTrimAt = now
         // Only normal cache files take part in trimming. `foo.offline.json` ends with `.json`
         // too, so the suffix must be excluded explicitly.
         val files = dir.listFiles { f -> isCacheFile(f) && !isOfflineFileName(f.name) } ?: return
@@ -273,8 +292,10 @@ class ArticleCache(context: Context) {
 
     companion object {
         /** An article older than this is downloaded again when opened. */
-        const val DEFAULT_MAX_AGE_MS = 3L * 24 * 60 * 60 * 1000
-        private const val MAX_FILES = 120
-        private const val MAX_BYTES = 60L * 1024 * 1024
+        const val DEFAULT_MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000
+        private const val MAX_FILES = CacheConfig.ARTICLE_MAX_FILES
+        private const val MAX_BYTES = CacheConfig.DISK_CACHE_BYTES
+        private const val TRIM_EVERY_WRITES = 8
+        private const val TRIM_INTERVAL_MS = 10_000L
     }
 }
