@@ -12,11 +12,11 @@ plugins {
 }
 
 android {
-    namespace = "org.nsh07.wikireader"
+    namespace = "com.wikirandomizerp.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "org.nsh07.wikireader"
+        applicationId = "com.wikirandomizerp.app"
         minSdk = 26
         targetSdk = 36
         versionCode = 54
@@ -138,6 +138,7 @@ dependencies {
     implementation(libs.retrofit2.retrofit)
     implementation(libs.latex2unicode.x.x3)
     implementation(libs.androidx.profileinstaller)
+    implementation(libs.androidx.billing.ktx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

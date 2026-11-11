@@ -1,0 +1,43 @@
+package com.wikirandomizerp.app.ui.settingsScreen.viewModel
+
+sealed class SettingsAction {
+    data class SaveColorScheme(val value: String) : SettingsAction()
+    data class SaveFontStyle(val value: String) : SettingsAction()
+    data class SaveLang(val value: String) : SettingsAction()
+    data class SaveTheme(val value: String) : SettingsAction()
+
+    data class SaveFontSize(val value: Int) : SettingsAction()
+
+    data class SaveBlackTheme(val value: Boolean) : SettingsAction()
+    data class SaveDataSaver(val value: Boolean) : SettingsAction()
+    data class SaveExpandedSections(val value: Boolean) : SettingsAction()
+    data class SaveFeedEnabled(val value: Boolean) : SettingsAction()
+    data class SaveHistory(val value: Boolean) : SettingsAction()
+    data class SaveImageBackground(val value: Boolean) : SettingsAction()
+    data class SaveImmersiveMode(val value: Boolean) : SettingsAction()
+    data class SaveDonationPrompts(val value: Boolean) : SettingsAction()
+    data class SaveSupporterMode(val value: Boolean) : SettingsAction()
+    data class SaveRenderMath(val value: Boolean) : SettingsAction()
+    data class SaveSearchHistory(val value: Boolean) : SettingsAction()
+    data class SavePopularArticlesOnly(val value: Boolean) : SettingsAction()
+    data class SaveAvoidStubs(val value: Boolean) : SettingsAction()
+    data class SaveOnlyArticlesWithImages(val value: Boolean) : SettingsAction()
+    data class SavePreferQuality(val value: Boolean) : SettingsAction()
+    data class SaveDebugLogging(val value: Boolean) : SettingsAction()
+    data class SaveSaveOffline(val value: Boolean) : SettingsAction()
+    data class SaveSaveFolders(val value: Boolean) : SettingsAction()
+    data class SaveSaveNotes(val value: Boolean) : SettingsAction()
+    data class SavePopularityBias(val value: Int) : SettingsAction()
+    data class SaveTopicStrictness(val value: Int) : SettingsAction()
+    data class SavePullForRandom(val value: Boolean) : SettingsAction()
+    data class SavePreloadArticles(val value: Boolean) : SettingsAction()
+    data class SavePersonalization(val value: Boolean) : SettingsAction()
+    data class SaveMenuSide(val value: String) : SettingsAction()
+    data class SaveRenderMode(val value: String) : SettingsAction()
+    data class SaveReduceMotion(val value: Boolean) : SettingsAction()
+    data class SaveHapticFeedback(val value: Boolean) : SettingsAction()
+    data class SaveBoldArticleText(val value: Boolean) : SettingsAction()
+    data class SaveAutoSaveHighlights(val value: Boolean) : SettingsAction()
+
+    object ResetSettings : SettingsAction()
+}

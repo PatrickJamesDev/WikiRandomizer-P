@@ -138,6 +138,23 @@
     <string name="libraryTopicRead">%1$s read · %2$s left</string>
     <string name="settingSaveOffline">Save articles for offline reading</string>
     <string name="settingSaveOfflineDesc">Off: saving only bookmarks the article and opens it online. On: the article text is also stored on your device.</string>
+    <string name="settingSaveFolders">Save articles into folders</string>
+    <string name="settingSaveFoldersDesc">Show an optional folder field when saving an article, and folder filters in the Saved screen. Off by default.</string>
+    <string name="settingSaveNotes">Add notes to saved articles</string>
+    <string name="settingSaveNotesDesc">Show an optional personal note field when saving an article. Notes are searchable in the Saved screen. Off by default.</string>
+    <string name="saveArticleTitle">Save article</string>
+    <string name="saveArticleDesc">Save \"%1$s\" with an optional folder and a personal note. Both can be changed later.</string>
+    <string name="folderLabel">Folder</string>
+    <string name="folderHint">e.g. Research, Recipes, Later</string>
+    <string name="noteLabel">Note</string>
+    <string name="noteHint">Why is this article worth keeping?</string>
+    <string name="save">Save</string>
+    <string name="allFolders">All</string>
+    <string name="noFolder">No folder</string>
+    <string name="savedFolder">Folder: %1$s</string>
+    <string name="editSavedArticle">Saved article details</string>
+    <string name="editSavedArticleDesc">Change the folder or note for \"%1$s\".</string>
+    <string name="savedArticleUpdated">Saved article updated</string>
     <string name="settingStrictness">Topic strictness</string>
     <string name="settingStrictnessDesc">How closely an article must match your topic. Higher hides loosely related articles. The score uses the article title and short description, so it works immediately for new libraries.</string>
     <string name="strictnessBroad">Broad: everything found for the topic</string>
@@ -475,8 +492,8 @@
     <string name="topicExhaustedReset">Reset history</string>
     <string name="findImages">Find images</string>
     <string name="settingDonationPrompts">Donation prompts</string>
-    <string name="settingDonationPromptsDesc">Occasionally ask for support after 100, 300, 600 and 1000 articles (off by default)</string>
-    <string name="donationPromptTitle">Enjoying WikiReader?</string>
+    <string name="settingDonationPromptsDesc">Occasionally ask for support after 100, 300, 600, 1000 and 2000 articles (off by default)</string>
+    <string name="donationPromptTitle">Enjoying WikiRandomizer-P?</string>
     <string name="donationPromptDesc">You have opened %1$d articles. If the app is useful to you, please consider supporting its development.</string>
     <string name="donateNow">Donate</string>
     <string name="settingSupporterMode">Supporter mode</string>
@@ -564,4 +581,52 @@
     <string name="statsActiveDays">Days with reading</string>
     <string name="statsFootnote">Everything stays on this device. Daily figures, the streak and session records start counting with this update; the totals include everything from before.</string>
     <string name="statsSettingsDesc">Articles read, time spent reading, streaks and more</string>
+
+    <!-- About / author -->
+    <string name="authorGithub">GitHub</string>
+    <string name="authorGithubDesc">github.com/PatrickJamesDev</string>
+    <string name="authorSupport">Support the app</string>
+    <string name="authorSupportDesc">Optional donations, no ads and no tracking</string>
+    <string name="aboutIndependence">WikiRandomizer-P is an independent app made by Patrick James. It is not affiliated with or endorsed by the Wikimedia Foundation.</string>
+
+    <!-- Donations -->
+    <string name="donationDialogTitle">Support WikiRandomizer-P</string>
+    <string name="donationDialogDesc">WikiRandomizer-P is free, has no ads and collects no data. If it makes your day a little better, you can support its development. This is completely optional.</string>
+    <string name="donationLoading">Connecting to Google Play…</string>
+    <string name="donationThanks">Thank you for supporting WikiRandomizer-P!</string>
+    <string name="donationUnavailable">Donations are not available right now.</string>
+    <string name="donationNotConfigured">Donation products are not set up yet. You can still support the project on GitHub.</string>
+    <string name="donationRetry">Retry</string>
+    <string name="donationViaGithub">Support on GitHub</string>
+    <string name="donationSupporterBadge">Supporter</string>
+    <string name="donationSupporterDesc">Thank you for supporting the app!</string>
+    <string name="donationIndependence">Donations support Patrick James, the independent developer of this app. They are not donations to Wikimedia.</string>
+    <string name="donationOneTime">One-time purchase</string>
+    <string name="donationClose">Close</string>
+
+    <!-- Debug menu -->
+    <string name="developerOptions">Developer options</string>
+    <string name="developerOptionsDesc">Testing tools for donations and diagnostics</string>
+    <string name="debugModeEnabled">Developer options enabled</string>
+    <string name="debugModeDisabled">Developer options disabled</string>
+    <string name="debugMenuTitle">Developer options</string>
+    <string name="debugMenuDesc">These tools are for testing only. Nothing here is shown to normal users.</string>
+    <string name="debugDonationSection">Donations</string>
+    <string name="debugBillingStatus">Billing status</string>
+    <string name="debugBillingConnected">Connected to Google Play</string>
+    <string name="debugBillingDisconnected">Not connected</string>
+    <string name="debugBillingProducts">Products found: %1$d</string>
+    <string name="debugTestDonationPrompt">Show donation prompt</string>
+    <string name="debugTestDonationPromptDesc">Preview the in-app support prompt</string>
+    <string name="debugTestDonationDialog">Open donation dialog</string>
+    <string name="debugTestDonationDialogDesc">Preview the Play Billing donation sheet</string>
+    <string name="debugSimulatePurchase">Simulate a successful purchase</string>
+    <string name="debugSimulatePurchaseDesc">Marks this install as a supporter without charging</string>
+    <string name="debugResetDonation">Reset donation state</string>
+    <string name="debugResetDonationDesc">Clears the local supporter flag and cached messages</string>
+    <string name="debugDiagnosticsSection">Diagnostics</string>
+    <string name="debugOpenLog">Open debug log</string>
+    <string name="debugOpenLogDesc">Inspect network calls, timings and errors</string>
+    <string name="debugDisable">Disable developer options</string>
+    <string name="debugDisableDesc">The About screen tap shortcut keeps working</string>
 </resources>

@@ -148,9 +148,17 @@ WikiRandomizer-P into your language, open an issue or a pull request at
 [github.com/PatrickJamesDev/WikiRandomizer-P](https://github.com/PatrickJamesDev/WikiRandomizer-P)
 and include the language code and the translated `strings.xml`.
 
+## Project docs
+
+- **Privacy policy:** [PRIVACY_POLICY.md](PRIVACY_POLICY.md) — no accounts, no ads, no tracking.
+- **Play Store launch checklist:** [PLAY_STORE_CHECKLIST.md](PLAY_STORE_CHECKLIST.md).
+- **Optional donations setup:** [DONATION_SETUP.md](DONATION_SETUP.md).
+
 ## Donate
 
-You can support Patrick James's work on GitHub:
+WikiRandomizer-P is free and ad-free. Optional donations support **Patrick James**, the
+independent developer of this app — they are not donations to Wikipedia or the Wikimedia
+Foundation. Open **About → Support the app** in the app, or support the work on GitHub:
 
 [github.com/PatrickJamesDev](https://github.com/PatrickJamesDev)
 
