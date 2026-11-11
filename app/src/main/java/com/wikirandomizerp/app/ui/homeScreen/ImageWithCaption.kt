@@ -90,7 +90,6 @@ fun SharedTransitionScope.ImageWithCaption(
             FeedImage(
                 source = uriLow,
                 description = description,
-                loadingIndicator = false,
                 lightPlaceholder = true,
                 colorFilter = if (invert && darkTheme && !background) // Invert colors in dark theme
                     ColorFilter.colorMatrix(ColorMatrix(colorMatrixInvert))

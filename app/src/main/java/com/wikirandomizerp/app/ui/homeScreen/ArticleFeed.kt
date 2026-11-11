@@ -180,7 +180,6 @@ fun ArticleFeed(
                                     width = feedContent.tfa.originalImage?.width ?: 1,
                                     height = feedContent.tfa.originalImage?.height ?: 1,
                                     background = imageBackground,
-                                    loadingIndicator = false,
                                     modifier = Modifier
                                         .sharedBounds(
                                             sharedContentState = rememberSharedContentState(
@@ -234,7 +233,6 @@ fun ArticleFeed(
                                         width = feedContent.tfa.originalImage?.width ?: 1,
                                         height = feedContent.tfa.originalImage?.height ?: 1,
                                         background = imageBackground,
-                                        loadingIndicator = false,
                                         modifier = Modifier
                                             .sharedBounds(
                                                 sharedContentState = rememberSharedContentState(
@@ -409,7 +407,6 @@ fun ArticleFeed(
                                                 FeedImage(
                                                     source = feedContent.mostReadArticles[i].thumbnail?.source,
                                                     description = feedContent.mostReadArticles[i].titles?.normalized,
-                                                    loadingIndicator = true,
                                                     background = imageBackground,
                                                     modifier = Modifier
                                                         .sharedBounds(
@@ -507,7 +504,6 @@ fun ArticleFeed(
                                     width = feedContent.image.thumbnail?.width ?: 1,
                                     height = feedContent.image.thumbnail?.height ?: 1,
                                     background = imageBackground,
-                                    loadingIndicator = false,
                                     modifier = Modifier
                                         .sharedBounds(
                                             sharedContentState = rememberSharedContentState(
@@ -542,7 +538,6 @@ fun ArticleFeed(
                                         width = feedContent.image.image?.width ?: 1,
                                         height = feedContent.image.image?.height ?: 1,
                                         background = imageBackground,
-                                        loadingIndicator = false,
                                         modifier = Modifier.weight(1f)
                                     )
                                     Column(Modifier.weight(1f)) {
@@ -605,7 +600,6 @@ fun ArticleFeed(
                                         ?.find { it.thumbnail != null }
                                         ?.thumbnail?.source,
                                     description = null,
-                                    loadingIndicator = false,
                                     background = imageBackground,
                                     modifier = Modifier
                                         .maskClip(shapes.extraLarge)
@@ -730,7 +724,6 @@ fun ArticleFeed(
                                             ?.find { it.thumbnail != null }
                                             ?.thumbnail?.source,
                                         description = null,
-                                        loadingIndicator = false,
                                         background = imageBackground,
                                         modifier = Modifier
                                             .maskClip(shapes.extraLarge)

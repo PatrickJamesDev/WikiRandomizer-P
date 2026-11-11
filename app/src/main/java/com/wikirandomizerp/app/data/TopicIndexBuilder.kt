@@ -192,7 +192,13 @@ class TopicIndexBuilder(
             // Recall: for natural-language topics, also take what full-text search finds. Niche
             // topics are often intersections ("succulents of North America") that no single
             // category covers; the relevance model below filters whatever search over-reaches on.
-            if (hint != null && !resumable && titles.size < MAX_ARTICLES / 2) {
+            // A broad one-word interest ("fruits") is different: the category subtree already
+            // covers it, and full-text search mostly adds compounds that merely contain the word
+            // ("Fruits Basket", "Forbidden Fruits"). Skip the expansion once the crawl is big
+            // enough; keep it for thin categories where search is the only recall we have.
+            val hintTerms = hint?.let { RelevanceModel.terms(it.phrase).distinct() }.orEmpty()
+            val broadSingleWord = hintTerms.size == 1 && titles.size >= 150
+            if (hint != null && !resumable && !broadSingleWord && titles.size < MAX_ARTICLES / 2) {
                 val extra = expandBySearch(hint.phrase, titles.keys)
                 if (extra.isNotEmpty()) titles = titles + extra
             }
@@ -866,7 +872,20 @@ class TopicIndexBuilder(
             .filter { TopicRegionGuard.conflicts("${it.title} ${it.descr.orEmpty()}", context) }
             .map { it.key }
             .toSet()
-        val drop = result.excluded + regionDrops
+        // "Fruit flies", "fruit bats" and similar compounds share the topic word but are not about
+        // it. For a one-word topic, drop multi-word titles whose description is taxonomic (the
+        // head noun belongs to another domain) and where the topic word is not the head noun.
+        // This keeps "fruit wine"/"fruit tree" while removing animals that merely use the word as
+        // a modifier.
+        val queryTerms = RelevanceModel.terms(context).distinct()
+        val compoundDrops = if (queryTerms.size == 1) {
+            val term = queryTerms.single()
+            docs.asSequence()
+                .filter { isOffTopicOrganism(it.title, it.descr, term) }
+                .map { it.key }
+                .toSet()
+        } else emptySet()
+        val drop = result.excluded + regionDrops + compoundDrops
         val scored = result.rel.values.count { it > 0 }
         if (scored == 0 && docs.isNotEmpty()) {
             // The query and every title/description share no usable word. That is a mismatch in
@@ -887,7 +906,8 @@ class TopicIndexBuilder(
             TAG,
             "relevance '$topic': ${docs.size} articles, $scored scored, seeds=${result.seedKeys.take(8)}, " +
                     "excluded ${result.excluded.size}, other region ${regionDrops.size} " +
-                    "${regionDrops.take(10)}"
+                    "${regionDrops.take(10)}, unrelated compounds ${compoundDrops.size} " +
+                    "${compoundDrops.take(10)}"
         )
         val low = result.rel.values.count { it in 0..14 }
         val lowCov = result.cov.values.count { it in 0..9 }
@@ -903,7 +923,31 @@ class TopicIndexBuilder(
     private val stopWords = setOf("of", "in", "by", "and", "the", "from", "to", "for", "with", "on", "at", "as")
 
     /**
-     * Words that describe a broad field rather than a topic. A search hit that shares only one of
+     * True when [title] is an organism article whose name merely uses [term] as a modifier
+     * ("Fruit fly", "Mediterranean fruit fly") rather than being about the term itself. The
+     * description of such pages is taxonomic ("Family of insects", "Species of fly"), which is a
+     * reliable signal that the head noun belongs to another domain. Titles where [term] is the
+     * last content word ("Tropical fruit") and non-taxonomic compounds ("Fruit wine", whose
+     * description mentions fruit) are kept.
+     */
+    private fun isOffTopicOrganism(title: String, description: String?, term: String): Boolean {
+        if (title.contains('(')) return false // "Fruit (plant structure)" is the real article
+        val titleTerms = RelevanceModel.terms(title)
+        if (titleTerms.size <= 1) return false
+        if (titleTerms.none { RelevanceModel.sameWord(term, it) }) return false
+        if (RelevanceModel.sameWord(term, titleTerms.last())) return false
+        val descr = description?.trim()?.lowercase() ?: return false
+        return organismDescriptionPrefixes.any { descr.startsWith(it) || descr.contains(" $it") }
+    }
+
+    private val organismDescriptionPrefixes = listOf(
+        "species of", "subspecies of", "genus of", "family of", "order of",
+        "class of", "phylum of", "kingdom of", "clade of", "variety of"
+    )
+
+    /**
+     * Words that describe a broad field rather than a topic.
+     * A search hit that shares only one of
      * these with the user's phrase is not evidence of relevance ("ancient" does not make Ancient
      * Egypt part of "ancient South American civilizations").
      */

@@ -92,7 +92,6 @@ fun Gallery(
                 FeedImage(
                     source = uriLow,
                     description = description,
-                    loadingIndicator = false,
                     lightPlaceholder = true,
                     background = background,
                     modifier = Modifier

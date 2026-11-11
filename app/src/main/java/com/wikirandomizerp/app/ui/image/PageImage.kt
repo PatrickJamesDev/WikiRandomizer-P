@@ -116,7 +116,7 @@ fun SharedTransitionScope.PageImage(
 
         is AsyncImagePainter.State.Loading -> {
             Box(
-                modifier = Modifier
+                modifier = modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             )
@@ -125,7 +125,7 @@ fun SharedTransitionScope.PageImage(
         else -> {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier
+                modifier = modifier
                     .fillMaxWidth()
             ) {
                 Icon(

@@ -388,7 +388,6 @@ fun HistoryScreen(
                                         FeedImage(
                                             source = it.thumbnail,
                                             description = it.description,
-                                            loadingIndicator = true,
                                             background = imageBackground,
                                             pinnedThumbnail = true,
                                             modifier = Modifier
@@ -540,7 +539,6 @@ private fun HistoryGridCard(
                 FeedImage(
                     source = item.thumbnail,
                     description = item.description,
-                    loadingIndicator = true,
                     background = imageBackground,
                     pinnedThumbnail = true,
                     modifier = Modifier

@@ -112,6 +112,16 @@ class InterestResolver(private val repo: WikipediaRepository) {
         // article, whose category "Tobacco" also contains cigarettes and nicotine pouches.
         val phraseWords = variants.flatMap { words(it) }.toSet()
         val variantWords = variants.map { words(it) }
+        // A one-word interest may be singular or plural: "fruits" must treat Category:Fruit as
+        // the exact match, not as a prefix like Category:Fruit flies.
+        val stemExact = if (phraseWords.size == 1) {
+            val only = phraseWords.first()
+            score.keys.filterTo(HashSet()) { key ->
+                val cw = words(key.replace('_', ' '))
+                cw.size == 1 && cw.first() == only
+            }
+        } else emptySet()
+        val exactOrStem = exactHits + stemExact
         val coverage = HashMap<String, Double>()
         for (c in score.keys.toList()) {
             val cw = words(c.replace('_', ' '))
@@ -121,7 +131,7 @@ class InterestResolver(private val repo: WikipediaRepository) {
                 else vw.count { pw -> cw.any { sameWord(pw, it) } }.toDouble() / vw.size
             }
             coverage[c] = bestCoverage
-            val exactBoost = if (c in exactHits) 1.8 else 0.0
+            val exactBoost = if (c in exactOrStem) 1.8 else 0.0
             score[c] = (score[c] ?: 0.0) *
                     (if (hits > 0) 1.0 + 0.9 * minOf(hits, 3) + 1.2 * bestCoverage + exactBoost else 0.35)
         }
@@ -146,32 +156,41 @@ class InterestResolver(private val repo: WikipediaRepository) {
         } catch (e: Exception) {
             DebugLog.w(TAG, "could not fetch category sizes: ${e.message}")
         }
-        fun adjusted(e: Map.Entry<String, Double>): Double {
-            val size = sizes[e.key] ?: return e.value          // unknown: keep the raw score
-            val sizePenalty = 1.0 + maxOf(0.0, Math.log10(size / 300.0))
-            val exact = e.key in exactHits
-            val cw = words(e.key.replace('_', ' '))
-            // A one-word interest ("fruit") must prefer the category that *is* that word over
-            // every category that merely begins with it ("Fruit flies"). Before, the smaller
-            // sub-category won the size penalty and the user got fruit flies.
-            val prefixOnly = !exact && phraseWords.size == 1 && cw.size > phraseWords.size &&
+        fun isPrefixOnly(key: String): Boolean {
+            if (key in exactOrStem || phraseWords.size != 1) return false
+            val cw = words(key.replace('_', ' '))
+            return cw.size > phraseWords.size &&
                     phraseWords.all { pw -> cw.any { sameWord(pw, it) } }
+        }
+        fun adjusted(e: Map.Entry<String, Double>): Double {
+            val exact = e.key in exactOrStem
+            // A one-word interest ("fruit") must prefer the category that *is* that word over
+            // every category that merely begins with it ("Fruit flies"). Smaller sub-categories
+            // used to win through the size penalty, which is why the user got fruit flies.
+            val prefixOnly = isPrefixOnly(e.key)
+            val size = sizes[e.key]
+            val sizePenalty = if (size == null) 1.0
+            else 1.0 + maxOf(0.0, Math.log10(size / 300.0))
             val specificity = 1.0 + 1.5 * (coverage[e.key] ?: 0.0) +
                     if (exact) 3.5 else 0.0
             return e.value * specificity *
-                    (if (prefixOnly) 0.65 else 1.0) / sizePenalty
+                    (if (prefixOnly) 0.35 else 1.0) /
+                    (if (prefixOnly) 1.0 else sizePenalty)
         }
         val chosen = shortlist
             .filter { (sizes[it.key] ?: 1) > 0 }
             .sortedWith(
-                compareByDescending<Map.Entry<String, Double>> { it.key in exactHits }
+                compareByDescending<Map.Entry<String, Double>> { it.key in exactOrStem }
                     .thenByDescending { adjusted(it) }
             )
             .take(8)
         val categories = chosen.map {
             InterestCategory(
                 it.key, adjusted(it), seedCount[it.key] ?: 0, it.key in nameHits, sizes[it.key] ?: 0,
-                relevant = (coverage[it.key] ?: 0.0) >= 0.55 || it.key in exactHits
+                // A prefix-only category is never pre-selected: "Fruit flies" shares the word
+                // "fruit" but is a different subject, so it stays available but unticked.
+                relevant = !isPrefixOnly(it.key) &&
+                        ((coverage[it.key] ?: 0.0) >= 0.55 || it.key in exactOrStem)
             )
         }
         DebugLog.i(TAG, "'$phrase' -> ${categories.map { "${it.category}(%.1f,seeds=${it.seedArticles},name=${it.nameMatch})".format(it.score) }}")

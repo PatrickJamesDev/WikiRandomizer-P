@@ -29,11 +29,10 @@ fun FeedImage(
     description: String? = null,
     width: Int? = null,
     height: Int? = null,
-    loadingIndicator: Boolean,
     background: Boolean,
     colorFilter: ColorFilter? = null,
     contentScale: ContentScale = ContentScale.Crop,
-    /** Static grey block while loading instead of an animated indicator (cheaper for long articles). */
+    /** Disable the crossfade: many pictures animating at once costs frames while scrolling. */
     lightPlaceholder: Boolean = false,
     /**
      * True for list covers (History / Saved / tabs). Their pictures are stored under the pinned

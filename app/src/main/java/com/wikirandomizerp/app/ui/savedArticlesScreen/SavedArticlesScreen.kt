@@ -415,7 +415,6 @@ fun SavedArticlesScreen(
                                         FeedImage(
                                             source = it.thumbnail,
                                             description = it.description,
-                                            loadingIndicator = true,
                                             background = imageBackground,
                                             pinnedThumbnail = true,
                                             modifier = Modifier
@@ -634,7 +633,6 @@ private fun SavedGridCard(
                 FeedImage(
                     source = article.thumbnail,
                     description = article.description,
-                    loadingIndicator = true,
                     background = imageBackground,
                     pinnedThumbnail = true,
                     modifier = Modifier

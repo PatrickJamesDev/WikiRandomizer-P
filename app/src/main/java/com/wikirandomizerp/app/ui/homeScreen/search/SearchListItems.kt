@@ -185,7 +185,6 @@ fun LazyItemScope.PrefixSearchResultListItem(
                 FeedImage(
                     source = item.thumbnail.source,
                     contentScale = ContentScale.Crop,
-                    loadingIndicator = true,
                     background = imageBackground,
                     modifier = Modifier
                         .padding(vertical = 4.dp)
@@ -292,7 +291,6 @@ fun LazyItemScope.SearchResultListItem(
                 FeedImage(
                     source = it.thumbnail.source,
                     contentScale = ContentScale.Crop,
-                    loadingIndicator = true,
                     background = imageBackground,
                     modifier = Modifier
                         .padding(vertical = 4.dp)
@@ -401,7 +399,6 @@ fun LazyItemScope.LocalSearchResultListItem(
                 FeedImage(
                     source = item.thumbnail,
                     contentScale = ContentScale.Crop,
-                    loadingIndicator = true,
                     background = imageBackground,
                     modifier = Modifier
                         .padding(vertical = 4.dp)

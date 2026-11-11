@@ -20,11 +20,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.motionScheme
@@ -44,12 +47,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
+import com.wikirandomizerp.app.R
 import com.wikirandomizerp.app.data.WikiLang
 import com.wikirandomizerp.app.ui.common.readingMaxWidth
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeAction
@@ -89,6 +96,11 @@ fun PageContent(
     val fontFamily = rememberReadingFontFamily(preferencesState.fontStyle)
     val lang = content.currentLang ?: preferencesState.lang
     val pageId = content.pageId
+    // Taxobox / "Species of ..." pages are organisms, so iNaturalist can identify them.
+    val organismArticle = remember(content.uid, content.extract.size, photoDesc) {
+        isOrganismArticle(content.extract, photoDesc)
+    }
+    val uriHandler = LocalUriHandler.current
 
     val pullToRefreshState = rememberPullToRefreshState()
 
@@ -392,6 +404,29 @@ fun PageContent(
                                             bottom = 16.dp
                                         )
                                         .fillMaxWidth()
+                                )
+                            }
+                            if (organismArticle) {
+                                AssistChip(
+                                    onClick = {
+                                        runCatching {
+                                            uriHandler.openUri(inaturalistSearchUrl(content.title))
+                                        }
+                                    },
+                                    label = { Text(stringResource(R.string.viewOnINaturalist)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter = painterResource(R.drawable.leaf),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    },
+                                    modifier = Modifier.padding(
+                                        start = 16.dp,
+                                        end = 16.dp,
+                                        top = 4.dp,
+                                        bottom = 8.dp
+                                    )
                                 )
                             }
                             // Show the lead image even when the article has no short description

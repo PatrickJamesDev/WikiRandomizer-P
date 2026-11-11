@@ -491,6 +491,7 @@
     <string name="topicExhaustedDesc">You have already seen every article in your selected topics. Reset this topic\'s view history and start again?</string>
     <string name="topicExhaustedReset">Reset history</string>
     <string name="findImages">Find images</string>
+    <string name="viewOnINaturalist">View on iNaturalist</string>
     <string name="settingDonationPrompts">Donation prompts</string>
     <string name="settingDonationPromptsDesc">Occasionally ask for support after 100, 300, 600, 1000 and 2000 articles (off by default)</string>
     <string name="donationPromptTitle">Enjoying WikiRandomizer-P?</string>
@@ -608,7 +609,7 @@
 
     <!-- Debug menu -->
     <string name="developerOptions">Developer options</string>
-    <string name="developerOptionsDesc">Testing tools for donations and diagnostics</string>
+    <string name="developerOptionsDesc">Supporter tools, donation tests and diagnostics</string>
     <string name="debugModeEnabled">Developer options enabled</string>
     <string name="debugModeDisabled">Developer options disabled</string>
     <string name="debugMenuTitle">Developer options</string>
