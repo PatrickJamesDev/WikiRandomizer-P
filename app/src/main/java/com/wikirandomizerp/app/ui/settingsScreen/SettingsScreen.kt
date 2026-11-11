@@ -50,6 +50,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
@@ -76,6 +77,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -95,16 +97,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
+import com.wikirandomizerp.app.BuildConfig
 import com.wikirandomizerp.app.R
 import com.wikirandomizerp.app.R.string
+import com.wikirandomizerp.app.WikiRandomizerPApplication
+import com.wikirandomizerp.app.data.DeveloperMode
 import com.wikirandomizerp.app.data.LibraryStats
+import com.wikirandomizerp.app.data.UpdateResult
+import com.wikirandomizerp.app.data.UpdateState
 import com.wikirandomizerp.app.data.langCodeToName
 import com.wikirandomizerp.app.data.toColor
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeAction
+import com.wikirandomizerp.app.ui.aboutScreen.UpdateDialog
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeSubscreen
 import com.wikirandomizerp.app.ui.settingsScreen.viewModel.PreferencesState
 import com.wikirandomizerp.app.ui.settingsScreen.viewModel.SettingsAction
@@ -143,6 +152,7 @@ fun SettingsScreenRoot(
     onNavigateToReadingSettings: () -> Unit = {},
     onReplayTutorial: () -> Unit = {},
     onOpenDonation: () -> Unit = {},
+    onOpenDebug: () -> Unit = {},
     onGetLibraryStats: suspend () -> LibraryStats = {
         LibraryStats(totalArticles = 0, unseen = 0, topics = emptyList())
     },
@@ -193,6 +203,7 @@ fun SettingsScreenRoot(
         onNavigateToReadingSettings = onNavigateToReadingSettings,
         onReplayTutorial = onReplayTutorial,
         onOpenDonation = onOpenDonation,
+        onOpenDebug = onOpenDebug,
         onGetLibraryStats = onGetLibraryStats,
         onSetTopicEnabled = onSetTopicEnabled,
         onNavigateToVocabulary = onNavigateToVocabulary,
@@ -221,6 +232,7 @@ fun SettingsScreen(
     onNavigateToReadingSettings: () -> Unit = {},
     onReplayTutorial: () -> Unit = {},
     onOpenDonation: () -> Unit = {},
+    onOpenDebug: () -> Unit = {},
     onGetLibraryStats: suspend () -> LibraryStats = {
         LibraryStats(totalArticles = 0, unseen = 0, topics = emptyList())
     },
@@ -255,6 +267,12 @@ fun SettingsScreen(
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val snackBarHostState = remember { SnackbarHostState() }
+    var developerEnabled by remember { mutableStateOf(DeveloperMode.isEnabled(context)) }
+    val versionTapTimes = remember { mutableListOf<Long>() }
+    val availableUpdate by UpdateState.available.collectAsState()
+    val checkingUpdate by UpdateState.checking.collectAsState()
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    val app = context.applicationContext as? WikiRandomizerPApplication
 
     val fontImportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -301,6 +319,7 @@ fun SettingsScreen(
     // Refresh on return so the switch list never shows a stale library.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         coroutineScope.launch { libraryStats = onGetLibraryStats() }
+        developerEnabled = DeveloperMode.isEnabled(context)
     }
 
     var animateFontSize by remember { mutableStateOf(true) }
@@ -502,8 +521,8 @@ fun SettingsScreen(
             SettingsCategory.DATA, // 9 browsing history
             SettingsCategory.DATA, // 10 search history
             SettingsCategory.READING, // 11 pull for random
-            SettingsCategory.READING, // 12 preload articles
-            SettingsCategory.READING, // 13 personalization
+            SettingsCategory.BEHAVIOUR, // 12 preload articles
+            SettingsCategory.BEHAVIOUR, // 13 personalization
             SettingsCategory.APPEARANCE, // 14 reduce motion
             SettingsCategory.APPEARANCE, // 15 haptics
             SettingsCategory.APPEARANCE, // 16 bold text
@@ -561,6 +580,15 @@ fun SettingsScreen(
             setShowResetSettingsDialog = setShowResetSettingsDialog,
             showSnackbar = { coroutineScope.launch { snackBarHostState.showSnackbar(it) } }
         )
+    availableUpdate?.let { updateInfo ->
+        if (showUpdateDialog) {
+            UpdateDialog(
+                info = updateInfo,
+                onDismiss = { showUpdateDialog = false },
+                onOpenReleasePage = { uriHandler.openUri(updateInfo.releaseUrl) }
+            )
+        }
+    }
     if (showLanguageSheet)
         LanguageBottomSheet(
             lang = preferencesState.lang,
@@ -815,22 +843,53 @@ fun SettingsScreen(
                     supportingContent = {
                         Column {
                             val intSize = round(fontSizeFloat).toInt()
-                            Text(intSize.toString())
-                            Slider(
-                                value = fontSizeAnimated,
-                                onValueChange = {
-                                    animateFontSize = false
-                                    if (round(it).toInt() != intSize)
-                                        haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                                    fontSizeFloat = it
-                                },
-                                valueRange = 10f..22f,
-                                onValueChangeFinished = {
-                                    animateFontSize = true
-                                    onAction(SettingsAction.SaveFontSize(round(fontSizeFloat).toInt()))
-                                    fontSizeFloat = round(fontSizeFloat)
-                                }
+                            Text(
+                                text = stringResource(string.settingFontSizePreview),
+                                style = typography.bodyLarge,
+                                fontSize = fontSizeAnimated.sp,
+                                modifier = Modifier.padding(vertical = 8.dp)
                             )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            ) {
+                                IconButton(
+                                    enabled = intSize > 10,
+                                    onClick = {
+                                        val next = (intSize - 1).coerceAtLeast(10)
+                                        animateFontSize = false
+                                        fontSizeFloat = next.toFloat()
+                                        haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                        onAction(SettingsAction.SaveFontSize(next))
+                                    }
+                                ) {
+                                    Icon(
+                                        painterResource(R.drawable.remove),
+                                        contentDescription = stringResource(string.settingFontSizeDecrease)
+                                    )
+                                }
+                                Text(
+                                    text = "$intSize sp",
+                                    style = typography.titleMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(
+                                    enabled = intSize < 22,
+                                    onClick = {
+                                        val next = (intSize + 1).coerceAtMost(22)
+                                        animateFontSize = false
+                                        fontSizeFloat = next.toFloat()
+                                        haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                        onAction(SettingsAction.SaveFontSize(next))
+                                    }
+                                ) {
+                                    Icon(
+                                        painterResource(R.drawable.add),
+                                        contentDescription = stringResource(string.settingFontSizeIncrease)
+                                    )
+                                }
+                            }
                         }
                     },
                     colors = listItemColors,
@@ -1233,6 +1292,160 @@ fun SettingsScreen(
             }
             item { Spacer(Modifier.height(12.dp)) }
             item {
+                ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.outline_info), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(string.version)) },
+                    supportingContent = { Text(BuildConfig.VERSION_NAME) },
+                    colors = listItemColors,
+                    modifier = Modifier
+                        .clip(topListItemShape)
+                        .clickable {
+                            val now = System.currentTimeMillis()
+                            versionTapTimes.add(now)
+                            versionTapTimes.removeAll { now - it > 10_000L }
+                            if (versionTapTimes.size >= 10) {
+                                versionTapTimes.clear()
+                                DeveloperMode.setEnabled(context, true)
+                                developerEnabled = true
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                coroutineScope.launch {
+                                    snackBarHostState.showSnackbar(
+                                        context.getString(string.debugModeEnabled)
+                                    )
+                                }
+                            }
+                        }
+                )
+            }
+            item {
+                ClickableListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.update), contentDescription = null)
+                    },
+                    headlineContent = {
+                        Text(
+                            availableUpdate?.let {
+                                stringResource(string.updateAvailable, it.version)
+                            } ?: stringResource(string.checkForUpdates)
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            when {
+                                checkingUpdate -> stringResource(string.checkingForUpdates)
+                                availableUpdate != null -> stringResource(string.updateAvailableDesc)
+                                else -> stringResource(string.checkForUpdatesDesc)
+                            }
+                        )
+                    },
+                    trailingContent = if (checkingUpdate) {
+                        {
+                            CircularProgressIndicator(
+                                Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    } else null,
+                    colors = listItemColors,
+                    items = 6,
+                    index = 1
+                ) {
+                    val info = availableUpdate
+                    if (info != null) {
+                        showUpdateDialog = true
+                    } else if (!checkingUpdate) {
+                        coroutineScope.launch {
+                            if (app == null) {
+                                snackBarHostState.showSnackbar(context.getString(string.updateFailed))
+                                return@launch
+                            }
+                            UpdateState.checking.value = true
+                            when (
+                                val result = app.container.updateChecker
+                                    .checkForUpdate(BuildConfig.VERSION_NAME)
+                            ) {
+                                is UpdateResult.Available -> {
+                                    UpdateState.available.value = result.info
+                                    showUpdateDialog = true
+                                }
+
+                                is UpdateResult.UpToDate -> snackBarHostState.showSnackbar(
+                                    context.getString(string.upToDate)
+                                )
+
+                                is UpdateResult.Error -> snackBarHostState.showSnackbar(
+                                    context.getString(string.updateCheckFailed, result.message)
+                                )
+                            }
+                            UpdateState.checking.value = false
+                        }
+                    }
+                }
+            }
+            item {
+                ClickableListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.code), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(string.sourceCode)) },
+                    supportingContent = { Text("github.com/PatrickJamesDev/WikiRandomizer-P") },
+                    colors = listItemColors,
+                    items = 6,
+                    index = 2
+                ) { uriHandler.openUri("https://github.com/PatrickJamesDev/WikiRandomizer-P") }
+            }
+            item {
+                ClickableListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.gavel), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(string.license)) },
+                    supportingContent = { Text("GPL v3.0") },
+                    colors = listItemColors,
+                    items = 6,
+                    index = 3
+                ) { uriHandler.openUri("https://github.com/PatrickJamesDev/WikiRandomizer-P/blob/main/LICENSE") }
+            }
+            item {
+                ClickableListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.update), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(string.releases)) },
+                    supportingContent = { Text(stringResource(string.releasesDesc)) },
+                    colors = listItemColors,
+                    items = 6,
+                    index = 4
+                ) { uriHandler.openUri("https://github.com/PatrickJamesDev/WikiRandomizer-P/releases") }
+            }
+            item {
+                ClickableListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.translate), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(string.translate)) },
+                    supportingContent = { Text(stringResource(string.translateDesc)) },
+                    colors = listItemColors,
+                    items = 6,
+                    index = 5
+                ) { uriHandler.openUri("https://hosted.weblate.org/engage/wikireader/") }
+            }
+            item { Spacer(Modifier.height(12.dp)) }
+            item {
+                ClickableListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.github), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(string.authorName)) },
+                    supportingContent = { Text(stringResource(string.authorGithubDesc)) },
+                    colors = listItemColors,
+                    items = 2,
+                    index = 0
+                ) { uriHandler.openUri("https://github.com/PatrickJamesDev") }
+            }
+            item {
                 ClickableListItem(
                     leadingContent = {
                         Icon(
@@ -1244,10 +1457,36 @@ fun SettingsScreen(
                     headlineContent = { Text(stringResource(string.authorSupport)) },
                     supportingContent = { Text(stringResource(string.authorSupportDesc)) },
                     colors = listItemColors,
-                    items = 1,
-                    index = 0
+                    items = 2,
+                    index = 1
                 ) { onOpenDonation() }
             }
+            item { Spacer(Modifier.height(12.dp)) }
+            item {
+                ClickableListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.wikipedia_s_w), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(string.wikipedia)) },
+                    supportingContent = { Text(stringResource(string.wikipediaWebsiteDesc)) },
+                    colors = listItemColors,
+                    items = 2,
+                    index = 0
+                ) { uriHandler.openUri("https://wikipedia.org") }
+            }
+            item {
+                ClickableListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.wikimedia_logo_black), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(string.supportWikipedia)) },
+                    supportingContent = { Text(stringResource(string.donateToWikipedia)) },
+                    colors = listItemColors,
+                    items = 2,
+                    index = 1
+                ) { uriHandler.openUri("https://wikimediafoundation.org/support/") }
+            }
+            if (developerEnabled) {
             item { Spacer(Modifier.height(12.dp)) }
             item {
                 ListItem(
@@ -1271,26 +1510,19 @@ fun SettingsScreen(
                     modifier = Modifier.clip(cardShape)
                 )
             }
-            item { Spacer(Modifier.height(12.dp)) }
-            if (preferencesState.supporterMode) {
-                item {
-                    ClickableListItem(
-                        leadingContent = {
-                            Icon(
-                                painterResource(R.drawable.note),
-                                tint = colorScheme.primary,
-                                contentDescription = null
-                            )
-                        },
-                        headlineContent = { Text(stringResource(string.featureReports)) },
-                        supportingContent = { Text(stringResource(string.featureReportsDesc)) },
-                        colors = listItemColors,
-                        items = 1,
-                        index = 0
-                    ) { setShowBugReport(true) }
-                }
-                item { Spacer(Modifier.height(12.dp)) }
+            item {
+                ClickableListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.code), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(string.developerOptions)) },
+                    supportingContent = { Text(stringResource(string.developerOptionsDesc)) },
+                    colors = listItemColors,
+                    items = 1,
+                    index = 0
+                ) { onOpenDebug() }
             }
+            item { Spacer(Modifier.height(12.dp)) }
             item {
                 ListItem(
                     leadingContent = {
@@ -1319,6 +1551,35 @@ fun SettingsScreen(
                         .clip(bottomListItemShape)
                         .clickable { setShowDebugLog(true) },
                     colors = listItemColors
+                )
+            }
+            }
+            item { Spacer(Modifier.height(12.dp)) }
+            if (preferencesState.supporterMode) {
+                item {
+                    ClickableListItem(
+                        leadingContent = {
+                            Icon(
+                                painterResource(R.drawable.note),
+                                tint = colorScheme.primary,
+                                contentDescription = null
+                            )
+                        },
+                        headlineContent = { Text(stringResource(string.featureReports)) },
+                        supportingContent = { Text(stringResource(string.featureReportsDesc)) },
+                        colors = listItemColors,
+                        items = 1,
+                        index = 0
+                    ) { setShowBugReport(true) }
+                }
+                item { Spacer(Modifier.height(12.dp)) }
+            }
+            item {
+                Text(
+                    text = stringResource(string.aboutIndependence),
+                    style = typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                 )
             }
             item {
@@ -1731,7 +1992,7 @@ private enum class SettingsCategory(
         R.drawable.view_list,
         string.settingsReadingTopics,
         string.settingsReadingTopicsDesc,
-        13
+        11
     ),
     APPEARANCE(
         R.drawable.palette,
@@ -1743,7 +2004,7 @@ private enum class SettingsCategory(
         R.drawable.translate,
         string.settingsBehaviour,
         string.settingsBehaviourDesc,
-        4
+        6
     ),
     DATA(
         R.drawable.download_done,

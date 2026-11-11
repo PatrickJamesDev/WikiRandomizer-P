@@ -317,6 +317,9 @@
     <string name="settingFeed">Feed</string>
     <string name="settingFeedDesc">Show a feed of trending articles, news and more on app startup</string>
     <string name="settingFontSize">Font size</string>
+    <string name="settingFontSizePreview">Aa — The quick brown fox jumps over the lazy dog.</string>
+    <string name="settingFontSizeDecrease">Decrease font size</string>
+    <string name="settingFontSizeIncrease">Increase font size</string>
     <string name="settingFontStyle">Font style</string>
     <string name="settingImageBackground">Image background</string>
     <string name="settingImageBackgroundDesc">Add a white background to transparent images. The background can help increase readability in dark mode.</string>
@@ -617,7 +620,7 @@
     <!-- Debug menu -->
     <string name="developerOptions">Developer options</string>
     <string name="developerOptionsDesc">Supporter tools, donation tests and diagnostics</string>
-    <string name="debugModeEnabled">Developer options enabled</string>
+    <string name="debugModeEnabled">Developer mode activated!</string>
     <string name="debugModeDisabled">Developer options disabled</string>
     <string name="debugMenuTitle">Developer options</string>
     <string name="debugMenuDesc">These tools are for testing only. Nothing here is shown to normal users.</string>

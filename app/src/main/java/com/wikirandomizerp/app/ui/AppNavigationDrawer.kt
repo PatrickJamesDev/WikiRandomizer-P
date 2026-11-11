@@ -82,7 +82,6 @@ fun AppNavigationDrawer(
     backStackEntry: NavBackStackEntry?,
     historyEnabled: Boolean,
     isImageView: Boolean,
-    onAboutClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onHomeClick: () -> Unit,
     onSavedArticlesClick: () -> Unit,
@@ -161,15 +160,6 @@ fun AppNavigationDrawer(
                 painterResource(drawable.filled_settings),
                 SettingsScreen::class,
                 onSettingsClick
-            )
-        )
-        add(
-            Item(
-                string.about,
-                painterResource(drawable.outline_info),
-                painterResource(drawable.filled_info),
-                AboutScreen::class,
-                onAboutClick
             )
         )
     }

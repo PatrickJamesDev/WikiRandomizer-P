@@ -156,7 +156,6 @@ import com.wikirandomizerp.app.data.SearchHistoryItem
 import com.wikirandomizerp.app.data.UpdateResult
 import com.wikirandomizerp.app.data.UpdateState
 import com.wikirandomizerp.app.data.UserLanguage
-import com.wikirandomizerp.app.ui.aboutScreen.AboutScreen
 import com.wikirandomizerp.app.ui.debugScreen.DebugScreen
 import com.wikirandomizerp.app.ui.donation.DonationDialog
 import com.wikirandomizerp.app.ui.curatorsScreen.CuratorsScreenRoot
@@ -438,7 +437,7 @@ fun AppScreen(
                         actionLabel = context.getString(R.string.viewUpdate),
                         withDismissAction = true
                     )
-                    if (snackbar == SnackbarResult.ActionPerformed) navigateTab(AboutScreen)
+                    if (snackbar == SnackbarResult.ActionPerformed) navigateTab(SettingsScreen)
                 }
             }
 
@@ -458,15 +457,6 @@ fun AppScreen(
         backStackEntry = navBackStackEntry,
         historyEnabled = preferencesState.browsingHistory,
         isImageView = backStack.last() is HomeSubscreen.Image,
-        onAboutClick = {
-            navController.navigate(AboutScreen) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
-                }
-                launchSingleTop = true
-                restoreState = true
-            }
-        },
         onHistoryClick = {
             navController.navigate(HistoryScreen) {
                 popUpTo(navController.graph.findStartDestination().id) {
@@ -839,6 +829,9 @@ fun AppScreen(
                         donationBilling?.refresh()
                         showDonationDialog = true
                     },
+                    onOpenDebug = {
+                        navController.navigate(DebugRoute) { launchSingleTop = true }
+                    },
                     onGetLibraryStats = { viewModel.getLibraryStats() },
                     onSetTopicEnabled = { topic, enabled ->
                         viewModel.setTopicEnabled(topic, enabled)
@@ -907,20 +900,6 @@ fun AppScreen(
                         }
                     },
                     onBack = navController::navigateUp
-                )
-            }
-
-            composable<AboutScreen> {
-                AboutScreen(
-                    onBack = navController::navigateUp,
-                    onDonate = {
-                        donationBilling?.clearMessage()
-                        donationBilling?.refresh()
-                        showDonationDialog = true
-                    },
-                    onOpenDebug = {
-                        navController.navigate(DebugRoute) { launchSingleTop = true }
-                    }
                 )
             }
 
@@ -1741,9 +1720,6 @@ object SettingsScreen
 
 @Serializable
 object CuratorsScreen
-
-@Serializable
-object AboutScreen
 
 @Serializable
 object DebugRoute
