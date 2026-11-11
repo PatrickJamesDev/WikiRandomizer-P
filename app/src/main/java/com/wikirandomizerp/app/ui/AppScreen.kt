@@ -164,6 +164,7 @@ import com.wikirandomizerp.app.ui.highlightsScreen.HighlightsScreenRoot
 import com.wikirandomizerp.app.ui.homeScreen.AppHomeScreen
 import com.wikirandomizerp.app.ui.homeScreen.search.AppSearchBar
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.ArticleTab
+import com.wikirandomizerp.app.ui.homeScreen.VerticalFeedScreen
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeAction
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeScreenViewModel
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeSubscreen
@@ -216,6 +217,7 @@ fun AppScreen(
         context.applicationContext as? WikiRandomizerPApplication
     }
     val donationBilling = application?.container?.donationBilling
+    val localSyncStore = application?.container?.localSyncStore
     var donationState by remember(donationBilling) {
         mutableStateOf(donationBilling?.state?.value ?: DonationState())
     }
@@ -413,9 +415,15 @@ fun AppScreen(
         }
     }
 
-    // One background release check per process. The result is shared with About, so opening the
+    // One background release check per process. The result is shared with Settings, so opening the
     // update entry never repeats the network round-trip. A failed check stays silent: it must never
     // interrupt reading or look like an app error.
+    LaunchedEffect(Unit) {
+        localSyncStore?.takeIf { it.autoSync }?.let { store ->
+            runCatching { store.syncNow() }
+        }
+    }
+
     LaunchedEffect(Unit) {
         val app = context.applicationContext as? WikiRandomizerPApplication
             ?: return@LaunchedEffect
@@ -457,6 +465,9 @@ fun AppScreen(
         backStackEntry = navBackStackEntry,
         historyEnabled = preferencesState.browsingHistory,
         isImageView = backStack.last() is HomeSubscreen.Image,
+        onVerticalFeedClick = {
+            navController.navigate(VerticalFeedRoute) { launchSingleTop = true }
+        },
         onHistoryClick = {
             navController.navigate(HistoryScreen) {
                 popUpTo(navController.graph.findStartDestination().id) {
@@ -791,6 +802,17 @@ fun AppScreen(
                             launchSingleTop = true
                             restoreState = true
                         }
+                    },
+                    onBack = navController::navigateUp
+                )
+            }
+
+            composable<VerticalFeedRoute> {
+                VerticalFeedScreen(
+                    feed = backStack.getOrNull(0) as? HomeSubscreen.Feed,
+                    onOpenArticle = { title, lang ->
+                        viewModel.onAction(HomeAction.LoadPage(title, lang))
+                        navController.navigateUp()
                     },
                     onBack = navController::navigateUp
                 )
@@ -1717,6 +1739,9 @@ object HistoryScreen
 
 @Serializable
 object SettingsScreen
+
+@Serializable
+object VerticalFeedRoute
 
 @Serializable
 object CuratorsScreen

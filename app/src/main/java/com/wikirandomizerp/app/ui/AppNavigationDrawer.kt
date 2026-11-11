@@ -88,6 +88,7 @@ fun AppNavigationDrawer(
     onHighlightsClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onCuratorsClick: () -> Unit,
+    onVerticalFeedClick: () -> Unit = {},
     onTabsClick: () -> Unit = {},
     menuOnRight: Boolean = false,
     modifier: Modifier = Modifier,
@@ -102,6 +103,15 @@ fun AppNavigationDrawer(
                 painterResource(drawable.filled_home),
                 HomeScreen::class,
                 onHomeClick
+            )
+        )
+        add(
+            Item(
+                string.verticalFeed,
+                painterResource(drawable.feed),
+                painterResource(drawable.feed),
+                VerticalFeedRoute::class,
+                onVerticalFeedClick
             )
         )
         add(

@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.text.format.DateUtils
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -273,6 +274,10 @@ fun SettingsScreen(
     val checkingUpdate by UpdateState.checking.collectAsState()
     var showUpdateDialog by remember { mutableStateOf(false) }
     val app = context.applicationContext as? WikiRandomizerPApplication
+    val localSyncStore = app?.container?.localSyncStore
+    var autoSync by remember { mutableStateOf(localSyncStore?.autoSync ?: false) }
+    var lastSyncAt by remember { mutableStateOf(localSyncStore?.lastSyncAt) }
+    var syncing by remember { mutableStateOf(false) }
 
     val fontImportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -945,6 +950,85 @@ fun SettingsScreen(
                     modifier = Modifier
                         .clip(bottomListItemShape)
                         .clickable { onBackup() }
+                )
+            }
+            item { Spacer(Modifier.height(12.dp)) }
+            item {
+                ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.update), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(string.settingSync)) },
+                    supportingContent = { Text(stringResource(string.settingSyncDesc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = autoSync,
+                            onCheckedChange = {
+                                autoSync = it
+                                localSyncStore?.setAutoSync(it)
+                            },
+                            colors = switchColors
+                        )
+                    },
+                    colors = listItemColors,
+                    modifier = Modifier.clip(topListItemShape)
+                )
+            }
+            item {
+                val lastSyncLabel = lastSyncAt?.let {
+                    DateUtils.getRelativeTimeSpanString(
+                        it,
+                        System.currentTimeMillis(),
+                        DateUtils.MINUTE_IN_MILLIS
+                    ).toString()
+                }
+                ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.download_done), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(string.settingSyncNow)) },
+                    supportingContent = {
+                        Text(
+                            when {
+                                syncing -> stringResource(string.settingSyncRunning)
+                                lastSyncLabel != null ->
+                                    stringResource(string.settingSyncLast, lastSyncLabel)
+                                else -> stringResource(string.settingSyncLocalOnly)
+                            }
+                        )
+                    },
+                    trailingContent = if (syncing) {
+                        {
+                            CircularProgressIndicator(
+                                Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    } else null,
+                    colors = listItemColors,
+                    modifier = Modifier
+                        .clip(bottomListItemShape)
+                        .clickable(enabled = !syncing && localSyncStore != null) {
+                            val store = localSyncStore ?: return@clickable
+                            coroutineScope.launch {
+                                syncing = true
+                                val result = runCatching { store.syncNow() }.getOrNull()
+                                syncing = false
+                                if (result != null) {
+                                    lastSyncAt = result.lastSyncAt
+                                    snackBarHostState.showSnackbar(
+                                        context.getString(
+                                            string.settingSyncComplete,
+                                            result.recordCount
+                                        )
+                                    )
+                                } else {
+                                    snackBarHostState.showSnackbar(
+                                        context.getString(string.settingSyncFailed)
+                                    )
+                                }
+                            }
+                        }
                 )
             }
             }

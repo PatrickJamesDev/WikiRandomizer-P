@@ -316,6 +316,17 @@
     <string name="settingExpandSectionsDesc">Expand all sections by default</string>
     <string name="settingFeed">Feed</string>
     <string name="settingFeedDesc">Show a feed of trending articles, news and more on app startup</string>
+    <string name="verticalFeed">Vertical feed</string>
+    <string name="verticalFeedEmpty">No feed cards are available yet. Load the home feed first.</string>
+    <string name="verticalFeedTapToRead">Tap to read</string>
+    <string name="settingSync">Automatic sync</string>
+    <string name="settingSyncDesc">Keep a local snapshot of reading progress. Cloud sync starts when Firebase is configured.</string>
+    <string name="settingSyncNow">Sync now</string>
+    <string name="settingSyncRunning">Saving local snapshot…</string>
+    <string name="settingSyncLast">Last local snapshot %1$s</string>
+    <string name="settingSyncLocalOnly">Local-only build. Cloud sync is not configured.</string>
+    <string name="settingSyncComplete">Saved %1$d progress records locally</string>
+    <string name="settingSyncFailed">Could not save the local snapshot</string>
     <string name="settingFontSize">Font size</string>
     <string name="settingFontSizePreview">Aa — The quick brown fox jumps over the lazy dog.</string>
     <string name="settingFontSizeDecrease">Decrease font size</string>
