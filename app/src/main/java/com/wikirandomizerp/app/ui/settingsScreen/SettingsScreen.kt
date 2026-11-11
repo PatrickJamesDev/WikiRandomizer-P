@@ -464,26 +464,52 @@ fun SettingsScreen(
                 string.settingBoldTextDesc,
                 SettingsAction::SaveBoldArticleText
             ),
+            SettingsSwitchItem(
+                preferencesState.inaturalistEnabled,
+                R.drawable.leaf,
+                string.settingINaturalist,
+                string.settingINaturalistDesc,
+                SettingsAction::SaveINaturalist
+            ),
+            SettingsSwitchItem(
+                preferencesState.swipeGestures,
+                R.drawable.menu_open,
+                string.settingSwipeGestures,
+                string.settingSwipeGesturesDesc,
+                SettingsAction::SaveSwipeGestures
+            ),
+            SettingsSwitchItem(
+                preferencesState.wikivoyageEnabled,
+                R.drawable.translate,
+                string.settingWikivoyage,
+                string.settingWikivoyageDesc,
+                SettingsAction::SaveWikivoyage
+            ),
         )
     }
 
     val switchCategories = remember {
         listOf(
-            SettingsCategory.BEHAVIOUR, // data saver
-            SettingsCategory.READING, // feed
-            SettingsCategory.READING, // expand sections
-            SettingsCategory.APPEARANCE, // image background
-            SettingsCategory.APPEARANCE, // immersive mode
-            SettingsCategory.READING, // render math
-            SettingsCategory.DATA, // save offline
-            SettingsCategory.DATA, // browsing history
-            SettingsCategory.DATA, // search history
-            SettingsCategory.READING, // pull for random
-            SettingsCategory.READING, // preload articles
-            SettingsCategory.READING, // personalization
-            SettingsCategory.APPEARANCE, // reduce motion
-            SettingsCategory.APPEARANCE, // haptics
-            SettingsCategory.APPEARANCE // bold text
+            SettingsCategory.BEHAVIOUR, // 0 data saver
+            SettingsCategory.READING, // 1 feed
+            SettingsCategory.READING, // 2 expand sections
+            SettingsCategory.APPEARANCE, // 3 image background
+            SettingsCategory.APPEARANCE, // 4 immersive mode
+            SettingsCategory.READING, // 5 render math
+            SettingsCategory.DATA, // 6 save offline
+            SettingsCategory.DATA, // 7 save folders
+            SettingsCategory.DATA, // 8 save notes
+            SettingsCategory.DATA, // 9 browsing history
+            SettingsCategory.DATA, // 10 search history
+            SettingsCategory.READING, // 11 pull for random
+            SettingsCategory.READING, // 12 preload articles
+            SettingsCategory.READING, // 13 personalization
+            SettingsCategory.APPEARANCE, // 14 reduce motion
+            SettingsCategory.APPEARANCE, // 15 haptics
+            SettingsCategory.APPEARANCE, // 16 bold text
+            SettingsCategory.READING, // 17 iNaturalist action
+            SettingsCategory.BEHAVIOUR, // 18 swipe gestures
+            SettingsCategory.BEHAVIOUR // 19 Wikivoyage
         )
     }
 

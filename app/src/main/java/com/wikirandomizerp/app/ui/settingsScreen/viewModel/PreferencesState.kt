@@ -35,6 +35,12 @@ data class PreferencesState(
     val saveFolders: Boolean = false,
     /** Offer a personal note field when saving an article (off by default). */
     val saveNotes: Boolean = false,
+    /** Show a "View on iNaturalist" action on organism articles (off by default). */
+    val inaturalistEnabled: Boolean = false,
+    /** Swipe left/right on an article to move through history (off by default). */
+    val swipeGestures: Boolean = false,
+    /** Read Wikivoyage travel guides instead of Wikipedia (off by default; restart to apply). */
+    val wikivoyageEnabled: Boolean = false,
     /** -2 only obscure, -1 prefer obscure, 0 no preference, 1 prefer popular, 2 only popular. */
     val popularityBias: Int = 0,
     /** 0 broad, 1 balanced, 2 strict, 3 very strict: how closely articles must match the topic. */

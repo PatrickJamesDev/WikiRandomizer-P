@@ -1,5 +1,7 @@
 package com.wikirandomizerp.app.ui.homeScreen
 
+import android.content.Intent
+import android.net.Uri
 import com.wikirandomizerp.app.data.DebugLog
 import com.wikirandomizerp.app.ui.image.ImageAspectCache
 import com.wikirandomizerp.app.ui.image.ArticleGalleryBuilder
@@ -7,7 +9,9 @@ import com.wikirandomizerp.app.ui.image.ArticleGalleryItem
 import com.wikirandomizerp.app.ui.image.ImagePrefetcher
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.first
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -21,11 +25,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +49,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
@@ -56,6 +64,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.launch
+import kotlin.math.abs
 import com.wikirandomizerp.app.R
 import com.wikirandomizerp.app.data.WikiLang
 import com.wikirandomizerp.app.ui.common.readingMaxWidth
@@ -101,6 +111,20 @@ fun PageContent(
         isOrganismArticle(content.extract, photoDesc)
     }
     val uriHandler = LocalUriHandler.current
+    val appContext = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var openingINaturalist by remember(content.uid) { mutableStateOf(false) }
+    val density = LocalDensity.current
+    val swipeEdgePx = with(density) { 48.dp.toPx() }
+    val swipeThresholdPx = with(density) { 72.dp.toPx() }
+
+    // Resolve the taxon while the page opens, so tapping the chip hands the exact page to the
+    // iNaturalist app without a visible network wait.
+    LaunchedEffect(content.uid, organismArticle, preferencesState.inaturalistEnabled) {
+        if (organismArticle && preferencesState.inaturalistEnabled) {
+            INaturalistTaxa.resolveId(content.title)
+        }
+    }
 
     val pullToRefreshState = rememberPullToRefreshState()
 
@@ -364,6 +388,41 @@ fun PageContent(
                         modifier = Modifier
                             .widthIn(max = readingWidth)
                             .fillMaxSize()
+                            .then(
+                                if (preferencesState.swipeGestures) Modifier.pointerInput(Unit) {
+                                    // Only the centre of the article is ours: edge drags stay with
+                                    // the navigation drawer (left) and the tabs panel (right).
+                                    awaitEachGesture {
+                                        val down = awaitFirstDown(requireUnconsumed = false)
+                                        if (down.position.x < swipeEdgePx ||
+                                            down.position.x > size.width - swipeEdgePx
+                                        ) return@awaitEachGesture
+                                        var totalX = 0f
+                                        var totalY = 0f
+                                        var active = false
+                                        val pointerId = down.id
+                                        while (true) {
+                                            val event = awaitPointerEvent()
+                                            val change = event.changes
+                                                .firstOrNull { it.id == pointerId } ?: break
+                                            if (!change.pressed) break
+                                            totalX += change.position.x - change.previousPosition.x
+                                            totalY += change.position.y - change.previousPosition.y
+                                            if (!active &&
+                                                abs(totalX) > viewConfiguration.touchSlop &&
+                                                abs(totalX) > abs(totalY)
+                                            ) {
+                                                active = true
+                                            }
+                                            if (active) change.consume()
+                                        }
+                                        if (active && abs(totalX) >= swipeThresholdPx) {
+                                            if (totalX > 0f) onAction(HomeAction.NavigateBack)
+                                            else onAction(HomeAction.NavigateForward)
+                                        }
+                                    }
+                                } else Modifier
+                            )
                     ) {
                 item(key = content.title + "#--header--") { // Title + Image/description
                     with(sharedScope) {
@@ -406,20 +465,52 @@ fun PageContent(
                                         .fillMaxWidth()
                                 )
                             }
-                            if (organismArticle) {
+                            if (organismArticle && preferencesState.inaturalistEnabled) {
                                 AssistChip(
+                                    enabled = !openingINaturalist,
                                     onClick = {
-                                        runCatching {
-                                            uriHandler.openUri(inaturalistSearchUrl(content.title))
+                                        if (!openingINaturalist) {
+                                            openingINaturalist = true
+                                            scope.launch {
+                                                val id = INaturalistTaxa.resolveId(content.title)
+                                                openingINaturalist = false
+                                                // The app opens the exact taxon page when the id is
+                                                // known; otherwise the iNaturalist home screen,
+                                                // never a search results page.
+                                                val url = id?.let(::inaturalistTaxonUrl)
+                                                    ?: "https://www.inaturalist.org/"
+                                                val appIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                                    .setPackage(INATURALIST_PACKAGE)
+                                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                val opened = runCatching {
+                                                    appContext.startActivity(appIntent)
+                                                    true
+                                                }.getOrDefault(false)
+                                                if (!opened) runCatching { uriHandler.openUri(url) }
+                                            }
                                         }
                                     },
-                                    label = { Text(stringResource(R.string.viewOnINaturalist)) },
-                                    leadingIcon = {
-                                        Icon(
-                                            painter = painterResource(R.drawable.leaf),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
+                                    label = {
+                                        Text(
+                                            stringResource(
+                                                if (openingINaturalist) R.string.openingINaturalist
+                                                else R.string.viewOnINaturalist
+                                            )
                                         )
+                                    },
+                                    leadingIcon = {
+                                        if (openingINaturalist) {
+                                            CircularProgressIndicator(
+                                                strokeWidth = 2.dp,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        } else {
+                                            Icon(
+                                                painter = painterResource(R.drawable.leaf),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
                                     },
                                     modifier = Modifier.padding(
                                         start = 16.dp,

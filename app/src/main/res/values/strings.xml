@@ -391,6 +391,13 @@
     <string name="settingPreloadArticlesDesc">Quietly prepare the next random articles (text and pictures) while you read, so they open instantly. Uses a little extra data.</string>
     <string name="settingPersonalization">Learn from what I read</string>
     <string name="settingPersonalizationDesc">Use reading time, scroll depth and likes to pick more articles from the topics you actually read. Everything stays on this device; turning it off forgets what was learned.</string>
+    <string name="settingINaturalist">Show iNaturalist action</string>
+    <string name="settingINaturalistDesc">Add a button to organism articles that opens the matching species page in the iNaturalist app. Off by default.</string>
+    <string name="settingSwipeGestures">Swipe to go back and forward</string>
+    <string name="settingSwipeGesturesDesc">Swipe right on an article to go back in history and left to go forward. Edge swipes are left free for the menu and tabs.</string>
+    <string name="settingWikivoyage">Read Wikivoyage</string>
+    <string name="settingWikivoyageDesc">Use Wikivoyage travel guides instead of Wikipedia for search, topics and random articles. Turn this off again to return to Wikipedia; restart the app after changing it.</string>
+    <string name="openingINaturalist">Opening…</string>
     <string name="settingReplayTutorial">Welcome tutorial</string>
     <string name="settingReplayTutorialDesc">Show the introduction to WikiRandomizer-P again</string>
     <string name="tutorialSkip">Skip</string>

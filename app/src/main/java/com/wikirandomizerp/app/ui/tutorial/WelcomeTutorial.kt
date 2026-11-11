@@ -12,13 +12,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -133,80 +138,95 @@ fun WelcomeTutorial(
                 .padding(24.dp)
                 .widthIn(max = 480.dp)
                 .fillMaxWidth()
+                .heightIn(max = 640.dp)
+                // A fixed card height keeps the Back / Next buttons in the same place on every
+                // page; only the body scrolls when a page is taller than the screen.
+                .fillMaxHeight(0.92f)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(24.dp)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                     modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    Icon(
-                        painterResource(page.icon),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(32.dp)
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                    ) {
+                        Icon(
+                            painterResource(page.icon),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        stringResource(page.title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        textAlign = TextAlign.Center
                     )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(page.body),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+
+                    when (page.action) {
+                        StepAction.TOPICS -> {
+                            Spacer(Modifier.height(16.dp))
+                            FilledTonalButton(
+                                shapes = ButtonDefaults.shapes(),
+                                onClick = {
+                                    onStepChange(index + 1) // resume after the topics screen
+                                    onOpenTopics()
+                                },
+                                modifier = ctaModifier
+                            ) { Text(stringResource(R.string.tutorialOpenTopics)) }
+                        }
+
+                        StepAction.RANDOM -> {
+                            Spacer(Modifier.height(16.dp))
+                            FilledTonalButton(
+                                shapes = ButtonDefaults.shapes(),
+                                onClick = {
+                                    onStepChange(index + 1)
+                                    onTryRandom()
+                                },
+                                modifier = ctaModifier
+                            ) { Text(stringResource(R.string.tutorialTryRandom)) }
+                        }
+
+                        StepAction.SETTINGS -> {
+                            Spacer(Modifier.height(16.dp))
+                            FilledTonalButton(
+                                shapes = ButtonDefaults.shapes(),
+                                onClick = {
+                                    onStepChange(index + 1) // resume after Settings
+                                    onOpenSettings()
+                                },
+                                modifier = ctaModifier
+                            ) { Text(stringResource(R.string.tutorialOpenSettings)) }
+                        }
+
+                        StepAction.NONE -> {}
+                    }
                 }
+
                 Spacer(Modifier.height(16.dp))
-                Text(
-                    stringResource(page.title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    stringResource(page.body),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-
-                when (page.action) {
-                    StepAction.TOPICS -> {
-                        Spacer(Modifier.height(16.dp))
-                        FilledTonalButton(
-                            shapes = ButtonDefaults.shapes(),
-                            onClick = {
-                                onStepChange(index + 1) // resume after the topics screen
-                                onOpenTopics()
-                            },
-                            modifier = ctaModifier
-                        ) { Text(stringResource(R.string.tutorialOpenTopics)) }
-                    }
-
-                    StepAction.RANDOM -> {
-                        Spacer(Modifier.height(16.dp))
-                        FilledTonalButton(
-                            shapes = ButtonDefaults.shapes(),
-                            onClick = {
-                                onStepChange(index + 1)
-                                onTryRandom()
-                            },
-                            modifier = ctaModifier
-                        ) { Text(stringResource(R.string.tutorialTryRandom)) }
-                    }
-
-                    StepAction.SETTINGS -> {
-                        Spacer(Modifier.height(16.dp))
-                        FilledTonalButton(
-                            shapes = ButtonDefaults.shapes(),
-                            onClick = {
-                                onStepChange(index + 1) // resume after Settings
-                                onOpenSettings()
-                            },
-                            modifier = ctaModifier
-                        ) { Text(stringResource(R.string.tutorialOpenSettings)) }
-                    }
-
-                    StepAction.NONE -> {}
-                }
-
-                Spacer(Modifier.height(20.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     for (i in tutorialPages.indices) {
                         Box(

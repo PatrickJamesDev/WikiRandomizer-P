@@ -1,6 +1,7 @@
 package com.wikirandomizerp.app.data
 
 import android.content.Context
+import com.wikirandomizerp.app.network.HostGate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -63,8 +64,11 @@ class ArticleCache(context: Context) {
     }
 
     private fun digestName(lang: String, title: String): String {
+        // Wikivoyage and Wikipedia can have identically titled pages with different text.
+        // Keep their on-disk cache entries apart; the Wikipedia keys stay unchanged.
+        val cacheLang = if (HostGate.isWikivoyage) "voy:$lang" else lang
         val digest = MessageDigest.getInstance("SHA-1")
-            .digest("$lang\u0000${normalize(title)}".toByteArray(Charsets.UTF_8))
+            .digest("$cacheLang\u0000${normalize(title)}".toByteArray(Charsets.UTF_8))
         return digest.joinToString("") { "%02x".format(it) }
     }
 

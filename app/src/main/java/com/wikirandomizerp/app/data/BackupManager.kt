@@ -17,6 +17,9 @@ import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import org.json.JSONArray
+import org.json.JSONObject
+import com.wikirandomizerp.app.network.HostGate
 
 /** One backup kept inside the app (made automatically before an update or before a restore). */
 data class BackupInfo(
@@ -71,6 +74,10 @@ class BackupManager(private val context: Context) {
         ).filter { it.exists() && it.length() > 0 }
         val offline = offlineDir.listFiles { f -> f.isFile && f.name.endsWith(".offline.json") }
             ?.toList().orEmpty()
+        // The permanent "seen" list lives in the separate topic_index_<lang>.db files, not in
+        // the Room database. Export it too, so restoring an older backup does not make already
+        // read articles appear as new again.
+        val seen = readSeenLists()
 
         ZipOutputStream(out).use { zip ->
             dbFiles.forEach { file ->
@@ -83,6 +90,13 @@ class BackupManager(private val context: Context) {
                 FileInputStream(file).use { it.copyTo(zip) }
                 zip.closeEntry()
             }
+            if (seen.isNotEmpty()) {
+                val root = JSONObject()
+                seen.forEach { (lang, titles) -> root.put(lang, JSONArray(titles)) }
+                zip.putNextEntry(ZipEntry("seen.json"))
+                zip.write(root.toString().toByteArray())
+                zip.closeEntry()
+            }
             zip.putNextEntry(ZipEntry("README.txt"))
             zip.write(
                 ("WikiReader local backup\n" +
@@ -90,7 +104,8 @@ class BackupManager(private val context: Context) {
                         "Reason: $reason\n" +
                         "App version: ${appVersionName()}\n" +
                         "Contains: saved articles, highlights, history, vocabulary, statistics, " +
-                        "open tabs, settings and ${offline.size} offline article(s)\n")
+                        "open tabs, settings, seen-article lists and ${offline.size} offline " +
+                        "article(s)\n")
                     .toByteArray()
             )
             zip.closeEntry()
@@ -154,6 +169,57 @@ class BackupManager(private val context: Context) {
                 BackupInfo(file, file.lastModified(), file.length(), reason)
             }.orEmpty()
 
+    /** Reads every existing topic index's permanent seen list, keyed by its database language. */
+    private fun readSeenLists(): Map<String, List<String>> {
+        val out = LinkedHashMap<String, List<String>>()
+        val files = context.databaseList()
+            .asSequence()
+            .filter { it.startsWith("topic_index_") && it.endsWith(".db") }
+            .sorted()
+        for (name in files) {
+            val lang = name.removePrefix("topic_index_").removeSuffix(".db")
+            val titles = runCatching { TopicIndex.get(context, lang).seenTitles() }
+                .getOrDefault(emptyList())
+            if (titles.isNotEmpty()) out[lang] = titles
+        }
+        return out
+    }
+
+    /** Older backups have no seen.json: rebuild what we can from the restored view history. */
+    private fun readHistorySeen(candidate: File): Map<String, List<String>> {
+        val out = LinkedHashMap<String, MutableList<String>>()
+        return runCatching {
+            val db = SQLiteDatabase.openDatabase(
+                candidate.path, null, SQLiteDatabase.OPEN_READONLY
+            )
+            try {
+                db.rawQuery("SELECT lang, title FROM view_history", null).use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val lang = cursor.getString(0) ?: continue
+                        val title = cursor.getString(1) ?: continue
+                        if (title.isNotBlank()) {
+                            out.getOrPut(HostGate.storageLanguage(lang)) { ArrayList() }
+                                .add(title)
+                        }
+                    }
+                }
+            } finally {
+                db.close()
+            }
+            out
+        }.getOrDefault(emptyMap())
+    }
+
+    private fun applySeen(lists: Map<String, List<String>>) {
+        lists.forEach { (lang, titles) ->
+            runCatching {
+                TopicIndex.get(context, lang).markSeenAll(titles)
+            }.onFailure {
+                DebugLog.w("Backup", "could not restore seen list for $lang: ${it.message}")
+            }
+        }
+    }
+
     /**
      * Replaces the app's data with the backup in [input]. The current data is backed up first, the
      * backup is checked (SQLite file, not newer than this app understands) before anything is
@@ -164,6 +230,7 @@ class BackupManager(private val context: Context) {
         try {
             var foundDb = false
             val offlineFiles = ArrayList<File>()
+            var foundSeen = false
             ZipInputStream(input).use { zip ->
                 var entry = zip.nextEntry
                 while (entry != null) {
@@ -174,11 +241,13 @@ class BackupManager(private val context: Context) {
                         name == DB_NAME || name == "$DB_NAME-wal" -> File(work, name)
                         entry.name.startsWith("offline/") && name.endsWith(".offline.json") ->
                             File(File(work, "offline").apply { mkdirs() }, name)
+                        name == "seen.json" -> File(work, name)
                         else -> null
                     }
                     if (target != null) {
                         FileOutputStream(target).use { zip.copyTo(it) }
                         if (name == DB_NAME) foundDb = true
+                        if (name == "seen.json") foundSeen = true
                         if (target.parentFile?.name == "offline") offlineFiles.add(target)
                     }
                     zip.closeEntry()
@@ -218,6 +287,11 @@ class BackupManager(private val context: Context) {
                 )
             }
 
+            val seenJson = File(work, "seen.json")
+                .takeIf { foundSeen }
+                ?.let { runCatching { it.readText() }.getOrNull() }
+            val historySeen = if (seenJson == null) readHistorySeen(candidate) else emptyMap()
+
             // Everything checks out: keep the current data as a safety net, then swap the files.
             createAutoBackupNow("before-restore")
             AppDatabase.closeAndReset()
@@ -229,6 +303,28 @@ class BackupManager(private val context: Context) {
             if (offlineFiles.isNotEmpty()) {
                 offlineDir.mkdirs()
                 offlineFiles.forEach { runCatching { it.copyTo(File(offlineDir, it.name), overwrite = true) } }
+            }
+
+            // Restore the permanent seen list (or, for old backups, rebuild it from history).
+            if (seenJson != null) {
+                runCatching {
+                    val root = JSONObject(seenJson)
+                    val lists = LinkedHashMap<String, List<String>>()
+                    root.keys().forEach { lang ->
+                        val array = root.optJSONArray(lang) ?: return@forEach
+                        val titles = ArrayList<String>(array.length())
+                        for (i in 0 until array.length()) {
+                            array.optString(i).takeIf { it.isNotBlank() }?.let(titles::add)
+                        }
+                        if (titles.isNotEmpty()) lists[lang] = titles
+                    }
+                    applySeen(lists)
+                }.onFailure {
+                    DebugLog.w("Backup", "could not read seen list from backup: ${it.message}")
+                    applySeen(historySeen)
+                }
+            } else {
+                applySeen(historySeen)
             }
             DebugLog.i("Backup", "restored backup (schema v$backupVersion, ${offlineFiles.size} offline articles)")
             RestoreResult.Success

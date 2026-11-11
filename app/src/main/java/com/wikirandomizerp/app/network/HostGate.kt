@@ -18,6 +18,21 @@ import kotlinx.coroutines.sync.withLock
  * then switches the host for its own batch.
  */
 object HostGate {
+    /**
+     * The Wikimedia project the app is reading. "wikipedia" by default; "wikivoyage" when the
+     * optional travel-guide source is enabled. All topic-index keys are prefixed with "voy_" in
+     * that mode so Wikipedia and Wikivoyage libraries never mix.
+     */
+    @Volatile
+    var project: String = "wikipedia"
+
+    /** True when the optional Wikivoyage source is active. */
+    val isWikivoyage: Boolean get() = project == "wikivoyage"
+
+    /** Topic-index/cache language key for the current project. */
+    fun storageLanguage(lang: String): String =
+        if (isWikivoyage) "voy_$lang" else lang
+
     private val mutex = Mutex()
     private var currentLang: String? = null
     private var active = 0
@@ -34,7 +49,7 @@ object HostGate {
             mutex.withLock {
                 if (active == 0 || currentLang == lang) {
                     currentLang = lang
-                    interceptor.setHost("$lang.wikipedia.org")
+                    interceptor.setHost("$lang.$project.org")
                     active++
                     acquired = true
                 } else {

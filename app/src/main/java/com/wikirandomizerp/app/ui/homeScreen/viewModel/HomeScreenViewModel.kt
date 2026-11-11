@@ -2494,7 +2494,8 @@ class HomeScreenViewModel(
             HomeAction.NavigateBack -> navigateHistory(-1)
             HomeAction.NavigateForward -> navigateHistory(1)
             is HomeAction.OpenInBrowser -> {
-                val url = "https://${action.lang}.wikipedia.org/wiki/" +
+                val project = if (preferencesState.value.wikivoyageEnabled) "wikivoyage" else "wikipedia"
+                val url = "https://${action.lang}.$project.org/wiki/" +
                         Uri.encode(action.title.replace(' ', '_'))
                 runCatching {
                     appContext.startActivity(
@@ -3560,7 +3561,10 @@ class HomeScreenViewModel(
             // Loads share global parser state (reference lists): never run two at once. Waiting for
             // the cancelled load to actually stop fixes crashes/garbled articles from rapid taps.
             previousLoad?.join()
-            if (!preferencesState.value.dataSaver && preferencesState.value.feedEnabled) {
+            // Wikivoyage has no Wikipedia featured-feed endpoint; its home screen is the app
+            // logo, with search / random travel guides one tap away.
+            if (!preferencesState.value.dataSaver && preferencesState.value.feedEnabled &&
+                !preferencesState.value.wikivoyageEnabled) {
                 if (!silent) _homeScreenState.update { currentState ->
                     currentState.copy(isLoading = true, loadingProgress = null)
                 }
@@ -4091,7 +4095,14 @@ class HomeScreenViewModel(
                     wikipediaRepository = wikipediaRepository,
                     appPreferencesRepository = appPreferencesRepository,
                     appDatabaseRepository = appHistoryRepository,
-                    topicIndexProvider = { lang -> TopicIndex.get(application.applicationContext, lang) },
+                    topicIndexProvider = { lang ->
+                        // Wikivoyage libraries are kept in separate files so switching sources
+                        // never mixes travel guides with encyclopedia topics or their seen lists.
+                        TopicIndex.get(
+                            application.applicationContext,
+                            HostGate.storageLanguage(lang)
+                        )
+                    },
                     articleCache = ArticleCache(application.applicationContext),
                     appContext = application.applicationContext,
                     donationSupporterProvider = {

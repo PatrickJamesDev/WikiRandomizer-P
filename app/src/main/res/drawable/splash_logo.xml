@@ -1,54 +1,9 @@
-<animated-vector
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt">
-    <aapt:attr name="android:drawable">
-        <vector
-            android:name="vector"
-            android:width="33dp"
-            android:height="33dp"
-            android:viewportWidth="33"
-            android:viewportHeight="33">
-            <group
-                android:name="group"
-                android:scaleX="0.7"
-                android:scaleY="0.7"
-                android:translateX="5"
-                android:translateY="5">
-                <path
-                    android:name="path"
-                    android:fillAlpha="0.75"
-                    android:fillColor="#000000"
-                    android:pathData="M 16.933 23.192 L 9.706 10.675 L 24.16 10.675 Z" />
-                <path
-                    android:name="path_1"
-                    android:fillAlpha="0.75"
-                    android:fillColor="#000000"
-                    android:pathData="M 16.933 23.192 L 9.706 10.675 L 24.16 10.675 Z" />
-            </group>
-        </vector>
-    </aapt:attr>
-    <target android:name="path">
-        <aapt:attr name="android:animation">
-            <objectAnimator
-                android:duration="300"
-                android:interpolator="@android:anim/overshoot_interpolator"
-                android:propertyName="pathData"
-                android:startOffset="250"
-                android:valueFrom="M 16.933 23.192 L 9.706 10.675 L 24.16 10.675 Z"
-                android:valueTo="M 13.375 23.192 L 6.148 10.675 L 20.601 10.675 Z"
-                android:valueType="pathType"/>
-        </aapt:attr>
-    </target>
-    <target android:name="path_1">
-        <aapt:attr name="android:animation">
-            <objectAnimator
-                android:duration="300"
-                android:interpolator="@android:anim/overshoot_interpolator"
-                android:propertyName="pathData"
-                android:startOffset="250"
-                android:valueFrom="M 16.933 23.192 L 9.706 10.675 L 24.16 10.675 Z"
-                android:valueTo="M 20.492 23.192 L 13.265 10.675 L 27.718 10.675 Z"
-                android:valueType="pathType"/>
-        </aapt:attr>
-    </target>
-</animated-vector>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#1C1B1A"
+        android:pathData="M28.77 86.0V84.94L32.80 84.64Q34.47 84.55 34.99 83.61Q35.52 82.66 35.52 79.99V27.21Q35.52 25.02 34.95 24.16Q34.38 23.31 32.49 23.22L28.77 23.05V22.0H54.54Q59.41 22.0 63.33 22.67Q67.26 23.35 70.24 24.73Q73.22 26.12 75.21 28.20Q77.21 30.28 78.21 33.13Q79.22 35.98 79.22 39.66Q79.22 43.78 78.00 46.92Q76.77 50.05 74.62 52.31Q72.47 54.56 69.62 55.97Q66.77 57.37 63.51 58.05Q60.24 58.73 56.87 58.73Q54.46 58.73 52.70 58.62Q50.95 58.51 50.12 58.38V80.25Q50.12 82.49 50.69 83.54Q51.26 84.59 53.62 84.71L58.53 84.94V86.0ZM53.40 57.24Q58.88 57.24 61.47 53.01Q64.05 48.78 64.05 40.36Q64.05 34.01 62.96 30.30Q61.86 26.60 59.50 25.00Q57.13 23.40 53.27 23.40H50.12V56.94Q50.69 57.11 51.56 57.17Q52.44 57.24 53.40 57.24Z" />
+</vector>

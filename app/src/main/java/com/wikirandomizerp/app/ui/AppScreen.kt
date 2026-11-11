@@ -525,7 +525,14 @@ fun AppScreen(
                 restoreState = true
             }
         },
-        onTabsClick = { tabPanelOpen = true },
+        onTabsClick = {
+            // Opening both side panels at once animated two heavy sheets and made the transition
+            // stutter. Close the drawer first, then reveal the tabs panel.
+            scope.launch {
+                drawerState.close()
+                tabPanelOpen = true
+            }
+        },
         menuOnRight = preferencesState.menuSide == "right",
         modifier = Modifier
             .fillMaxSize()

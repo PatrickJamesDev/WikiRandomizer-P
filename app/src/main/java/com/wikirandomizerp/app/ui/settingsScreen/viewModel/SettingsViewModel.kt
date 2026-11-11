@@ -24,6 +24,7 @@ import com.wikirandomizerp.app.data.PreferencesRepository
 import com.wikirandomizerp.app.data.TopicIndex
 import com.wikirandomizerp.app.data.UserLanguage
 import com.wikirandomizerp.app.data.langCodeToName
+import com.wikirandomizerp.app.network.HostGate
 
 class SettingsViewModel(
     private val appStatusFlow: MutableStateFlow<AppStatus>,
@@ -102,6 +103,12 @@ class SettingsViewModel(
         val saveOffline = boolean("save-offline", false)
         val saveFolders = boolean("save-folders", false)
         val saveNotes = boolean("save-notes", false)
+        val inaturalistEnabled = boolean("inaturalist-enabled", false)
+        val swipeGestures = boolean("swipe-gestures", false)
+        val wikivoyageEnabled = boolean("wikivoyage-enabled", false)
+        // Set before the first network request can run. Changing the source mid-session only
+        // affects subsequent requests; a restart is recommended after toggling it.
+        HostGate.project = if (wikivoyageEnabled) "wikivoyage" else "wikipedia"
         val popularityBias = int("popularity-bias", 0)
         val topicStrictness = int("topic-strictness", 1)
         val preferQuality = boolean("prefer-quality", true)
@@ -125,6 +132,9 @@ class SettingsViewModel(
                 saveOffline = saveOffline,
                 saveFolders = saveFolders,
                 saveNotes = saveNotes,
+                inaturalistEnabled = inaturalistEnabled,
+                swipeGestures = swipeGestures,
+                wikivoyageEnabled = wikivoyageEnabled,
                 popularityBias = popularityBias,
                 topicStrictness = topicStrictness,
                 preferQuality = preferQuality,
@@ -341,6 +351,28 @@ class SettingsViewModel(
                 preferencesStateMutableFlow.update { it.copy(topicStrictness = action.value) }
             }
 
+            is SettingsAction.SaveINaturalist -> viewModelScope.launch(safeCoroutineHandler) {
+                preferencesStateMutableFlow.update { currentState ->
+                    currentState.copy(inaturalistEnabled = action.value)
+                }
+                appPreferencesRepository.saveBooleanPreference("inaturalist-enabled", action.value)
+            }
+
+            is SettingsAction.SaveSwipeGestures -> viewModelScope.launch(safeCoroutineHandler) {
+                preferencesStateMutableFlow.update { currentState ->
+                    currentState.copy(swipeGestures = action.value)
+                }
+                appPreferencesRepository.saveBooleanPreference("swipe-gestures", action.value)
+            }
+
+            is SettingsAction.SaveWikivoyage -> viewModelScope.launch(safeCoroutineHandler) {
+                preferencesStateMutableFlow.update { currentState ->
+                    currentState.copy(wikivoyageEnabled = action.value)
+                }
+                appPreferencesRepository.saveBooleanPreference("wikivoyage-enabled", action.value)
+                HostGate.project = if (action.value) "wikivoyage" else "wikipedia"
+            }
+
             is SettingsAction.SavePopularityBias -> viewModelScope.launch(safeCoroutineHandler) {
                 appPreferencesRepository.saveIntPreference("popularity-bias", action.value)
                 preferencesStateMutableFlow.update { it.copy(popularityBias = action.value) }
@@ -414,11 +446,14 @@ class SettingsViewModel(
                     appPreferencesRepository.resetSettings()
                     // Reset also means "forget learned behaviour" (the feature is off by default).
                     try {
-                        TopicIndex.get(appContext, preferencesStateMutableFlow.value.lang)
-                            .clearPersonalization()
+                        TopicIndex.get(
+                            appContext,
+                            HostGate.storageLanguage(preferencesStateMutableFlow.value.lang)
+                        ).clearPersonalization()
                     } catch (e: Exception) {
                         DebugLog.w("Settings", "could not clear personalization on reset: ${e.message}")
                     }
+                    HostGate.project = "wikipedia"
                     preferencesStateMutableFlow.update {
                         PreferencesState()
                     }

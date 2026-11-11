@@ -353,7 +353,10 @@ private fun AppDrawerContent(
                 selected = selected,
                 onClick = {
                     if (item.enabled) {
-                        scope.launch { drawerState.close() }
+                        // Screens replace the current destination anyway. Items without a route
+                        // (Tabs) close the drawer themselves before opening their panel, so the
+                        // two animations run in sequence instead of on top of each other.
+                        if (item.route != null) scope.launch { drawerState.close() }
                         item.onClick()
                     }
                 },

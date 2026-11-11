@@ -660,6 +660,38 @@ class TopicIndex private constructor(context: Context, val lang: String) :
         )
     }
 
+    /** Marks many titles at once; used when restoring a backup's seen list. */
+    fun markSeenAll(titles: Collection<String>) {
+        val clean = titles.asSequence().filter { it.isNotBlank() }.distinct().toList()
+        if (clean.isEmpty()) return
+        val now = System.currentTimeMillis()
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            val statement = db.compileStatement(
+                "INSERT OR IGNORE INTO seen(title, seen_at) VALUES(?, ?)"
+            )
+            for (title in clean) {
+                statement.bindString(1, title)
+                statement.bindLong(2, now)
+                statement.executeInsert()
+                statement.clearBindings()
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    /** Copy of the permanent seen list, used by backups. */
+    fun seenTitles(): List<String> {
+        val out = ArrayList<String>()
+        readableDatabase.rawQuery("SELECT title FROM seen", null).use { cursor ->
+            while (cursor.moveToNext()) out.add(cursor.getString(0))
+        }
+        return out
+    }
+
     /**
      * Keeps the seen list from growing forever. Oldest entries are forgotten first, so an article
      * read years ago may come back instead of the table growing without bound.
