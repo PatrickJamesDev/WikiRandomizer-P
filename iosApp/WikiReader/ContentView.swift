@@ -1,4 +1,5 @@
 import SwiftUI
+import shared
 
 struct ContentView: View {
     @StateObject private var model = ReaderModel()
