@@ -165,3 +165,9 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
+
+// --- build fix: AGP's extract*NativeSymbolTables output (libzim/libkiwix .sym files) can't be
+// packed into the Gradle build cache on Windows ("Could not get file mode for ...so.sym").
+// The task is fast, so simply don't cache it.
+tasks.matching { it.name.startsWith("extract") && it.name.endsWith("NativeSymbolTables") }
+    .configureEach { outputs.cacheIf { false } }

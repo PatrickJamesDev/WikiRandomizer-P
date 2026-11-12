@@ -1,5 +1,6 @@
 package com.wikirandomizerp.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.ReportDrawnWhen
@@ -21,12 +22,18 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import com.wikirandomizerp.app.data.AppLaunchExtras
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import com.wikirandomizerp.app.data.AppStatus
 import com.wikirandomizerp.app.data.isRtl
 import com.wikirandomizerp.app.data.toColor
 import com.wikirandomizerp.app.ui.AppScreen
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeScreenViewModel
 import com.wikirandomizerp.app.ui.settingsScreen.viewModel.SettingsViewModel
+import com.wikirandomizerp.app.ui.theme.LocalReadingOptions
+import com.wikirandomizerp.app.ui.theme.ReadingOptions
 import com.wikirandomizerp.app.ui.theme.WikiRandomizerPTheme
 
 /** Used when the user turns haptics off; existing call sites keep working unchanged. */
@@ -46,6 +53,7 @@ class MainActivity : ComponentActivity() {
         viewModel.setFilesDir(filesDir.path)
         com.wikirandomizerp.app.data.PerfMonitor.attach(this)
 
+        handleLaunchIntent(intent)
         enableEdgeToEdge()
 
         setContent {
@@ -81,8 +89,22 @@ class MainActivity : ComponentActivity() {
                         { title, lang -> viewModel.getCommonsCategoryGallery(title, lang) }
                     loader
                 }
+                val readingOptions = remember(
+                    preferencesState.lineSpacing,
+                    preferencesState.readingMargin,
+                    preferencesState.justifyText,
+                    preferencesState.sepiaTheme
+                ) {
+                    ReadingOptions(
+                        lineSpacingPercent = preferencesState.lineSpacing,
+                        horizontalMarginDp = preferencesState.readingMargin,
+                        justifyText = preferencesState.justifyText,
+                        sepia = preferencesState.sepiaTheme
+                    )
+                }
                 CompositionLocalProvider(
                     com.wikirandomizerp.app.ui.homeScreen.LocalCommonsGalleryLoader provides galleryLoader,
+                    LocalReadingOptions provides readingOptions,
                     LocalLayoutDirection provides
                             if (isRtl(preferencesState.lang)) LayoutDirection.Rtl
                             else LayoutDirection.Ltr,
@@ -95,6 +117,35 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize()
                     )
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleLaunchIntent(intent)
+    }
+
+    /**
+     * Opens an article from a daily-notification tap, or a random topic article from the widget.
+     * Runs only after the library/database is ready so navigation cannot race initialization.
+     */
+    private fun handleLaunchIntent(intent: Intent?) {
+        if (intent == null) return
+        val title = intent.getStringExtra(AppLaunchExtras.EXTRA_ARTICLE_TITLE)
+        val lang = intent.getStringExtra(AppLaunchExtras.EXTRA_ARTICLE_LANG)
+        val randomFromTopics = intent.action == AppLaunchExtras.ACTION_RANDOM_FROM_TOPICS
+        if (title.isNullOrBlank() && !randomFromTopics) return
+        intent.removeExtra(AppLaunchExtras.EXTRA_ARTICLE_TITLE)
+        intent.removeExtra(AppLaunchExtras.EXTRA_ARTICLE_LANG)
+        intent.action = null
+        lifecycleScope.launch {
+            viewModel.appStatus.first { it == AppStatus.INITIALIZED }
+            if (!title.isNullOrBlank()) {
+                viewModel.openExternalArticle(title, lang)
+            } else {
+                viewModel.openRandomFromTopics()
             }
         }
     }

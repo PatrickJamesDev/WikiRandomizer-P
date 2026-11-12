@@ -92,6 +92,8 @@ fun AppNavigationDrawer(
     onVerticalFeedClick: () -> Unit = {},
     onTabsClick: () -> Unit = {},
     menuOnRight: Boolean = false,
+    /** The TikTok-style feed is a developer preview and stays out of the normal menu. */
+    developerMode: Boolean = false,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
@@ -106,15 +108,18 @@ fun AppNavigationDrawer(
                 onHomeClick
             )
         )
-        add(
-            Item(
-                string.verticalFeed,
-                painterResource(drawable.feed),
-                painterResource(drawable.feed),
-                VerticalFeedRoute::class,
-                onVerticalFeedClick
+        // Developer preview: hidden for everyone until developer mode is switched on.
+        if (developerMode) {
+            add(
+                Item(
+                    string.verticalFeed,
+                    painterResource(drawable.feed),
+                    painterResource(drawable.feed),
+                    VerticalFeedRoute::class,
+                    onVerticalFeedClick
+                )
             )
-        )
+        }
         add(
             Item(
                 string.saved,

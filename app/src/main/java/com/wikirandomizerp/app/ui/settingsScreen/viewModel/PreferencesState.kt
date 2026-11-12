@@ -19,6 +19,22 @@ data class PreferencesState(
     val renderMath: Boolean = true,
     val browsingHistory: Boolean = true,
     val searchHistory: Boolean = true,
+    /**
+     * Page-style reading options (developer preview). [lineSpacing] is a percentage (100 =
+     * normal), [readingMargin] is the horizontal body margin in dp.
+     */
+    val lineSpacing: Int = 100,
+    val readingMargin: Int = 16,
+    val justifyText: Boolean = false,
+    val sepiaTheme: Boolean = false,
+    /** Long-press a link for a Wikipedia page preview instead of opening a tab (developer preview). */
+    val linkPreviews: Boolean = false,
+    /** Talk pages and revision history in the article tools (developer preview). */
+    val talkPages: Boolean = false,
+    /** Optional daily "article of the day" notification (developer preview, off by default). */
+    val dailyNotification: Boolean = false,
+    /** Optional home-screen widget (developer preview, off by default). */
+    val homeWidget: Boolean = false,
     /** When true, article discovery uses popularity-ranked results instead of a random walk. */
     val popularArticlesOnly: Boolean = false,
     /** When true, articles shorter than 5 000 bytes of wikitext are filtered out. */
@@ -37,6 +53,8 @@ data class PreferencesState(
     val saveNotes: Boolean = false,
     /** Show a "View on iNaturalist" action on organism articles (off by default). */
     val inaturalistEnabled: Boolean = false,
+    /** Show a gallery of iNaturalist photos below the Commons gallery on species articles. */
+    val inaturalistGallery: Boolean = false,
     /** Swipe left/right on an article to move through history (off by default). */
     val swipeGestures: Boolean = false,
     /** Read Wikivoyage travel guides instead of Wikipedia (off by default; restart to apply). */

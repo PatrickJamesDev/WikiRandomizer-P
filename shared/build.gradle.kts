@@ -57,16 +57,14 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
-        val iosMain by creating {
-            dependsOn(commonMain.get())
+        // iosMain comes from the default hierarchy template, which Kotlin applies only after this
+        // block has been evaluated, so configure it lazily when it appears.
+        matching { it.name == "iosMain" }.configureEach {
             dependencies {
                 implementation(compose.foundation)
                 implementation(compose.material3)
                 implementation(compose.ui)
             }
-        }
-        listOf("iosX64Main", "iosArm64Main", "iosSimulatorArm64Main").forEach { name ->
-            getByName(name).dependsOn(iosMain)
         }
     }
 }

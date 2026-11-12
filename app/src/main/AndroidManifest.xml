@@ -8,6 +8,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <!-- Lets the app detect the iNaturalist app (package visibility on Android 11+). -->
+    <queries>
+        <package android:name="org.inaturalist.android" />
+    </queries>
     <application
         android:name=".WikiRandomizerPApplication"
         android:allowBackup="true"
@@ -59,6 +63,18 @@
             android:name="com.wikirandomizerp.app.data.IndexKeepAliveService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- Developer-preview home-screen widget; disabled by default in Settings. -->
+        <receiver
+            android:name="com.wikirandomizerp.app.widget.RandomArticleWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_random_info" />
+        </receiver>
     </application>
 
 </manifest>

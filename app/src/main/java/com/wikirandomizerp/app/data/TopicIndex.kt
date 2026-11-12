@@ -283,6 +283,29 @@ class TopicIndex private constructor(context: Context, val lang: String) :
         return out
     }
 
+    /**
+     * A few more articles from the same topic libraries as [title], excluding the article itself.
+     * Used by the "Related articles" strip at the end of an article. When the article is not in a
+     * library, samples from the enabled topics so the strip still has something to show.
+     */
+    fun relatedArticles(title: String, limit: Int): List<ArticleRow> {
+        if (limit <= 0) return emptyList()
+        val topics = topicsForTitle(title).ifEmpty { enabledTopics().take(3) }
+        if (topics.isEmpty()) return emptyList()
+        val normalized = title.replace('_', ' ').trim()
+        return pick(
+            topics = topics,
+            imagesOnly = false,
+            minBytes = 0,
+            qualityOnly = false,
+            limit = limit + 6,
+            includeSeen = true
+        ).asSequence()
+            .filter { !it.title.replace('_', ' ').equals(normalized, ignoreCase = true) }
+            .take(limit)
+            .toList()
+    }
+
     /** Needs a (re)build: missing entirely, or interrupted before it finished. */
     fun needsBuild(topic: String): Boolean = !isBuilt(topic) || isIncomplete(topic)
 

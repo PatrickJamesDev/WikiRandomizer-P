@@ -44,6 +44,9 @@ import com.wikirandomizerp.app.data.perfMeasure
 import com.wikirandomizerp.app.parser.HTML_INFOBOX_MARKER
 import com.wikirandomizerp.app.parser.ReferenceData.infoboxTemplates
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.normalizeArticleLinkTitle
+import com.wikirandomizerp.app.ui.theme.LocalReadingOptions
+import com.wikirandomizerp.app.ui.theme.SepiaInk
+import androidx.compose.ui.text.style.TextAlign
 import kotlin.text.Typography.nbsp
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -79,6 +82,7 @@ fun ParsedBodyText(
     staged: Boolean = false
 ) {
     com.wikirandomizerp.app.data.TrackRecompositions("ParsedBodyText")
+    val reading = LocalReadingOptions.current
     val context = LocalContext.current
     val dpi = LocalDensity.current.density
     val baseBodyStyle = typography.bodyLarge
@@ -163,7 +167,7 @@ fun ParsedBodyText(
                         fontSize = (fontSize + 4).sp,
                         lineHeight = (24 * (fontSize / 16.0) + 4).toInt().sp,
                         modifier = Modifier
-                            .padding(horizontal = 16.dp)
+                            .padding(horizontal = reading.horizontalMarginDp.dp)
                     )
                 }
             } else if (it.blockStartsWith("{{clade", ignoreCase = true)) {
@@ -235,11 +239,15 @@ fun ParsedBodyText(
                     style = bodyStyle,
                     fontSize = fontSize.sp,
                     fontFamily = fontFamily,
-                    lineHeight = (24 * (fontSize / 16.0)).toInt().sp,
+                    lineHeight = (
+                        24 * (fontSize / 16.0) * (reading.lineSpacingPercent / 100.0)
+                    ).toInt().sp,
+                    textAlign = if (reading.justifyText) TextAlign.Justify else TextAlign.Start,
+                    color = if (reading.sepia) SepiaInk else Color.Unspecified,
                     onTextLayout = { textLayout = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = reading.horizontalMarginDp.dp)
                         .perfMeasure("paragraph (${displayText.length} chars)")
                         .articleLinkGestures(
                             text = displayText,

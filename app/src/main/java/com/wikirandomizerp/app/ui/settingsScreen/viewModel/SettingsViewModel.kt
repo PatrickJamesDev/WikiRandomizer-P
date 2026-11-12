@@ -76,6 +76,14 @@ class SettingsViewModel(
         val lang = string("lang", "en")
         val theme = string("theme", "auto")
         val fontSize = int("font-size", 16)
+        val lineSpacing = int("line-spacing", 100).coerceIn(80, 200)
+        val readingMargin = int("reading-margin", 16).coerceIn(4, 48)
+        val justifyText = boolean("justify-text", false)
+        val sepiaTheme = boolean("sepia-theme", false)
+        val linkPreviews = boolean("link-previews", false)
+        val talkPages = boolean("talk-pages", false)
+        val dailyNotification = boolean("daily-notification", false)
+        val homeWidget = boolean("home-widget", false)
         val blackTheme = boolean("black-theme", false)
         val dataSaver = boolean("data-saver", false)
         val feedEnabled = boolean("feed-enabled", true)
@@ -104,6 +112,7 @@ class SettingsViewModel(
         val saveFolders = boolean("save-folders", false)
         val saveNotes = boolean("save-notes", false)
         val inaturalistEnabled = boolean("inaturalist-enabled", false)
+        val inaturalistGallery = boolean("inaturalist-gallery", false)
         val swipeGestures = boolean("swipe-gestures", false)
         val wikivoyageEnabled = boolean("wikivoyage-enabled", false)
         // Set before the first network request can run. Changing the source mid-session only
@@ -133,6 +142,7 @@ class SettingsViewModel(
                 saveFolders = saveFolders,
                 saveNotes = saveNotes,
                 inaturalistEnabled = inaturalistEnabled,
+                inaturalistGallery = inaturalistGallery,
                 swipeGestures = swipeGestures,
                 wikivoyageEnabled = wikivoyageEnabled,
                 popularityBias = popularityBias,
@@ -155,6 +165,14 @@ class SettingsViewModel(
                 feedEnabled = feedEnabled,
                 expandedSections = expandedSections,
                 fontSize = fontSize,
+                lineSpacing = lineSpacing,
+                readingMargin = readingMargin,
+                justifyText = justifyText,
+                sepiaTheme = sepiaTheme,
+                linkPreviews = linkPreviews,
+                talkPages = talkPages,
+                dailyNotification = dailyNotification,
+                homeWidget = homeWidget,
                 fontStyle = fontStyle,
                 imageBackground = imageBackground,
                 immersiveMode = immersiveMode,
@@ -172,6 +190,16 @@ class SettingsViewModel(
         // Let the first frame in immediately. Cleanup and the language-chip sync are useful but
         // must never keep the splash screen up (a slow or failing database looked like a freeze).
         appStatusFlow.update { AppStatus.INITIALIZED }
+
+        // Restore optional developer-preview scheduling without blocking the first frame.
+        runCatching {
+            com.wikirandomizerp.app.widget.WidgetPrefs.setEnabled(appContext, homeWidget)
+            com.wikirandomizerp.app.data.notifications.DailyArticleScheduler.update(
+                appContext,
+                dailyNotification,
+                lang
+            )
+        }
 
         try {
             appDatabaseRepository.insertUserLanguage(
@@ -244,6 +272,55 @@ class SettingsViewModel(
                 preferencesStateMutableFlow.update { currentState ->
                     currentState.copy(fontSize = action.value)
                 }
+            }
+
+            is SettingsAction.SaveLineSpacing -> viewModelScope.launch(safeCoroutineHandler) {
+                val value = action.value.coerceIn(80, 200)
+                appPreferencesRepository.saveIntPreference("line-spacing", value)
+                preferencesStateMutableFlow.update { it.copy(lineSpacing = value) }
+            }
+
+            is SettingsAction.SaveReadingMargin -> viewModelScope.launch(safeCoroutineHandler) {
+                val value = action.value.coerceIn(4, 48)
+                appPreferencesRepository.saveIntPreference("reading-margin", value)
+                preferencesStateMutableFlow.update { it.copy(readingMargin = value) }
+            }
+
+            is SettingsAction.SaveJustifyText -> viewModelScope.launch(safeCoroutineHandler) {
+                appPreferencesRepository.saveBooleanPreference("justify-text", action.value)
+                preferencesStateMutableFlow.update { it.copy(justifyText = action.value) }
+            }
+
+            is SettingsAction.SaveSepiaTheme -> viewModelScope.launch(safeCoroutineHandler) {
+                appPreferencesRepository.saveBooleanPreference("sepia-theme", action.value)
+                preferencesStateMutableFlow.update { it.copy(sepiaTheme = action.value) }
+            }
+
+            is SettingsAction.SaveLinkPreviews -> viewModelScope.launch(safeCoroutineHandler) {
+                appPreferencesRepository.saveBooleanPreference("link-previews", action.value)
+                preferencesStateMutableFlow.update { it.copy(linkPreviews = action.value) }
+            }
+
+            is SettingsAction.SaveTalkPages -> viewModelScope.launch(safeCoroutineHandler) {
+                appPreferencesRepository.saveBooleanPreference("talk-pages", action.value)
+                preferencesStateMutableFlow.update { it.copy(talkPages = action.value) }
+            }
+
+            is SettingsAction.SaveDailyNotification -> viewModelScope.launch(safeCoroutineHandler) {
+                appPreferencesRepository.saveBooleanPreference("daily-notification", action.value)
+                preferencesStateMutableFlow.update { it.copy(dailyNotification = action.value) }
+                com.wikirandomizerp.app.data.notifications.DailyArticleScheduler.update(
+                    appContext,
+                    action.value,
+                    preferencesStateMutableFlow.value.lang
+                )
+            }
+
+            is SettingsAction.SaveHomeWidget -> viewModelScope.launch(safeCoroutineHandler) {
+                appPreferencesRepository.saveBooleanPreference("home-widget", action.value)
+                preferencesStateMutableFlow.update { it.copy(homeWidget = action.value) }
+                com.wikirandomizerp.app.widget.WidgetPrefs.setEnabled(appContext, action.value)
+                com.wikirandomizerp.app.widget.RandomArticleWidgetProvider.updateAll(appContext)
             }
 
             is SettingsAction.SaveExpandedSections -> viewModelScope.launch(safeCoroutineHandler) {
@@ -356,6 +433,13 @@ class SettingsViewModel(
                     currentState.copy(inaturalistEnabled = action.value)
                 }
                 appPreferencesRepository.saveBooleanPreference("inaturalist-enabled", action.value)
+            }
+
+            is SettingsAction.SaveINaturalistGallery -> viewModelScope.launch(safeCoroutineHandler) {
+                preferencesStateMutableFlow.update { currentState ->
+                    currentState.copy(inaturalistGallery = action.value)
+                }
+                appPreferencesRepository.saveBooleanPreference("inaturalist-gallery", action.value)
             }
 
             is SettingsAction.SaveSwipeGestures -> viewModelScope.launch(safeCoroutineHandler) {

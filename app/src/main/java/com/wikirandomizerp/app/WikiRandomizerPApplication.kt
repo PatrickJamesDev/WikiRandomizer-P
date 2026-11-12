@@ -65,6 +65,7 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         com.wikirandomizerp.app.data.PerfMonitor.init(this)
         DebugLog.init(this)
+        com.wikirandomizerp.app.data.notifications.DailyArticleNotifier.ensureChannel(this)
         enableStrictModeIfDebuggable()
         // After an install/update, keep a copy of the previous data before anything opens the database.
         com.wikirandomizerp.app.data.BackupManager.backupIfAppWasUpdated(this)

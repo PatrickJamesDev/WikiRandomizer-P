@@ -697,4 +697,69 @@
     <string name="debugOpenLogDesc">Inspect network calls, timings and errors</string>
     <string name="debugDisable">Disable developer options</string>
     <string name="debugDisableDesc">The About screen tap shortcut keeps working</string>
+    <!-- iNaturalist: where to open, and the species photo gallery -->
+    <string name="inat_open_title">Open in</string>
+    <string name="inat_open_app">iNaturalist app</string>
+    <string name="inat_open_app_missing">iNaturalist app (not installed)</string>
+    <string name="inat_open_browser">Web browser</string>
+    <string name="inat_open_remember">Always use this choice</string>
+    <string name="inat_open_prefs_title">Open iNaturalist links in</string>
+    <string name="inat_open_ask">Ask every time</string>
+    <string name="inat_close">Close</string>
+    <string name="inat_app_fallback_toast">The iNaturalist app could not open this link, so it was opened in the browser.</string>
+    <string name="inat_gallery_title">iNaturalist observations</string>
+    <string name="inat_gallery_subtitle">Community photos of this species (research grade, openly licensed)</string>
+    <string name="inat_gallery_view_all">View all on iNaturalist</string>
+    <string name="inat_gallery_where">Where do links open?</string>
+    <string name="inat_open_observation">Open this observation in iNaturalist</string>
+    <string name="inat_observed_by">Observed by %1$s</string>
+    <string name="settingINaturalistGallery">Show iNaturalist gallery</string>
+    <string name="settingINaturalistGalleryDesc">Show a row of community photos from iNaturalist below the Wikimedia Commons gallery on species articles. Each photo can be opened in iNaturalist, in its app or in the browser.</string>
+    <!-- Developer preview: reading customisation -->
+    <string name="settingLineSpacing">Line spacing</string>
+    <string name="settingLineSpacingDesc">Space between lines while reading</string>
+    <string name="settingLineSpacingValue">%1$d%%</string>
+    <string name="settingReadingMargin">Side margins</string>
+    <string name="settingReadingMarginDesc">Horizontal padding around article text</string>
+    <string name="settingReadingMarginValue">%1$d dp</string>
+    <string name="settingJustifyText">Justify text</string>
+    <string name="settingJustifyTextDesc">Align paragraphs to both edges</string>
+    <string name="settingSepiaTheme">Sepia reading theme</string>
+    <string name="settingSepiaThemeDesc">Warm paper background with softer ink for long reads</string>
+    <!-- Developer preview: link previews -->
+    <string name="settingLinkPreviews">Link previews</string>
+    <string name="settingLinkPreviewsDesc">Long-press a link to peek at the page before opening it</string>
+    <string name="linkPreviewLoading">Loading preview…</string>
+    <string name="linkPreviewFailed">No preview available</string>
+    <string name="linkPreviewRead">Read article</string>
+    <string name="linkPreviewOpenTab">Open in new tab</string>
+    <!-- Related articles strip -->
+    <string name="relatedArticlesTitle">Related articles</string>
+    <string name="relatedArticlesDesc">More from this article\'s topic libraries</string>
+    <!-- Developer preview: talk pages and history -->
+    <string name="settingTalkPages">Talk pages and history</string>
+    <string name="settingTalkPagesDesc">Show talk page and revision history shortcuts on articles</string>
+    <string name="articleTalkPage">Talk page</string>
+    <string name="articleRevisionHistory">Revision history</string>
+    <string name="articleInfoTitle">Article info</string>
+    <string name="articleInfoTabTalk">Talk</string>
+    <string name="articleInfoTabHistory">History</string>
+    <string name="articleInfoTalkEmpty">No talk page content found for this article.</string>
+    <string name="articleInfoHistoryEmpty">No revisions returned.</string>
+    <string name="articleInfoRevisionBy">%1$s · %2$s</string>
+    <string name="articleInfoRevisionSize">%1$d bytes</string>
+    <!-- Developer preview: daily notification and widget -->
+    <string name="settingDailyNotification">Daily article notification</string>
+    <string name="settingDailyNotificationDesc">One quiet notification a day with an article from your topics</string>
+    <string name="settingHomeWidget">Home-screen widget</string>
+    <string name="settingHomeWidgetDesc">Shows a widget that opens a random article from your topics</string>
+    <string name="notificationChannelName">Daily article</string>
+    <string name="notificationChannelDesc">A daily article picked from your topic libraries</string>
+    <string name="dailyArticleNotificationTitle">Today\'s article</string>
+    <string name="widget_name">WikiRandomizer</string>
+    <string name="widget_subtitle">A random article from your topics</string>
+    <string name="widget_button">Surprise me</string>
+    <string name="widget_dev_only">Add it from Settings once developer mode is on</string>
+    <string name="widget_disabled">Enable the widget in Settings to use it</string>
+    <string name="widget_description">Open a random article from your topic libraries</string>
 </resources>

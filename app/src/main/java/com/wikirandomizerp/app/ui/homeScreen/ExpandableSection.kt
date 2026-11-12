@@ -42,6 +42,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import com.wikirandomizerp.app.R
+import com.wikirandomizerp.app.ui.theme.LocalReadingOptions
+import com.wikirandomizerp.app.ui.theme.SepiaBackground
+import com.wikirandomizerp.app.ui.theme.SepiaInk
 import com.wikirandomizerp.app.ui.theme.WRShapeDefaults.cardShape
 import com.wikirandomizerp.app.ui.theme.WikiRandomizerPTheme
 
@@ -110,10 +113,13 @@ fun ExpandableSection(
         animationSpec = motionScheme.defaultSpatialSpec()
     )
 
+    val reading = LocalReadingOptions.current
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.background,
-            contentColor = MaterialTheme.colorScheme.onBackground
+            containerColor = if (reading.sepia) SepiaBackground
+            else MaterialTheme.colorScheme.background,
+            contentColor = if (reading.sepia) SepiaInk
+            else MaterialTheme.colorScheme.onBackground
         ),
         shape = cardShape,
         modifier = modifier
@@ -143,6 +149,7 @@ fun ExpandableSection(
                 fontFamily = fontFamily,
                 fontSize = (28 * (fontSize / 16.0)).toInt().sp,
                 lineHeight = (36 * (fontSize / 16.0)).toInt().sp,
+                color = if (reading.sepia) SepiaInk else androidx.compose.ui.graphics.Color.Unspecified,
                 modifier = Modifier
                     .weight(1f)
                     .padding(top = 16.dp, bottom = 16.dp, end = 16.dp)

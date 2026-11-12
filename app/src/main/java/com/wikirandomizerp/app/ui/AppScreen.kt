@@ -43,6 +43,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -166,6 +167,7 @@ import com.wikirandomizerp.app.ui.curatorsScreen.CuratorsScreenRoot
 import com.wikirandomizerp.app.ui.historyScreen.HistoryScreenRoot
 import com.wikirandomizerp.app.ui.highlightsScreen.HighlightsScreenRoot
 import com.wikirandomizerp.app.ui.homeScreen.AppHomeScreen
+import com.wikirandomizerp.app.ui.homeScreen.ArticleInfoDialog
 import com.wikirandomizerp.app.ui.homeScreen.search.AppSearchBar
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.ArticleTab
 import com.wikirandomizerp.app.ui.homeScreen.VerticalFeedScreen
@@ -207,6 +209,7 @@ fun AppScreen(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    var developerMode by remember { mutableStateOf(DeveloperMode.isEnabled(context)) }
 
     val preferencesState by settingsViewModel.preferencesState.collectAsStateWithLifecycle()
 
@@ -335,6 +338,7 @@ fun AppScreen(
     // LaunchedEffect alone only runs when its keys change. Re-apply the preference when returning
     // from another app, the lock screen, or a permission/system window as Android may restore bars.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        developerMode = DeveloperMode.isEnabled(context)
         val window = activityWindow
         if (window != null && !imageOpen) {
             view.post {
@@ -358,6 +362,8 @@ fun AppScreen(
     var showArticleLanguageSheet by rememberSaveable { mutableStateOf(false) }
     var deepLinkHandled by rememberSaveable { mutableStateOf(false) }
     var tabPanelOpen by rememberSaveable { mutableStateOf(false) }
+    var showArticleInfo by rememberSaveable { mutableStateOf(false) }
+    var articleInfoTab by rememberSaveable { mutableStateOf(0) }
 
     val searchBarScrollBehavior =
         if (
@@ -572,6 +578,7 @@ fun AppScreen(
             }
         },
         menuOnRight = preferencesState.menuSide == "right",
+        developerMode = developerMode,
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
@@ -735,7 +742,9 @@ fun AppScreen(
                         setShowArticleLanguageSheet = { showArticleLanguageSheet = it },
                         insets = insets,
                         windowSizeClass = windowSizeClass,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        relatedLoader = viewModel::getRelatedArticles,
+                        previewLoader = viewModel::getLinkPreview
                     )
 
                     AnimatedVisibility(
@@ -1135,8 +1144,25 @@ fun AppScreen(
         onCloseTab = { viewModel.onAction(HomeAction.CloseTab(it)) },
         onNewTab = { viewModel.onAction(HomeAction.NewTab) },
         recentlyClosed = homeScreenState.recentlyClosed,
-        onReopenClosedTab = { viewModel.onAction(HomeAction.ReopenClosedTab) }
+        onReopenClosedTab = { viewModel.onAction(HomeAction.ReopenClosedTab) },
+        showArticleInfoShortcuts = developerMode && preferencesState.talkPages &&
+                currentArticle != null && currentArticle.title != "Error",
+        onOpenArticleInfo = { tab ->
+            articleInfoTab = tab
+            showArticleInfo = true
+        }
     )
+
+    if (showArticleInfo && currentArticle != null) {
+        ArticleInfoDialog(
+            title = currentArticle.title,
+            lang = currentArticle.currentLang ?: preferencesState.lang,
+            initialTab = articleInfoTab,
+            talkLoader = viewModel::getTalkPage,
+            revisionsLoader = { title, lang -> viewModel.getRevisions(title, lang) },
+            onDismiss = { showArticleInfo = false }
+        )
+    }
 
     TabAddedFlash(
         pulse = tabAddedPulse,
@@ -1247,12 +1273,19 @@ private fun ArticleTabPanel(
     onCloseTab: (Long) -> Unit,
     onNewTab: () -> Unit,
     recentlyClosed: List<ArticleTab>,
-    onReopenClosedTab: () -> Unit
+    onReopenClosedTab: () -> Unit,
+    showArticleInfoShortcuts: Boolean = false,
+    onOpenArticleInfo: (Int) -> Unit = {}
 ) {
     // Back closes the panel first, like the navigation drawer on the left.
     BackHandler(enabled = open) { onOpenChange(false) }
 
     val density = LocalDensity.current
+    // Same motion the left navigation drawer uses (Material's spatial spring to open and to settle
+    // a drag, the fast effects spec to close), instead of a fixed 260 ms tween.
+    val panelMotion = MaterialTheme.motionScheme
+    val settleSpec = panelMotion.defaultSpatialSpec<Float>()
+    val closeSpec = panelMotion.fastEffectsSpec<Float>()
     val dragState = remember {
         AnchoredDraggableState(initialValue = TabPanelValue.Closed)
     }
@@ -1260,7 +1293,7 @@ private fun ArticleTabPanel(
     val flingBehavior = AnchoredDraggableDefaults.flingBehavior(
         dragState,
         { distance -> distance * 0.5f },
-        tween(260)
+        settleSpec
     )
     // Stable instance: the drag modifier must not be re-created while a finger is on it.
     val stableFling = remember(dragState) { flingBehavior }
@@ -1284,7 +1317,7 @@ private fun ArticleTabPanel(
             if (anchorsReady && dragState.currentValue != target &&
                 !dragState.isAnimationRunning
             ) {
-                dragState.animateTo(target)
+                dragState.animateTo(target, if (open) settleSpec else closeSpec)
             }
         }
 
@@ -1342,7 +1375,7 @@ private fun ArticleTabPanel(
                         dragState,
                         Orientation.Horizontal,
                         flingBehavior = stableFling
-                    ) else Modifier
+                    ) else Modifier.clearAndSetSemantics {}
                 )
         ) {
         ModalDrawerSheet(
@@ -1362,209 +1395,28 @@ private fun ArticleTabPanel(
                     translationX = if (offset.isNaN()) panelWidthPx else offset
                 }
         ) {
-            val showLanguage = remember(tabs) { tabs.map { it.lang }.distinct().size > 1 }
-
-            LazyColumn(
-                contentPadding = PaddingValues(vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                item(key = "tabs-title") {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 28.dp, end = 12.dp)
-                    ) {
-                        Text(
-                            stringResource(R.string.tabs),
-                            style = typography.titleLarge,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(vertical = 10.dp)
-                        )
-                        IconButton(onClick = { onOpenChange(false) }) {
-                            Icon(
-                                painterResource(R.drawable.clear),
-                                contentDescription = stringResource(R.string.closeTabPanel)
-                            )
-                        }
-                    }
-                }
-
-                item(key = "tabs-actions") {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 24.dp, end = 20.dp, bottom = 8.dp)
-                    ) {
-                        FilledTonalIconButton(
-                            onClick = { onOpenChange(false); onBack() },
-                            enabled = canGoBack,
-                            shapes = IconButtonDefaults.shapes()
-                        ) {
-                            Icon(
-                                painterResource(R.drawable.arrow_back),
-                                contentDescription = stringResource(R.string.articleBack)
-                            )
-                        }
-                        FilledTonalIconButton(
-                            onClick = { onOpenChange(false); onForward() },
-                            enabled = canGoForward,
-                            shapes = IconButtonDefaults.shapes()
-                        ) {
-                            Icon(
-                                painterResource(R.drawable.arrow_forward),
-                                contentDescription = stringResource(R.string.articleForward)
-                            )
-                        }
-                        FilledTonalIconButton(
-                            onClick = { onOpenChange(false); onOpenInBrowser() },
-                            enabled = canOpenInBrowser,
-                            shapes = IconButtonDefaults.shapes()
-                        ) {
-                            Icon(
-                                painterResource(R.drawable.open_in_browser),
-                                contentDescription = stringResource(R.string.openInBrowser)
-                            )
-                        }
-                        Spacer(Modifier.weight(1f))
-                        TextButton(onClick = { onOpenChange(false); onNewTab() }) {
-                            Icon(
-                                painterResource(R.drawable.add),
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(stringResource(R.string.newTab))
-                        }
-                    }
-                }
-
-                if (tabs.isEmpty()) {
-                    item(key = "tabs-empty") {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 48.dp)
-                        ) {
-                            Icon(
-                                painterResource(R.drawable.tab),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Spacer(Modifier.height(10.dp))
-                            Text(
-                                stringResource(R.string.noTabs),
-                                style = typography.titleMedium
-                            )
-                            Text(
-                                stringResource(R.string.noTabsDesc),
-                                style = typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-                            )
-                        }
-                    }
-                } else {
-                    items(tabs, key = { it.id }) { tab ->
-                        NavigationDrawerItem(
-                            label = {
-                                Text(
-                                    tab.title,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            },
-                            selected = tab.id == activeTabId,
-                            onClick = {
-                                onOpenChange(false)
-                                onSelectTab(tab.id)
-                            },
-                            icon = { TabCover(tab.thumbnail) },
-                            badge = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (showLanguage) {
-                                        Text(
-                                            tab.lang.uppercase(),
-                                            style = typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = { onCloseTab(tab.id) },
-                                        modifier = Modifier.size(40.dp)
-                                    ) {
-                                        Icon(
-                                            painterResource(R.drawable.clear),
-                                            contentDescription = stringResource(R.string.closeTab),
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                            },
-                            modifier = Modifier
-                                .padding(horizontal = 12.dp)
-                                .animateItem()
-                        )
-                    }
-                }
-            }
-
-            // Pinned under the list so it stays visible however far the tab list is scrolled.
-            if (imageSearchTitle != null || recentlyClosed.isNotEmpty()) {
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 28.dp))
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                    modifier = Modifier
-                        .navigationBarsPadding()
-                        .padding(vertical = 8.dp)
-                ) {
-                    recentlyClosed.lastOrNull()?.let { closed ->
-                        NavigationDrawerItem(
-                            label = {
-                                Text(
-                                    stringResource(R.string.reopenClosedTab, closed.title),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            },
-                            selected = false,
-                            onClick = {
-                                onOpenChange(false)
-                                onReopenClosedTab()
-                            },
-                            icon = { Icon(painterResource(R.drawable.undo), null) },
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        )
-                    }
-                    // Only for articles that have no lead picture and no body pictures.
-                    if (imageSearchTitle != null) {
-                        NavigationDrawerItem(
-                            label = {
-                                Text(
-                                    stringResource(R.string.findImages),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            },
-                            selected = false,
-                            onClick = {
-                                onOpenChange(false)
-                                onFindImages(imageSearchTitle)
-                            },
-                            icon = { Icon(painterResource(R.drawable.image), null) },
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        )
-                    }
-                }
-            }
+            // The sheet's content lives in its own function so flipping `open` (which happens
+            // when a drag or animation settles) does not re-compose the whole tab list.
+            ArticleTabPanelContent(
+                tabs = tabs,
+                activeTabId = activeTabId,
+                canGoBack = canGoBack,
+                canGoForward = canGoForward,
+                canOpenInBrowser = canOpenInBrowser,
+                imageSearchTitle = imageSearchTitle,
+                onFindImages = onFindImages,
+                onOpenInBrowser = onOpenInBrowser,
+                onBack = onBack,
+                onForward = onForward,
+                onSelectTab = onSelectTab,
+                onCloseTab = onCloseTab,
+                onNewTab = onNewTab,
+                recentlyClosed = recentlyClosed,
+                onReopenClosedTab = onReopenClosedTab,
+                onOpenChange = onOpenChange,
+                showArticleInfoShortcuts = showArticleInfoShortcuts,
+                onOpenArticleInfo = onOpenArticleInfo
+            )
         }
         }
 
@@ -1582,6 +1434,256 @@ private fun ArticleTabPanel(
                         flingBehavior = stableFling
                     )
             )
+        }
+    }
+}
+
+/** The tab panel's list, back/forward row and shortcuts. Separate so it can skip recomposition. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ColumnScope.ArticleTabPanelContent(
+    tabs: List<ArticleTab>,
+    activeTabId: Long?,
+    canGoBack: Boolean,
+    canGoForward: Boolean,
+    canOpenInBrowser: Boolean,
+    imageSearchTitle: String?,
+    onFindImages: (String) -> Unit,
+    onOpenInBrowser: () -> Unit,
+    onBack: () -> Unit,
+    onForward: () -> Unit,
+    onSelectTab: (Long) -> Unit,
+    onCloseTab: (Long) -> Unit,
+    onNewTab: () -> Unit,
+    recentlyClosed: List<ArticleTab>,
+    onReopenClosedTab: () -> Unit,
+    onOpenChange: (Boolean) -> Unit,
+    showArticleInfoShortcuts: Boolean = false,
+    onOpenArticleInfo: (Int) -> Unit = {}
+) {
+    val showLanguage = remember(tabs) { tabs.map { it.lang }.distinct().size > 1 }
+
+    LazyColumn(
+        contentPadding = PaddingValues(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f)
+    ) {
+        item(key = "tabs-title") {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 28.dp, end = 12.dp)
+            ) {
+                Text(
+                    stringResource(R.string.tabs),
+                    style = typography.titleLarge,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(vertical = 10.dp)
+                )
+                IconButton(onClick = { onOpenChange(false) }) {
+                    Icon(
+                        painterResource(R.drawable.clear),
+                        contentDescription = stringResource(R.string.closeTabPanel)
+                    )
+                }
+            }
+        }
+
+        item(key = "tabs-actions") {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 20.dp, bottom = 8.dp)
+            ) {
+                FilledTonalIconButton(
+                    onClick = { onOpenChange(false); onBack() },
+                    enabled = canGoBack,
+                    shapes = IconButtonDefaults.shapes()
+                ) {
+                    Icon(
+                        painterResource(R.drawable.arrow_back),
+                        contentDescription = stringResource(R.string.articleBack)
+                    )
+                }
+                FilledTonalIconButton(
+                    onClick = { onOpenChange(false); onForward() },
+                    enabled = canGoForward,
+                    shapes = IconButtonDefaults.shapes()
+                ) {
+                    Icon(
+                        painterResource(R.drawable.arrow_forward),
+                        contentDescription = stringResource(R.string.articleForward)
+                    )
+                }
+                FilledTonalIconButton(
+                    onClick = { onOpenChange(false); onOpenInBrowser() },
+                    enabled = canOpenInBrowser,
+                    shapes = IconButtonDefaults.shapes()
+                ) {
+                    Icon(
+                        painterResource(R.drawable.open_in_browser),
+                        contentDescription = stringResource(R.string.openInBrowser)
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = { onOpenChange(false); onNewTab() }) {
+                    Icon(
+                        painterResource(R.drawable.add),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.newTab))
+                }
+            }
+        }
+
+        if (tabs.isEmpty()) {
+            item(key = "tabs-empty") {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 48.dp)
+                ) {
+                    Icon(
+                        painterResource(R.drawable.tab),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        stringResource(R.string.noTabs),
+                        style = typography.titleMedium
+                    )
+                    Text(
+                        stringResource(R.string.noTabsDesc),
+                        style = typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+                    )
+                }
+            }
+        } else {
+            items(tabs, key = { it.id }) { tab ->
+                NavigationDrawerItem(
+                    label = {
+                        Text(
+                            tab.title,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    selected = tab.id == activeTabId,
+                    onClick = {
+                        onOpenChange(false)
+                        onSelectTab(tab.id)
+                    },
+                    icon = { TabCover(tab.thumbnail) },
+                    badge = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (showLanguage) {
+                                Text(
+                                    tab.lang.uppercase(),
+                                    style = typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            IconButton(
+                                onClick = { onCloseTab(tab.id) },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    painterResource(R.drawable.clear),
+                                    contentDescription = stringResource(R.string.closeTab),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .padding(horizontal = 12.dp)
+                        .animateItem()
+                )
+            }
+        }
+    }
+
+    // Pinned under the list so it stays visible however far the tab list is scrolled.
+    if (imageSearchTitle != null || recentlyClosed.isNotEmpty() || showArticleInfoShortcuts) {
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 28.dp))
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier
+                .navigationBarsPadding()
+                .padding(vertical = 8.dp)
+        ) {
+            recentlyClosed.lastOrNull()?.let { closed ->
+                NavigationDrawerItem(
+                    label = {
+                        Text(
+                            stringResource(R.string.reopenClosedTab, closed.title),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    selected = false,
+                    onClick = {
+                        onOpenChange(false)
+                        onReopenClosedTab()
+                    },
+                    icon = { Icon(painterResource(R.drawable.undo), null) },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+            }
+            if (showArticleInfoShortcuts) {
+                NavigationDrawerItem(
+                    label = { Text(stringResource(R.string.articleTalkPage)) },
+                    selected = false,
+                    onClick = {
+                        onOpenChange(false)
+                        onOpenArticleInfo(0)
+                    },
+                    icon = { Icon(painterResource(R.drawable.person), null) },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+                NavigationDrawerItem(
+                    label = { Text(stringResource(R.string.articleRevisionHistory)) },
+                    selected = false,
+                    onClick = {
+                        onOpenChange(false)
+                        onOpenArticleInfo(1)
+                    },
+                    icon = { Icon(painterResource(R.drawable.history), null) },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+            }
+            // Only for articles that have no lead picture and no body pictures.
+            if (imageSearchTitle != null) {
+                NavigationDrawerItem(
+                    label = {
+                        Text(
+                            stringResource(R.string.findImages),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    selected = false,
+                    onClick = {
+                        onOpenChange(false)
+                        onFindImages(imageSearchTitle)
+                    },
+                    icon = { Icon(painterResource(R.drawable.image), null) },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+            }
         }
     }
 }

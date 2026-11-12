@@ -31,6 +31,15 @@ class LanguagePinnedWikipediaRepository(
     override suspend fun getPageContent(title: String): String =
         onWiki { delegate.getPageContent(title) }
 
+    override suspend fun getLinkPreview(title: String, lang: String): LinkPreview? =
+        delegate.getLinkPreview(title, lang)
+
+    override suspend fun getTalkPage(title: String, lang: String): String? =
+        delegate.getTalkPage(title, lang)
+
+    override suspend fun getRevisions(title: String, lang: String, limit: Int): List<WikiRevision> =
+        delegate.getRevisions(title, lang, limit)
+
     override suspend fun getPageHtml(title: String): String =
         onWiki { delegate.getPageHtml(title) }
 

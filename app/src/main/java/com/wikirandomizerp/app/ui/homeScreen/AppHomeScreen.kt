@@ -144,7 +144,11 @@ fun AppHomeScreen(
     onNavigateToRandomTopics: () -> Unit = {},
     insets: PaddingValues,
     windowSizeClass: WindowSizeClass,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    relatedLoader: suspend (String, String) -> List<com.wikirandomizerp.app.data.ArticleRow> =
+        { _, _ -> emptyList() },
+    previewLoader: suspend (String, String) -> com.wikirandomizerp.app.data.LinkPreview? =
+        { _, _ -> null }
 ) {
     val clipboard = LocalClipboard.current
     val density = LocalDensity.current
@@ -460,6 +464,8 @@ fun AppHomeScreen(
                             },
                             setSearchStr = { onAction(HomeAction.UpdateLanguageSearchStr(it)) },
                             onAction = onAction,
+                            relatedLoader = relatedLoader,
+                            previewLoader = previewLoader,
                             modifier = Modifier.background(colorScheme.surface)
                         )
                     }

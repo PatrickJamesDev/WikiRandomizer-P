@@ -54,18 +54,32 @@ if /i "%~1"=="install" set "TASK=:app:installDebug"
 if /i "%~1"=="releaseinstall" set "TASK=:app:installRelease -PlocalRelease"
 if /i "%~1"=="clean" call gradlew.bat clean --no-configuration-cache
 
+set "EXTRA="
+:build
 if exist build_log.txt del build_log.txt
 if exist build_errors.txt del build_errors.txt
 echo Building (%TASK%)... the first run downloads dependencies and can take 10+ minutes.
 
 rem Show Gradle output live AND keep a UTF-8 copy in build_log.txt.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "& .\gradlew.bat %TASK% --no-configuration-cache --console=plain 2>&1 | ForEach-Object { $_; Add-Content -LiteralPath 'build_log.txt' -Value $_ -Encoding UTF8 }; exit $LASTEXITCODE"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "& cmd /c '.\gradlew.bat %TASK% %EXTRA% --no-configuration-cache --console=plain 2>&1' | ForEach-Object { $_; Add-Content -LiteralPath 'build_log.txt' -Value $_ -Encoding UTF8 }; exit $LASTEXITCODE"
 if errorlevel 1 set "RESULT=1"
 
+if "%RESULT%"=="1" if not defined REPAIRED (
+  findstr /C:"MultiModuleICSettings" /C:"Could not generate a decorated class" /C:"NoClassDefFoundError" build_log.txt >nul 2>nul
+  if not errorlevel 1 if exist repair_gradle_cache.bat (
+    set "REPAIRED=1"
+    set "RESULT=0"
+    set "EXTRA=--refresh-dependencies"
+    echo.
+    echo Corrupted Gradle plugin cache detected - repairing it and retrying once...
+    call repair_gradle_cache.bat nopause
+    goto :build
+  )
+)
 if "%RESULT%"=="1" (
   echo.
   echo ================== BUILD FAILED ==================
-  findstr /B /C:"e: " /C:"error:" /C:"* What went wrong" /C:"Execution failed" /C:"Caused by" build_log.txt > build_errors.txt
+  powershell -NoProfile -Command "$lg=@(Get-Content -LiteralPath 'build_log.txt'); $o=New-Object System.Collections.Generic.List[string]; for($i=0;$i -lt $lg.Count;$i++){ $t=[string]$lg[$i]; if($t.StartsWith('e: ') -or $t.StartsWith('error:') -or $t.StartsWith('Caused by')){ $o.Add($t) } elseif($t.StartsWith('* What went wrong')){ $o.Add($t); for($j=$i+1;$j -lt $lg.Count -and -not ([string]$lg[$j]).StartsWith('* Try:');$j++){ if(([string]$lg[$j]).Trim() -ne ''){ $o.Add([string]$lg[$j]) } } } }; $o | Set-Content -LiteralPath 'build_errors.txt' -Encoding UTF8"
   type build_errors.txt
   echo ==================================================
   echo Errors saved to: %CD%\build_errors.txt

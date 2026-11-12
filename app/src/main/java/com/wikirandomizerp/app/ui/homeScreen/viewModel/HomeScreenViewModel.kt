@@ -72,6 +72,8 @@ import com.wikirandomizerp.app.data.IndexKeepAliveService
 import com.wikirandomizerp.app.data.InterestMatch
 import com.wikirandomizerp.app.data.InterestResolver
 import com.wikirandomizerp.app.data.LibraryExhaustedException
+import com.wikirandomizerp.app.data.LinkPreview
+import com.wikirandomizerp.app.data.WikiRevision
 import com.wikirandomizerp.app.data.LanguagePinnedWikipediaRepository
 import com.wikirandomizerp.app.data.BackupManager
 import com.wikirandomizerp.app.data.CommonsImage
@@ -2476,6 +2478,63 @@ class HomeScreenViewModel(
         typography = tg
     }
 
+    /** Talk page wikitext and revision list for the developer-preview article info sheet. */
+    suspend fun getTalkPage(title: String, lang: String): String? =
+        withContext(Dispatchers.IO) { wikipediaRepository.getTalkPage(title, lang) }
+
+    suspend fun getRevisions(title: String, lang: String): List<WikiRevision> =
+        withContext(Dispatchers.IO) { wikipediaRepository.getRevisions(title, lang) }
+
+    /** Summary for the long-press link preview (developer preview). */
+    suspend fun getLinkPreview(title: String, lang: String): LinkPreview? =
+        withContext(Dispatchers.IO) {
+            wikipediaRepository.getLinkPreview(title, lang)
+        }
+
+    /** Related articles from the topic libraries (used by the strip at the end of an article). */
+    suspend fun getRelatedArticles(title: String, lang: String): List<ArticleRow> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                topicIndexProvider(lang).relatedArticles(title, limit = 6)
+            }.getOrDefault(emptyList())
+        }
+
+    /** Opens an article the user shared into the app (notification or widget). */
+    fun openExternalArticle(title: String, lang: String?) {
+        viewModelScope.launch(errorHandler) {
+            loadPage(title = title, lang = lang, random = false)
+        }
+    }
+
+    /** Opens a random article from the enabled topic libraries, falling back to any random page. */
+    fun openRandomFromTopics() {
+        viewModelScope.launch(errorHandler) {
+            val prefs = preferencesState.value
+            val title = withContext(Dispatchers.IO) {
+                runCatching {
+                    val index = topicIndexProvider(prefs.lang)
+                    val topics = index.enabledTopics()
+                    if (topics.isEmpty()) {
+                        null
+                    } else {
+                        index.pick(
+                            topics = topics,
+                            imagesOnly = false,
+                            minBytes = 0,
+                            qualityOnly = false,
+                            limit = 8
+                        ).firstOrNull()?.title
+                    }
+                }.getOrNull()
+            }
+            if (title.isNullOrBlank()) {
+                loadPage(title = null, random = true)
+            } else {
+                loadPage(title = title, lang = prefs.lang, random = false)
+            }
+        }
+    }
+
     fun onAction(action: HomeAction) {
         DebugLog.d("Action", "onAction ${action::class.simpleName}")
         DebugLog.crumb("action ${action::class.simpleName}")
@@ -3213,7 +3272,8 @@ class HomeScreenViewModel(
                             }
                         }
 
-                    var sectionIndex = 3
+                    // LazyColumn item index of the first heading: 0 = header, 1 = intro.
+                    var sectionIndex = 2
                     val articleSections = mutableListOf<Pair<Int, String>>()
                     val parsedExtract = mutableListOf<List<AnnotatedString>>()
 
@@ -3317,7 +3377,7 @@ class HomeScreenViewModel(
                                     else parsed.joinToString(separator = "").parseAsHtml().toString()
                                 )
                             )
-                            sectionIndex += 2
+                            sectionIndex += 1
                         }
                         parsedExtract.add(parsed)
 
@@ -3784,7 +3844,8 @@ class HomeScreenViewModel(
                 val extract: List<String> = parseSections(extractText)
 
                 sections = extract.size
-                var sectionIndex = 3
+                // LazyColumn item index of the first heading: 0 = header, 1 = intro.
+                var sectionIndex = 2
                 val articleSections = mutableListOf<Pair<Int, String>>()
                 val parsedExtract = mutableListOf<List<AnnotatedString>>()
 
@@ -3850,7 +3911,7 @@ class HomeScreenViewModel(
                                 parsed.joinToString(separator = "").parseAsHtml().toString()
                             )
                         )
-                        sectionIndex += 2
+                        sectionIndex += 1
                     }
                     parsedExtract.add(parsed)
 

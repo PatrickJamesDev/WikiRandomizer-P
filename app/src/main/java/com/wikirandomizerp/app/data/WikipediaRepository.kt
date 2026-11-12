@@ -17,11 +17,35 @@ import java.time.format.DateTimeFormatter
 /** Upper bound on generator=links pages fetched for one article (500 links each). */
 private const val MAX_LINKED_PAGE_REQUESTS = 6
 
+/** One revision row for the developer-preview revision history. */
+data class WikiRevision(
+    val revId: Long,
+    val timestamp: String,
+    val user: String,
+    val comment: String,
+    val size: Int
+)
+
+/** Short summary shown when the reader long-presses a link (developer preview). */
+data class LinkPreview(
+    val title: String,
+    val extract: String,
+    val thumbnailUrl: String?,
+    val pageUrl: String
+)
+
 interface WikipediaRepository {
     suspend fun getPrefixSearchResults(query: String): WikiApiPrefixSearchResults
     suspend fun getSearchResults(query: String): WikiApiSearchResults
     suspend fun getPageData(query: String): WikiApiPageData
     suspend fun getPageContent(title: String): String
+    /** REST summary of [title] for the long-press link preview, or null when unavailable. */
+    suspend fun getLinkPreview(title: String, lang: String): LinkPreview? = null
+    /** Raw wikitext of the article's talk page (developer preview), or null when missing. */
+    suspend fun getTalkPage(title: String, lang: String): String? = null
+    /** Recent revisions of [title], newest first (developer preview). */
+    suspend fun getRevisions(title: String, lang: String, limit: Int = 25): List<WikiRevision> =
+        emptyList()
     /** Fully rendered article HTML (REST API), used when the user selects the HTML renderer. */
     suspend fun getPageHtml(title: String): String
     /** Plain-text Wiktionary definitions for [word], or null when none were found/offline. */
@@ -106,6 +130,64 @@ class NetworkWikipediaRepository(
     override suspend fun getPageContent(title: String): String =
         withContext(ioDispatcher) {
             wikipediaPageApiService.getPageContent(title)
+        }
+
+    override suspend fun getTalkPage(title: String, lang: String): String? =
+        withContext(ioDispatcher) {
+            runCatching {
+                val encoded = URLEncoder.encode("Talk:$title", "UTF-8").replace("+", "%20")
+                wikipediaApiService.getUrl(
+                    "https://$lang.wikipedia.org/w/index.php?title=$encoded&action=raw"
+                ).takeIf { it.isNotBlank() }
+            }.getOrNull()
+        }
+
+    override suspend fun getRevisions(
+        title: String,
+        lang: String,
+        limit: Int
+    ): List<WikiRevision> = withContext(ioDispatcher) {
+        runCatching {
+            val encoded = URLEncoder.encode(title.replace(' ', '_'), "UTF-8")
+                .replace("+", "%20")
+            val url = "https://$lang.wikipedia.org/w/api.php?action=query&format=json" +
+                    "&formatversion=2&prop=revisions&titles=$encoded" +
+                    "&rvprop=ids|timestamp|user|comment|size&rvlimit=$limit&rvdir=older"
+            val root = Json.parseToJsonElement(wikipediaApiService.getUrl(url)).jsonObject
+            val revisions = root["query"]?.jsonObject
+                ?.get("pages")?.jsonArray?.firstOrNull()?.jsonObject
+                ?.get("revisions")?.jsonArray ?: return@runCatching emptyList()
+            revisions.mapNotNull { element ->
+                val obj = element.jsonObject
+                WikiRevision(
+                    revId = obj["revid"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: return@mapNotNull null,
+                    timestamp = obj["timestamp"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    user = obj["user"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    comment = obj["comment"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    size = obj["size"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0
+                )
+            }
+        }.getOrDefault(emptyList())
+    }
+
+    override suspend fun getLinkPreview(title: String, lang: String): LinkPreview? =
+        withContext(ioDispatcher) {
+            runCatching {
+                val encoded = URLEncoder.encode(title.replace(' ', '_'), "UTF-8")
+                    .replace("+", "%20")
+                val url = "https://$lang.wikipedia.org/api/rest_v1/page/summary/$encoded"
+                val root = Json.parseToJsonElement(wikipediaApiService.getUrl(url)).jsonObject
+                val extract = root["extract"]?.jsonPrimitive?.contentOrNull
+                    ?.takeIf { it.isNotBlank() }
+                    ?: return@runCatching null
+                LinkPreview(
+                    title = root["title"]?.jsonPrimitive?.contentOrNull ?: title,
+                    extract = extract,
+                    thumbnailUrl = root["thumbnail"]?.jsonObject
+                        ?.get("source")?.jsonPrimitive?.contentOrNull,
+                    pageUrl = "https://$lang.wikipedia.org/wiki/$encoded"
+                )
+            }.getOrNull()
         }
 
     override suspend fun getPageHtml(title: String): String =
