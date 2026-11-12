@@ -7,7 +7,7 @@ struct ArticleWebView: UIViewRepresentable {
     let url: URL
 
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(requestedURL: url)
     }
 
     func makeUIView(context: Context) -> WKWebView {
@@ -17,32 +17,44 @@ struct ArticleWebView: UIViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.allowsBackForwardNavigationGestures = true
         webView.navigationDelegate = context.coordinator
+        webView.scrollView.contentInsetAdjustmentBehavior = .automatic
         webView.load(URLRequest(url: url))
         return webView
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        if webView.url == nil {
-            webView.load(URLRequest(url: url))
-        }
+        guard context.coordinator.requestedURL != url else { return }
+        context.coordinator.requestedURL = url
+        webView.load(URLRequest(url: url))
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate {
+        var requestedURL: URL
+
+        init(requestedURL: URL) {
+            self.requestedURL = requestedURL
+        }
+
         func webView(
             _ webView: WKWebView,
             decidePolicyFor navigationAction: WKNavigationAction,
             decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
         ) {
-            // Keep the reader inside the app; hand non-Wikipedia links to Safari.
-            if let host = navigationAction.request.url?.host,
-               !host.hasSuffix("wikipedia.org") {
+            guard let url = navigationAction.request.url else {
                 decisionHandler(.cancel)
-                if let url = navigationAction.request.url {
-                    UIApplication.shared.open(url)
-                }
                 return
             }
-            decisionHandler(.allow)
+
+            // Keep Wikipedia content inside the reader. Anything else, including custom
+            // schemes, is handed to the system so the embedded browser cannot be hijacked.
+            if let host = url.host?.lowercased(),
+               host == "wikipedia.org" || host.hasSuffix(".wikipedia.org") {
+                decisionHandler(.allow)
+                return
+            }
+
+            decisionHandler(.cancel)
+            UIApplication.shared.open(url)
         }
     }
 }

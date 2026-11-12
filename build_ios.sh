@@ -112,25 +112,50 @@ setup_tools() {
 }
 
 select_simulator() {
+    SIM_NAME=""
+    SIM_UDID=""
+
     if [ -n "${IOS_SIMULATOR_UDID:-}" ]; then
         SIM_UDID="$IOS_SIMULATOR_UDID"
-        DESTINATION="platform=iOS Simulator,id=$SIM_UDID"
-        return
-    fi
-
-    if [ -n "${IOS_SIMULATOR:-}" ]; then
-        DESTINATION="platform=iOS Simulator,name=$IOS_SIMULATOR"
+        SIM_NAME="$(xcrun simctl list devices available | awk -v id="$SIM_UDID" '
+            index($0, "(" id ")") {
+                line = $0
+                sub(/^[[:space:]]*/, "", line)
+                sub(/ \([0-9A-Fa-f-]+\).*/, "", line)
+                print line
+                exit
+            }
+        ')"
+        if [ -z "$SIM_NAME" ]; then
+            echo "[ERROR] Simulator UDID $SIM_UDID was not found."
+            echo "        Run: xcrun simctl list devices available"
+            exit 1
+        fi
+    elif [ -n "${IOS_SIMULATOR:-}" ]; then
         SIM_NAME="$IOS_SIMULATOR"
-        return
+        SIM_UDID="$(xcrun simctl list devices available | awk -v name="$SIM_NAME" '
+            index($0, name " (") {
+                if (match($0, /\([0-9A-Fa-f-]+\)/)) {
+                    print substr($0, RSTART + 1, RLENGTH - 2)
+                    exit
+                }
+            }
+        ')"
+        if [ -z "$SIM_UDID" ]; then
+            echo "[ERROR] Simulator \"$SIM_NAME\" was not found or is unavailable."
+            echo "        Run: xcrun simctl list devices available"
+            exit 1
+        fi
+    else
+        SIM_UDID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {print $2; exit}')"
+        if [ -z "$SIM_UDID" ]; then
+            echo "[ERROR] No iPhone simulator is installed."
+            echo "        Open Xcode > Settings > Platforms and install an iOS Simulator runtime."
+            exit 1
+        fi
+        SIM_NAME="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {print $1; exit}' | sed 's/[[:space:]]*$//')"
     fi
 
-    SIM_UDID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {print $2; exit}')"
-    if [ -z "$SIM_UDID" ]; then
-        echo "[ERROR] No iPhone simulator is installed."
-        echo "        Open Xcode > Settings > Platforms and install an iOS Simulator runtime."
-        exit 1
-    fi
-    SIM_NAME="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {print $1; exit}' | sed 's/[[:space:]]*$//')"
     DESTINATION="platform=iOS Simulator,id=$SIM_UDID"
 }
 
@@ -159,6 +184,7 @@ install_simulator() {
     build_simulator
     say "Installing on $SIM_NAME"
     xcrun simctl boot "$SIM_UDID" 2>/dev/null || true
+    xcrun simctl bootstatus "$SIM_UDID" -b >/dev/null 2>&1 || true
     open -a Simulator
     APP="$(find "$DERIVED/Build/Products/Debug-iphonesimulator" -maxdepth 2 -name 'WikiReader.app' -print -quit)"
     if [ -z "$APP" ]; then

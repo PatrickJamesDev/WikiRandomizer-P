@@ -9,6 +9,7 @@ package org.nsh07.wikireader.shared
  */
 object WikiUrls {
     private const val HEX = "0123456789ABCDEF"
+    private val repeatedUnderscores = Regex("_+")
 
     /** Host for the desktop/mobile-agnostic Wikipedia site of [lang]. */
     fun host(lang: String): String = "${cleanLang(lang)}.wikipedia.org"
@@ -44,7 +45,7 @@ object WikiUrls {
     fun normalizeTitle(title: String): String =
         title.trim()
             .replace(' ', '_')
-            .replace(Regex("_+"), "_")
+            .replace(repeatedUnderscores, "_")
             .trim('_')
 
     /** Percent-encodes a title for use as a single URL path segment. */

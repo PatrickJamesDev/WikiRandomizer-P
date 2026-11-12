@@ -26,11 +26,17 @@ struct ContentView: View {
                         ProgressView("Finding a random article…")
                             .frame(maxWidth: .infinity, minHeight: 320)
                     } else if let error = model.errorMessage {
-                        messageView(
-                            title: "Could not load Wikipedia",
-                            systemImage: "wifi.exclamationmark",
-                            description: error
-                        )
+                        VStack(spacing: 16) {
+                            messageView(
+                                title: "Could not load Wikipedia",
+                                systemImage: "wifi.exclamationmark",
+                                description: error
+                            )
+                            Button("Try again") {
+                                Task { await model.loadRandom() }
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
                     } else {
                         messageView(
                             title: "No article yet",
@@ -44,7 +50,14 @@ struct ContentView: View {
                 .padding()
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("WikiReader")
+            .navigationTitle("WikiRandomizer-P")
+            .overlay(alignment: .topTrailing) {
+                if model.isLoading, model.article != nil {
+                    ProgressView()
+                        .controlSize(.small)
+                        .padding(12)
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Menu {
@@ -111,17 +124,26 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
         }
 
+        let minutes = model.readingMinutes(for: article)
+        if minutes > 0 {
+            Label("\(minutes) min read", systemImage: "clock")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+
         if let thumbnail = article.thumbnail,
            let url = URL(string: thumbnail.source) {
-            AsyncImage(url: url) { image in
+            CachedAsyncImage(url: url) { image in
                 image
                     .resizable()
                     .scaledToFill()
             } placeholder: {
                 ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 240)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 240)
+            .clipped()
             .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         }
 

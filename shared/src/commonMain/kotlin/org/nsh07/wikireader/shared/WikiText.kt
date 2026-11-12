@@ -3,12 +3,13 @@ package org.nsh07.wikireader.shared
 /** Small, dependency-free text helpers shared by Android and iOS. */
 object WikiText {
     private val htmlTag = Regex("<[^>]+>")
+    private val brTag = Regex("<br\\s*/?>", RegexOption.IGNORE_CASE)
     private val whitespace = Regex("\\s+")
 
     /** Turns the snippets returned by the REST API into readable plain text. */
     fun plainText(input: String): String = normalizeWhitespace(
         input
-            .replace("<br\\s*/?>".toRegex(RegexOption.IGNORE_CASE), " ")
+            .replace(brTag, " ")
             .replace(htmlTag, " ")
             .replace("&nbsp;", " ")
             .replace("&amp;", "&")
