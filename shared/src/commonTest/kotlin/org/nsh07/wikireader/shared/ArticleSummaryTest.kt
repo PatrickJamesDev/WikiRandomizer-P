@@ -8,7 +8,7 @@ import kotlin.test.assertNull
 class ArticleSummaryTest {
     @Test
     fun parsesRestSummaryAndIgnoresUnknownFields() {
-        val article = ArticleSummaryJson.parse(
+        val article = assertNotNull(ArticleSummaryJson.parse(
             """
             {
               "type": "standard",
@@ -28,9 +28,8 @@ class ArticleSummaryTest {
               "new_api_field": true
             }
             """.trimIndent()
-        )
+        ))
 
-        assertNotNull(article)
         assertEquals("Köln", article.title)
         assertEquals(123, article.pageid)
         assertEquals("City in Germany", article.summaryDescription)
@@ -41,11 +40,10 @@ class ArticleSummaryTest {
 
     @Test
     fun acceptsSummariesWithoutOptionalFields() {
-        val article = ArticleSummaryJson.parse(
+        val article = assertNotNull(ArticleSummaryJson.parse(
             """{"title":"Empty","extract":"Only required fields."}"""
-        )
+        ))
 
-        assertNotNull(article)
         assertNull(article.summaryDescription)
         assertNull(article.thumbnail)
         assertNull(article.contentUrls)
