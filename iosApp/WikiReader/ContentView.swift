@@ -118,7 +118,7 @@ struct ContentView: View {
             .font(.largeTitle.bold())
             .textSelection(.enabled)
 
-        if let description = article.description, !description.isEmpty {
+        if let description = article.summaryDescription, !description.isEmpty {
             Text(description)
                 .font(.title3)
                 .foregroundStyle(.secondary)

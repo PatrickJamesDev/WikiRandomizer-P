@@ -18,7 +18,7 @@ private enum WikiNetworking {
     static let userAgent =
         "WikiReader-iOS/1.0 (https://github.com/PatrickJamesDev/WikiRandomizer-P)"
 
-    static func fetchRandomArticle(language: String) async throws -> ArticleSummary {
+    static func fetchRandomArticleData(language: String) async throws -> Data {
         let urlString = WikiUrls.shared.randomSummaryUrl(lang: language)
         guard let url = URL(string: urlString) else { throw URLError(.badURL) }
 
@@ -37,9 +37,7 @@ private enum WikiNetworking {
             throw URLError(.badServerResponse)
         }
 
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        return try decoder.decode(ArticleSummary.self, from: data)
+        return data
     }
 }
 
@@ -59,7 +57,7 @@ final class ReaderModel: ObservableObject {
     }
 
     private static let languageKey = "wikiLanguage"
-    private var activeRequest: Task<ArticleSummary, Error>?
+    private var activeRequest: Task<Data, Error>?
     private var requestGeneration = 0
 
     init() {
@@ -76,7 +74,7 @@ final class ReaderModel: ObservableObject {
         errorMessage = nil
 
         let request = Task {
-            try await WikiNetworking.fetchRandomArticle(language: requestedLanguage)
+            try await WikiNetworking.fetchRandomArticleData(language: requestedLanguage)
         }
         activeRequest = request
 
@@ -88,13 +86,17 @@ final class ReaderModel: ObservableObject {
         }
 
         do {
-            let article = try await withTaskCancellationHandler {
+            let data = try await withTaskCancellationHandler {
                 try await request.value
             } onCancel: {
                 request.cancel()
             }
 
             guard generation == requestGeneration else { return }
+            guard let raw = String(data: data, encoding: .utf8),
+                  let article = ArticleSummaryJson.shared.parse(raw: raw) else {
+                throw URLError(.cannotParseResponse)
+            }
             self.article = article
         } catch is CancellationError {
             // Superseded by a newer request, a language change, or a dismissed view.
