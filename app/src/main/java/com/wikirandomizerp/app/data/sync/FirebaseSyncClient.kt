@@ -63,7 +63,6 @@ class FirebaseSyncClient(context: Context) {
                     .setApplicationId(cfg.applicationId)
                     .setApiKey(cfg.apiKey)
                     .setProjectId(cfg.projectId)
-                    .setAuthDomain(cfg.authDomain.ifBlank { "${cfg.projectId}.firebaseapp.com" })
                     .build()
             )
         }.getOrNull()
@@ -78,17 +77,16 @@ class FirebaseSyncClient(context: Context) {
     private val _authState = MutableStateFlow<SyncAuthState>(
         when {
             !configured || auth == null -> SyncAuthState.NotConfigured
-            auth.currentUser != null -> auth.currentUser.toSyncAuthState()
-            else -> SyncAuthState.SignedOut
+            else -> auth.currentUser?.toSyncAuthState() ?: SyncAuthState.SignedOut
         }
     )
     val authState: StateFlow<SyncAuthState> = _authState.asStateFlow()
 
     private val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-        _authState.value = when {
-            !configured || auth == null -> SyncAuthState.NotConfigured
-            firebaseAuth.currentUser != null -> firebaseAuth.currentUser.toSyncAuthState()
-            else -> SyncAuthState.SignedOut
+        _authState.value = if (!configured || auth == null) {
+            SyncAuthState.NotConfigured
+        } else {
+            firebaseAuth.currentUser?.toSyncAuthState() ?: SyncAuthState.SignedOut
         }
     }
 
