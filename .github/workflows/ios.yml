@@ -1,0 +1,64 @@
+name: Build iOS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "iosApp/**"
+      - "shared/**"
+      - "build_ios.sh"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "iosApp/**"
+      - "shared/**"
+      - "build_ios.sh"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Run shared tests
+        run: ./gradlew :shared:jvmTest --no-configuration-cache --console=plain
+
+      - name: Build simulator app
+        run: ./build_ios.sh build
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-logs
+          path: |
+            build_ios_log.txt
+            build_ios_errors.txt
+          if-no-files-found: ignore
