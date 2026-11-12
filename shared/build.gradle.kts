@@ -50,6 +50,9 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.serialization.json)
+            // The Compose compiler is applied to every target, so its runtime must be visible
+            // even on JVM/Android/Wasm where no composables are compiled yet.
+            implementation(compose.runtime)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
@@ -57,7 +60,6 @@ kotlin {
         val iosMain by creating {
             dependsOn(commonMain.get())
             dependencies {
-                implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
                 implementation(compose.ui)
