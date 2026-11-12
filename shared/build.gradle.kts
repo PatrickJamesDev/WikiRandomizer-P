@@ -54,13 +54,17 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
-        val iosMain by getting {
+        val iosMain by creating {
+            dependsOn(commonMain.get())
             dependencies {
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
                 implementation(compose.ui)
             }
+        }
+        listOf("iosX64Main", "iosArm64Main", "iosSimulatorArm64Main").forEach { name ->
+            getByName(name).dependsOn(iosMain)
         }
     }
 }
