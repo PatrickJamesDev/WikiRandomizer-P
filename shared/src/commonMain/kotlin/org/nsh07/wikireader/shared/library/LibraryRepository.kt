@@ -17,6 +17,15 @@ data class LibraryEntry(
         get() = "${language.lowercase()}|${article.title.trim().lowercase()}"
 }
 
+@Serializable
+data class SearchQuery(
+    val query: String,
+    val language: String
+) {
+    val key: String
+        get() = "${language.lowercase()}|${query.trim().lowercase()}"
+}
+
 /**
  * Small shared Saved/History store.
  *
@@ -52,6 +61,20 @@ class LibraryRepository(private val settingsStore: SettingsStore) {
     fun clearHistory(): List<LibraryEntry> =
         write(SettingsKeys.ARTICLE_HISTORY, emptyList())
 
+    fun recentSearches(): List<SearchQuery> = readSearches()
+
+    fun addSearchQuery(query: String, language: String): List<SearchQuery> {
+        val trimmed = query.trim()
+        if (trimmed.length < 2) return recentSearches()
+        val entry = SearchQuery(trimmed, language)
+        return writeSearches(
+            (listOf(entry) + recentSearches().filterNot { it.key == entry.key })
+                .take(MAX_SEARCHES)
+        )
+    }
+
+    fun clearSearches(): List<SearchQuery> = writeSearches(emptyList())
+
     private fun prepend(entry: LibraryEntry, entries: List<LibraryEntry>): List<LibraryEntry> =
         listOf(entry) + entries.filterNot { it.key == entry.key }
 
@@ -65,7 +88,20 @@ class LibraryRepository(private val settingsStore: SettingsStore) {
         return entries
     }
 
+    private fun readSearches(): List<SearchQuery> =
+        runCatching {
+            json.decodeFromString<List<SearchQuery>>(
+                settingsStore.getString(SettingsKeys.SEARCH_HISTORY, "[]")
+            )
+        }.getOrDefault(emptyList())
+
+    private fun writeSearches(entries: List<SearchQuery>): List<SearchQuery> {
+        settingsStore.putString(SettingsKeys.SEARCH_HISTORY, json.encodeToString(entries))
+        return entries
+    }
+
     private companion object {
         const val MAX_HISTORY = 200
+        const val MAX_SEARCHES = 12
     }
 }

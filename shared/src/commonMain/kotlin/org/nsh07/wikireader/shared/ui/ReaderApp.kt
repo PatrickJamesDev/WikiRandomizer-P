@@ -74,13 +74,14 @@ import org.nsh07.wikireader.shared.ui.article.PlatformArticleWebView
 import org.nsh07.wikireader.shared.ui.library.LibraryScreen
 import org.nsh07.wikireader.shared.ui.library.LibrarySearchScreen
 import org.nsh07.wikireader.shared.ui.settings.SettingsScreen
+import org.nsh07.wikireader.shared.ui.stats.StatisticsScreen
 import org.nsh07.wikireader.shared.ui.topics.TopicsScreen
 import org.nsh07.wikireader.shared.ui.settings.THEME_DARK
 import org.nsh07.wikireader.shared.ui.settings.THEME_LIGHT
 import org.nsh07.wikireader.shared.ui.settings.THEME_SYSTEM
 import org.nsh07.wikireader.shared.ui.theme.WikiReaderTheme
 
-private enum class ReaderDestination { READER, TOPICS, SAVED, HISTORY, SEARCH, SETTINGS, ABOUT }
+private enum class ReaderDestination { READER, TOPICS, SAVED, HISTORY, SEARCH, STATS, SETTINGS, ABOUT }
 
 private data class OpenArticle(
     val language: String,
@@ -121,6 +122,7 @@ fun ReaderApp(
         var historyEntries by remember { mutableStateOf(library.history()) }
         var openArticle by remember { mutableStateOf<OpenArticle?>(null) }
         var librarySearchQuery by remember { mutableStateOf("") }
+        var recentSearches by remember { mutableStateOf(library.recentSearches()) }
         var selectedTopic by remember {
             mutableStateOf<WikiTopic?>(
                 settingsStore.getString(SettingsKeys.TOPIC, "")
@@ -245,6 +247,16 @@ fun ReaderApp(
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
                     NavigationDrawerItem(
+                        label = { Text("Stats") },
+                        selected = destination == ReaderDestination.STATS,
+                        onClick = {
+                            destination = ReaderDestination.STATS
+                            openArticle = null
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                    NavigationDrawerItem(
                         label = { Text("Settings") },
                         selected = destination == ReaderDestination.SETTINGS,
                         onClick = {
@@ -289,6 +301,7 @@ fun ReaderApp(
                                 ReaderDestination.SAVED -> "Saved"
                                 ReaderDestination.HISTORY -> "History"
                                 ReaderDestination.SEARCH -> "Search"
+                                ReaderDestination.STATS -> "Stats"
                                 ReaderDestination.SETTINGS -> "Settings"
                                 ReaderDestination.ABOUT -> "About"
                             }
@@ -409,8 +422,27 @@ fun ReaderApp(
                                 query = librarySearchQuery,
                                 saved = savedEntries,
                                 history = historyEntries,
+                                recentSearches = recentSearches,
                                 onQueryChange = { librarySearchQuery = it },
-                                onOpen = { entry -> openInReader(entry.language, entry.article) }
+                                onSearchCommitted = { query ->
+                                    recentSearches = library.addSearchQuery(query, language)
+                                },
+                                onRecentSearch = { query -> librarySearchQuery = query },
+                                onClearRecent = { recentSearches = library.clearSearches() },
+                                onOpen = { entry ->
+                                    recentSearches = library.addSearchQuery(
+                                        librarySearchQuery,
+                                        language
+                                    )
+                                    openInReader(entry.language, entry.article)
+                                }
+                            )
+
+                            ReaderDestination.STATS -> StatisticsScreen(
+                                saved = savedEntries,
+                                history = historyEntries,
+                                topicLabel = selectedTopic?.label ?: "All topics",
+                                languageLabel = languageName(language)
                             )
 
                             ReaderDestination.SETTINGS -> SettingsScreen(

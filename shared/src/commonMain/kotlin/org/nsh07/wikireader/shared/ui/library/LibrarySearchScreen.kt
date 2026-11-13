@@ -1,5 +1,6 @@
 package org.nsh07.wikireader.shared.ui.library
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,18 +14,25 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.nsh07.wikireader.shared.library.LibraryEntry
+import org.nsh07.wikireader.shared.library.SearchQuery
 import org.nsh07.wikireader.shared.ui.languageName
 
 @Composable
@@ -32,7 +40,11 @@ fun LibrarySearchScreen(
     query: String,
     saved: List<LibraryEntry>,
     history: List<LibraryEntry>,
+    recentSearches: List<SearchQuery>,
     onQueryChange: (String) -> Unit,
+    onSearchCommitted: (String) -> Unit,
+    onRecentSearch: (String) -> Unit,
+    onClearRecent: () -> Unit,
     onOpen: (LibraryEntry) -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -53,6 +65,8 @@ fun LibrarySearchScreen(
             placeholder = { Text("Search saved and history") },
             singleLine = true,
             shape = RoundedCornerShape(28.dp),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { onSearchCommitted(query) }),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -60,6 +74,38 @@ fun LibrarySearchScreen(
         )
 
         when {
+            normalized.length < 2 && recentSearches.isNotEmpty() -> LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item(key = "recent-header") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Recent searches",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 8.dp)
+                        )
+                        TextButton(onClick = onClearRecent) { Text("Clear") }
+                    }
+                }
+                items(recentSearches, key = { it.key }) { search ->
+                    RecentSearchRow(
+                        search = search,
+                        onClick = { onRecentSearch(search.query) }
+                    )
+                }
+                item { Spacer(Modifier.height(24.dp)) }
+            }
+
             normalized.length < 2 -> SearchMessage(
                 title = "Search your library",
                 description = "Type at least two characters to find saved and recently opened articles.",
@@ -108,6 +154,33 @@ private fun LazyListScope.resultSection(
             onOpen = { onOpen(entry) },
             onRemove = null
         )
+    }
+}
+
+@Composable
+private fun RecentSearchRow(search: SearchQuery, onClick: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = search.query,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = languageName(search.language),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
