@@ -1,20 +1,20 @@
 # Building WikiRandomizer-P for iOS
 
-WikiRandomizer-P uses a small Kotlin Multiplatform core (`shared`) plus two native UI shells:
+WikiRandomizer-P uses a Kotlin Multiplatform module (`shared`) for the shared core and the Compose UI, hosted by Android and iOS:
 
 ```
-shared/                 Kotlin Multiplatform (Android + iOS) – URL/title/text logic
-app/                    Android app (Jetpack Compose)
-iosApp/                 SwiftUI iOS app, links the `shared` framework
+shared/                 Kotlin Multiplatform (Android + iOS) – core logic + shared Compose UI
+app/                    Android host (Jetpack Compose entry point)
+iosApp/                 SwiftUI host that displays the shared Compose reader
 build_ios.sh            Installer/build script for macOS
 build_android.sh        Android build script for macOS/Linux
 build_windows.bat       Android build script for Windows
 ```
 
 Kotlin/Native compiles the `shared` module to a static `shared.framework` for `iosArm64`,
-`iosX64` and `iosSimulatorArm64`. Xcode compiles the SwiftUI shell and links that framework.
-The same shared source is compiled into the Android app, so URL encoding, title normalisation
-and text helpers cannot drift between platforms.
+`iosX64` and `iosSimulatorArm64`. Xcode compiles the small SwiftUI host and links that
+framework. The shared Compose UI compiles for both targets; iOS renders it today while the
+remaining Android screens migrate to it, so URL encoding and text helpers cannot drift.
 
 > **Apple limitation:** producing an iOS `.app`/`.ipa` requires macOS and Xcode. There is no
 > legal or practical way to cross-compile the final iOS binary on Linux or Windows. The script
@@ -89,10 +89,16 @@ several minutes. Later builds are incremental.
 
 - The shared core builds every Wikipedia URL (article, mobile article, random summary, image,
   search) and provides title/text helpers.
-- `iosApp` is a native SwiftUI reader: pick a language, fetch a random article summary from the
-  Wikipedia REST API, preview the lead image and extract, then open the full mobile article in a
-  `WKWebView` (tables, references and collapsible sections work there).
+- `iosApp` hosts `ReaderViewController()`, which renders the shared Compose app shell. It picks a
+  language, fetches a random summary through Ktor/Darwin, shows the title, description, read time
+  and extract, and opens the full article in an embedded `WKWebView` (Android uses `WebView`).
+  The drawer also contains Topics, Saved, History, Search, Settings and About. Topic picks load random
+  category articles; Saved articles and opened-article history use the shared `LibraryRepository`;
+  search filters both lists; theme and language persist through
+  `NSUserDefaults` via the shared `SettingsStore`.
 - The Android app keeps all of its existing features; `build_ios.sh` does not change the APK.
+- Remaining Android screens are migrated into `shared/src/commonMain` in phases, then both hosts
+  use the same implementation.
 
 ## Adding shared code
 

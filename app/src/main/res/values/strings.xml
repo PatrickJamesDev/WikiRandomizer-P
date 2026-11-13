@@ -671,6 +671,8 @@
     <!-- Debug menu -->
     <string name="developerOptions">Developer options</string>
     <string name="developerOptionsDesc">Supporter tools, donation tests and diagnostics</string>
+    <string name="sharedReaderPreview">Shared Compose reader</string>
+    <string name="sharedReaderPreviewDesc">Preview the Kotlin Multiplatform UI used by iOS</string>
     <string name="debugModeEnabled">Developer mode activated!</string>
     <string name="debugModeDisabled">Developer options disabled</string>
     <string name="debugMenuTitle">Developer options</string>

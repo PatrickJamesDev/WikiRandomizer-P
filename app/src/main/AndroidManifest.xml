@@ -48,6 +48,12 @@
             </intent-filter>
         </activity>
 
+        <!-- Developer preview of the shared Compose shell; production still opens MainActivity. -->
+        <activity
+            android:name="com.wikirandomizerp.app.SharedReaderActivity"
+            android:exported="false"
+            android:theme="@style/Theme.WikiRandomizerP.Starting" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

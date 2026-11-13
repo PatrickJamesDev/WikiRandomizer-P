@@ -50,20 +50,27 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.serialization.json)
-            // The Compose compiler is applied to every target, so its runtime must be visible
-            // even on JVM/Android/Wasm where no composables are compiled yet.
+            implementation(libs.kotlinx.coroutines.core)
+            // Shared Compose UI lives in commonMain so Android and iOS render the same screens.
             implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.ui)
+            implementation(libs.coil3.compose)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
         // iosMain comes from the default hierarchy template, which Kotlin applies only after this
-        // block has been evaluated, so configure it lazily when it appears.
+        // block has been evaluated, so configure it lazily when it appears. Darwin is only the
+        // HTTP engine: the shared UI talks to the platform-neutral RandomArticleSource interface.
         matching { it.name == "iosMain" }.configureEach {
             dependencies {
-                implementation(compose.foundation)
-                implementation(compose.material3)
-                implementation(compose.ui)
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.client.darwin)
+                implementation(libs.ktor.serialization.kotlinx.json)
+                implementation(libs.coil3.network.ktor3)
             }
         }
     }

@@ -1,39 +1,41 @@
 package org.nsh07.wikireader.shared.ios
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.remember
 import androidx.compose.ui.window.ComposeUIViewController
+import coil3.ImageLoader
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.network.ktor3.KtorNetworkFetcherFactory
+import coil3.request.crossfade
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.darwin.Darwin
+import org.nsh07.wikireader.shared.settings.IosSettingsStore
+import org.nsh07.wikireader.shared.ui.ReaderApp
 import platform.UIKit.UIViewController
 
+private val imageHttpClient by lazy { HttpClient(Darwin) }
+
 @Composable
-fun ComposeReaderRoot() {
-    MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text("WikiRandomizer-P", style = MaterialTheme.typography.headlineSmall)
-                Text(
-                    "Compose Multiplatform is ready for the iOS reader.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+internal fun ComposeReaderRoot() {
+    setSingletonImageLoaderFactory { context ->
+        ImageLoader.Builder(context)
+            .components {
+                add(KtorNetworkFetcherFactory(httpClient = { imageHttpClient }))
             }
-        }
+            .crossfade(true)
+            .build()
     }
+
+    val source = remember { KtorRandomArticleSource() }
+    val settingsStore = remember { IosSettingsStore() }
+    ReaderApp(source = source, settingsStore = settingsStore)
 }
 
 fun ReaderViewController(): UIViewController = ComposeUIViewController {
     ComposeReaderRoot()
+}
+
+/** Stable Obj-C entry point for the SwiftUI host; avoids relying on Kotlin file-class naming. */
+class ReaderViewControllerFactory {
+    fun makeReaderViewController(): UIViewController = ReaderViewController()
 }

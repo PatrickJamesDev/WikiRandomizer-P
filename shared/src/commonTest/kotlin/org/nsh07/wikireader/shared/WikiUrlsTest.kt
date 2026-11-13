@@ -43,6 +43,20 @@ class WikiUrlsTest {
     }
 
     @Test
+    fun categoryMembersUrlIsReadyForTopicDiscovery() {
+        assertEquals(
+            "https://en.wikipedia.org/w/api.php?action=query&list=categorymembers" +
+                "&cmtitle=Category%3AOrchids&cmtype=page&cmnamespace=0" +
+                "&cmlimit=50&format=json&formatversion=2",
+            WikiUrls.categoryMembersUrl("en", "Orchids")
+        )
+        assertTrue(
+            WikiUrls.categoryMembersUrl("de", "Rosen & Verwandte", limit = 20)
+                .contains("cmlimit=20")
+        )
+    }
+
+    @Test
     fun textHelpersAreUsefulForCards() {
         assertEquals("Hello world", WikiText.plainText("<b>Hello</b>&nbsp;world"))
         assertEquals(1, WikiText.readingMinutes("one two three", wordsPerMinute = 3))

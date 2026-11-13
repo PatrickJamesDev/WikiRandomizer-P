@@ -97,8 +97,11 @@ platform 36.
 
 ### iOS
 
-The app has a Kotlin Multiplatform core (`shared`) consumed by the Android app and by a native
-SwiftUI iOS shell. On macOS with Xcode:
+The app has a Kotlin Multiplatform core and shared Compose UI (`shared`) consumed by the Android
+app and by a small SwiftUI iOS host. iOS currently runs the shared reader shell, topic selection, Saved, History,
+library search, settings and an embedded `WKWebView` article view. On Android, the same shared shell
+is available as a developer preview: enable Developer options on About, then open **Shared Compose
+reader**. The production launcher still opens the feature-complete Android UI. On macOS with Xcode:
 
 ```bash
 ./build_ios.sh              # install tools, build, install and launch in the simulator

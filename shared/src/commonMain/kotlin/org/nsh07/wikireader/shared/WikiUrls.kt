@@ -31,6 +31,11 @@ object WikiUrls {
     fun searchUrl(lang: String, query: String): String =
         "https://${host(lang)}/w/index.php?search=${encodeQuery(query)}"
 
+    fun categoryMembersUrl(lang: String, category: String, limit: Int = 50): String =
+        "https://${host(lang)}/w/api.php?action=query&list=categorymembers" +
+            "&cmtitle=${encodeQuery("Category:$category")}" +
+            "&cmtype=page&cmnamespace=0&cmlimit=$limit&format=json&formatversion=2"
+
     /** Special:FilePath is the stable, resizing image endpoint used by the Android image loader. */
     fun filePathUrl(lang: String, fileName: String, width: Int = 0): String {
         val file = encodeTitle(fileName.substringAfter("File:", fileName))
