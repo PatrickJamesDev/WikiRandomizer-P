@@ -20,26 +20,6 @@ import java.util.zip.GZIPOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-data class FirebaseSyncConfig(
-    val projectId: String,
-    val applicationId: String,
-    val apiKey: String,
-    val authDomain: String
-)
-
-sealed interface SyncAuthState {
-    data object NotConfigured : SyncAuthState
-    data object SignedOut : SyncAuthState
-    data class SignedIn(val uid: String, val email: String?) : SyncAuthState
-}
-
-data class RemoteMeta(
-    val version: Long,
-    val schema: Int,
-    val updatedAt: Long,
-    val payloadBytes: Long
-)
-
 /**
  * Small Firebase Auth + Firestore client used only for cross-device reading history.
  *
@@ -171,7 +151,7 @@ class FirebaseSyncClient(context: Context) {
                     }.getOrNull()
                 }
             } else null
-            val (merged, payload) = encodeAndFit(mergeSyncSnapshots(snapshot, remote))
+            val (merged, payload) = encodeAndFit(mergeSyncSnapshots(snapshot, remote, System.currentTimeMillis()))
             val now = System.currentTimeMillis()
             transaction.set(
                 dataRef,

@@ -16,11 +16,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.File
 
-data class LocalSyncResult(
-    val recordCount: Int,
-    val lastSyncAt: Long
-)
-
 class SyncException(message: String) : Exception(message)
 
 /**

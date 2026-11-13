@@ -42,7 +42,6 @@ object RelevanceModel {
     private const val DROP_SIMILARITY = 0.30
     private const val FEEDBACK_STRENGTH = 4.5
 
-    private val splitter = Regex("[^\\p{L}\\p{N}]+")
     private val stop = setOf(
         "the", "and", "for", "with", "from", "that", "this", "are", "was", "were", "has", "have", "had",
         "its", "their", "his", "her", "which", "who", "whose", "what", "where", "when", "also", "other",
@@ -55,11 +54,27 @@ object RelevanceModel {
         "there", "these", "those", "they", "them", "will", "would", "could", "should", "its", "out", "per"
     )
 
-    fun terms(text: String): List<String> =
-        text.lowercase().split(splitter)
-            .filter { it.length >= 3 && it !in stop }
-            .map(::stem)
-            .filter { it.length >= 3 && it !in stop }
+    fun terms(text: String): List<String> {
+        // Split on non-letter/digit characters without relying on platform regex features
+        // (Unicode property escapes are not portable across every Kotlin target).
+        val out = ArrayList<String>()
+        val current = StringBuilder()
+        fun flush() {
+            if (current.length >= 3) {
+                val word = current.toString()
+                if (word !in stop) {
+                    val stemmed = stem(word)
+                    if (stemmed.length >= 3 && stemmed !in stop) out.add(stemmed)
+                }
+            }
+            current.clear()
+        }
+        for (ch in text.lowercase()) {
+            if (ch.isLetterOrDigit()) current.append(ch) else flush()
+        }
+        flush()
+        return out
+    }
 
     private fun stem(w: String): String = when {
         w.length > 4 && w.endsWith("ies") -> w.dropLast(3) + "y"
@@ -128,7 +143,21 @@ object RelevanceModel {
         val vocabSize: Int get() = termList.size
         fun idOf(term: String): Int? = vocab[term]
         fun isEmpty(i: Int) = ids[i].isEmpty()
-        fun hasTerm(i: Int, id: Int) = java.util.Arrays.binarySearch(ids[i], id) >= 0
+        fun hasTerm(i: Int, id: Int): Boolean {
+            val sorted = ids[i]
+            var low = 0
+            var high = sorted.size - 1
+            while (low <= high) {
+                val mid = (low + high) ushr 1
+                val value = sorted[mid]
+                when {
+                    value < id -> low = mid + 1
+                    value > id -> high = mid - 1
+                    else -> return true
+                }
+            }
+            return false
+        }
 
         /** Sum of the query's term weight present in document [i] (for absolute coverage). */
         fun queryMassIn(i: Int, q: DoubleArray): Double {

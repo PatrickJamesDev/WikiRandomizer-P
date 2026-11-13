@@ -139,6 +139,10 @@ fun AppSearchBar(
     modifier: Modifier = Modifier
 ) {
     val focusRequester = appSearchBarState.focusRequester
+    com.wikirandomizerp.app.data.TrackRecompositions("AppSearchBar") {
+        "history=${searchHistory.size} queryLength=${textFieldState.text.length} " +
+                "expanded=${searchBarState.targetValue == SearchBarValue.Expanded}"
+    }
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val colorScheme = colorScheme

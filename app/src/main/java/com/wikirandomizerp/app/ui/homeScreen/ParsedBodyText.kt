@@ -81,7 +81,9 @@ fun ParsedBodyText(
      */
     staged: Boolean = false
 ) {
-    com.wikirandomizerp.app.data.TrackRecompositions("ParsedBodyText")
+    com.wikirandomizerp.app.data.TrackRecompositions("ParsedBodyText") {
+        "blocks=${body.size} staged=$staged bold=$boldText"
+    }
     val reading = LocalReadingOptions.current
     val context = LocalContext.current
     val dpi = LocalDensity.current.density

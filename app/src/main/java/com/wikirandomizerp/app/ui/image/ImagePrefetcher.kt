@@ -162,18 +162,37 @@ object ImagePrefetcher {
      * pictures are stored at the 960 px step, and the full-screen 1920 px renditions are stored
      * too (up to [CacheConfig.MAX_HIGH_RES_IMAGES]) so opening the viewer never waits.
      */
-    fun warm(
+    suspend fun warm(
         context: Context,
         urls: Collection<String>,
-        maxFullRes: Int = CacheConfig.MAX_HIGH_RES_IMAGES
+        maxFullRes: Int = CacheConfig.MAX_HIGH_RES_IMAGES,
+        gapMs: Long = 0L
     ) {
-        if (urls.isEmpty()) return
+        val distinct = urls.distinct()
+        if (distinct.isEmpty()) return
+        warmPictures(
+            context = context,
+            thumbnails = distinct,
+            fullRes = distinct.take(maxFullRes).mapNotNull(::largeVariant),
+            gapMs = gapMs,
+        )
+    }
+
+    suspend fun warmPictures(
+        context: Context,
+        thumbnails: Collection<String>,
+        fullRes: Collection<String> = emptyList(),
+        gapMs: Long = 0L
+    ) = withContext(Dispatchers.Default) {
+        if (thumbnails.isEmpty() && fullRes.isEmpty()) return@withContext
         val loader = SingletonImageLoader.get(context)
-        for ((index, u) in urls.withIndex()) {
+        for (u in thumbnails) {
             enqueueWarm(loader, context, u, ImageCacheKeys.body(u))
-            if (index < maxFullRes) largeVariant(u)?.let {
-                enqueueWarm(loader, context, it, ImageCacheKeys.body(it))
-            }
+            if (gapMs > 0) delay(gapMs)
+        }
+        for (u in fullRes) {
+            enqueueWarm(loader, context, u, ImageCacheKeys.body(u))
+            if (gapMs > 0) delay(gapMs)
         }
     }
 
@@ -240,6 +259,24 @@ object ImagePrefetcher {
             if (!head.contains(':')) continue
             val name = head.substringAfter(':').substringBefore("]]").trim()
             if (name.matches(fileNameRegex)) out.add(fileUrl(lang, name))
+        }
+        var galleryFrom = 0
+        while (out.size < max) {
+            val open = wikitext.indexOf("<gallery", galleryFrom, ignoreCase = true)
+            if (open < 0) break
+            val bodyStart = wikitext.indexOf('>', open)
+            if (bodyStart < 0) break
+            val close = wikitext.indexOf("</gallery", bodyStart, ignoreCase = true)
+            if (close < 0) break
+            galleryFrom = close + 1
+            for (line in wikitext.substring(bodyStart + 1, close).lineSequence()) {
+                if (out.size >= max) break
+                val raw = line.substringBefore('|').trim()
+                val name = if (raw.startsWith("File:", true) || raw.startsWith("Image:", true)) {
+                    raw.substringAfter(':').trim()
+                } else raw
+                if (name.matches(fileNameRegex)) out.add(fileUrl(lang, name))
+            }
         }
         return out.toList()
     }

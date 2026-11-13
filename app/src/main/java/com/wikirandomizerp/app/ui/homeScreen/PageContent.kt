@@ -272,7 +272,9 @@ fun PageContent(
         // a moment), and again as more sections finish parsing: scrolling and the gallery then show
         // pictures instantly. Skipped in data-saver mode.
         val prefetchContext = LocalContext.current
-        com.wikirandomizerp.app.data.TrackRecompositions("PageContent")
+        com.wikirandomizerp.app.data.TrackRecompositions("PageContent") {
+            "uid=${content.uid} sections=${content.extract.size} title=${content.title.take(40)}"
+        }
         val prefetched = remember(content.uid) { HashSet<String>() }
         // Performance log: what the user is looking at / doing when a slow frame is reported.
         LaunchedEffect(content.uid) {

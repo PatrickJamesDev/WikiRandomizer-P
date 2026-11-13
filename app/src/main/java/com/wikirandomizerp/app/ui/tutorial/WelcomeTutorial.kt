@@ -245,17 +245,23 @@ fun WelcomeTutorial(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    if (!last) {
+                    val showBack = index > 0
+                    val showSkip = !last
+                    if (showBack) {
+                        TextButton(
+                            shapes = ButtonDefaults.shapes(),
+                            onClick = { onStepChange(index - 1) }
+                        ) { Text(stringResource(R.string.tutorialBack)) }
+                    } else if (showSkip) {
                         TextButton(shapes = ButtonDefaults.shapes(), onClick = onFinish) {
                             Text(stringResource(R.string.tutorialSkip))
                         }
                     }
                     Spacer(Modifier.weight(1f))
-                    if (index > 0) {
-                        TextButton(
-                            shapes = ButtonDefaults.shapes(),
-                            onClick = { onStepChange(index - 1) }
-                        ) { Text(stringResource(R.string.tutorialBack)) }
+                    if (showBack && showSkip) {
+                        TextButton(shapes = ButtonDefaults.shapes(), onClick = onFinish) {
+                            Text(stringResource(R.string.tutorialSkip))
+                        }
                     }
                     Button(
                         shapes = ButtonDefaults.shapes(),

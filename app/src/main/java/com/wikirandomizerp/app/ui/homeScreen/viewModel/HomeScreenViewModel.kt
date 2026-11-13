@@ -154,8 +154,13 @@ private const val MAX_BACKSTACK_ENTRIES = 8        // bounds memory when chainin
 private const val MAX_CANDIDATE_FETCH_ATTEMPTS = 3 // retries if a chosen candidate's fetch fails
 private const val MAX_RECENTLY_CLOSED = 10         // closed tabs that can still be brought back
 private const val PREFETCH_TARGET = 12             // random articles kept ready in the background
-private const val PREFETCH_WARM_IMAGES = 8         // body pictures warmed for a background page
-private const val PREFETCH_WARM_FULL_RES = 2       // full-screen renditions warmed in the background
+private const val PREFETCH_ALL_IMAGES = 5          // articles whose every thumbnail is warmed
+private const val PREFETCH_PARTIAL_IMAGES = 8      // next articles that get a partial image set
+private const val PREFETCH_WARM_IMAGES = 8         // body pictures warmed for a partial page
+private const val PREFETCH_WARM_FULL_RES = 12      // full-screen renditions for the next article
+private const val PREFETCH_WARM_FULL_RES_NEAR = 6  // full-screen renditions for the second
+private const val PREFETCH_WARM_FULL_RES_FAR = 2   // full-screen renditions for the third/fourth
+private const val IMAGE_PREFETCH_GAP_MS = 40L      // gentle spacing between image requests
 
 // Keep the text and body pictures of this many most-recently-read articles; older ones are
 // evicted from the caches (saved articles, offline downloads and open tabs are exempt).
@@ -321,7 +326,8 @@ class HomeScreenViewModel(
         val page: WikiApiPage,
         val libraryTitle: String,
         val content: String,
-        val key: String
+        val key: String,
+        var imageUrls: List<String> = emptyList()
     )
 
     /** The next few random articles, already downloaded (text on disk, pictures in the image cache). */
@@ -329,6 +335,9 @@ class HomeScreenViewModel(
     private val prefetchLock = Any()
     private val persistMutex = Mutex()
     private var prefetchJob: Job? = null
+    private var imagePrefetchJob: Job? = null
+    private val warmedThumbnails = ConcurrentHashMap.newKeySet<String>()
+    private val warmedFullRes = ConcurrentHashMap.newKeySet<String>()
     @Volatile private var libraryVersion = 0
 
     /** One article currently on screen; finished when the user leaves it (opt-in personalization). */
@@ -363,6 +372,10 @@ class HomeScreenViewModel(
         libraryVersion++
         synchronized(prefetchLock) { prefetchQueue.clear() }
         prefetchJob?.cancel()
+        imagePrefetchJob?.cancel()
+        imagePrefetchJob = null
+        warmedThumbnails.clear()
+        warmedFullRes.clear()
         persistPrefetchQueue()
         // Topic/settings changes must begin refilling immediately, otherwise the next Random tap
         // has nothing prepared and falls back to a loading screen.
@@ -401,10 +414,11 @@ class HomeScreenViewModel(
                 // accident. A mode change also changes the queue key, but this is defence in depth.
                 if (entry.contentKind != currentMode) continue
                 val page = entry.page ?: continue
-                restored.add(PrefetchedRandom(page, parts[1], entry.wikitext, parts[0]))
+                restored.add(PrefetchedRandom(page, parts[1], entry.wikitext, parts[0], entry.imageUrls))
             }
             if (restored.isNotEmpty()) {
                 synchronized(prefetchLock) { prefetchQueue.addAll(0, restored) }
+                ensureQueuedImageWarm()
                 DebugLog.i("Prefetch", "restored ${restored.size} prepared article(s) from the previous session (mode=$currentMode)")
             }
         } catch (e: CancellationException) {
@@ -856,9 +870,9 @@ class HomeScreenViewModel(
     /**
      * Starts loading a page's pictures so they are on screen the moment the article opens.
      *
-     * A page the user actually reads warms every body picture at 960 px and all high-resolution
-     * 1920 px renditions. Background-prefetched pages warm only a handful, otherwise a dozen
-     * queued articles would download thousands of pictures and compete with the visible page.
+     * A page the user actually reads warms its body pictures and the nearest high-resolution
+     * renditions. Background tabs warm only a handful, otherwise a dozen tabs would compete with
+     * the visible page.
      */
     private fun warmImages(
         lang: String,
@@ -870,28 +884,19 @@ class HomeScreenViewModel(
         // (article open / tab switch); it is pure background work.
         viewModelScope.launch(Dispatchers.IO + errorHandler) {
             try {
-                val urls = ArrayList<String>()
-                // Both the thumbnail (article/infobox) and the original (full-screen viewer) so the
-                // viewer can open the lead picture instantly even before the body is scrolled.
-                ImagePrefetcher.standardThumbnailUrl(page.thumbnail?.source)?.let { urls.add(it) }
-                page.photo?.source?.let { urls.add(it) }
                 val limit = if (full) CacheConfig.MAX_ARTICLE_IMAGES else PREFETCH_WARM_IMAGES
-                if (preferencesState.value.renderMode == "html") {
-                    // REST HTML is converted to [[File:...]] blocks before rendering, so warm
-                    // exactly those file names (the raw <img> src is not what the renderer
-                    // requests).
-                    val media = splitHtmlMediaBlocks(content)
-                        .filter { it.contains("[[File:", ignoreCase = true) }
-                        .joinToString("\n")
-                    urls.addAll(ImagePrefetcher.firstImageUrls(lang, media, limit))
-                } else {
-                    urls.addAll(ImagePrefetcher.firstImageUrls(lang, content, limit))
-                }
+                val urls = imageUrlsFor(
+                    lang,
+                    page,
+                    content,
+                    preferencesState.value.renderMode == "html"
+                ).take(limit)
                 ImagePrefetcher.warm(
                     appContext,
                     urls,
                     maxFullRes = if (full) CacheConfig.MAX_HIGH_RES_IMAGES
-                    else PREFETCH_WARM_FULL_RES
+                    else PREFETCH_WARM_FULL_RES_FAR,
+                    gapMs = IMAGE_PREFETCH_GAP_MS
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -991,9 +996,13 @@ class HomeScreenViewModel(
                 val openTabs = homeScreenState.value.tabs
                     .map { it.lang to it.title.lowercase(Locale.ROOT) }
                     .toHashSet()
+                val prefetched = synchronized(prefetchLock) {
+                    prefetchQueue.map { it.page.title.lowercase(Locale.ROOT) }.toHashSet()
+                }
                 for ((candidateLang, candidateTitle) in candidates) {
                     val key = candidateLang to candidateTitle.lowercase(Locale.ROOT)
                     if (key in openTabs) continue
+                    if (candidateTitle.lowercase(Locale.ROOT) in prefetched) continue
                     if (articleCache.isOffline(candidateLang, candidateTitle)) continue
                     val saved = try {
                         appDatabaseRepository.isTitleSaved(candidateTitle, candidateLang)
@@ -1133,11 +1142,14 @@ class HomeScreenViewModel(
 
     fun onAppForegrounded() {
         schedulePrefetch()
+        ensureQueuedImageWarm()
     }
 
     fun onAppBackgrounded() {
         prefetchJob?.cancel()
         prefetchJob = null
+        imagePrefetchJob?.cancel()
+        imagePrefetchJob = null
     }
 
     /**
@@ -1189,11 +1201,21 @@ class HomeScreenViewModel(
                     }
                     if (key != prefetchKey()) return@launch // settings changed meanwhile: start over later
                     val lang = prefetchLang
-                    articleCache.put(lang, title, picked.first, content, contentKind = mode)
-                    warmImages(lang, picked.first, content, full = false)
+                    val imageUrls = imageUrlsFor(lang, picked.first, content, mode == "html")
+                    articleCache.put(
+                        lang,
+                        title,
+                        picked.first,
+                        content,
+                        contentKind = mode,
+                        imageUrls = imageUrls
+                    )
                     synchronized(prefetchLock) {
-                        prefetchQueue.add(PrefetchedRandom(picked.first, picked.second, content, key))
+                        prefetchQueue.add(
+                            PrefetchedRandom(picked.first, picked.second, content, key, imageUrls)
+                        )
                     }
+                    ensureQueuedImageWarm()
                     persistPrefetchQueue()
                     DebugLog.i(
                         "Prefetch",
@@ -1206,6 +1228,77 @@ class HomeScreenViewModel(
                 DebugLog.d("Prefetch", "library exhausted: nothing to prepare")
             } catch (e: Exception) {
                 DebugLog.w("Prefetch", "could not prepare the next article: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Warms queued article pictures in reading order. The next five articles get every thumbnail,
+     * while full-screen renditions fall off with distance from the front of the queue.
+     */
+    private fun ensureQueuedImageWarm() {
+        val prefs = preferencesState.value
+        if (prefs.dataSaver || !prefs.preloadArticles) return
+        if (imagePrefetchJob?.isActive == true) return
+        imagePrefetchJob = viewModelScope.launch(Dispatchers.IO + errorHandler) {
+            try {
+                while (true) {
+                    coroutineContext.ensureActive()
+                    val currentPrefs = preferencesState.value
+                    if (currentPrefs.dataSaver || !currentPrefs.preloadArticles) return@launch
+                    if (warmedThumbnails.size > 5_000) warmedThumbnails.clear()
+                    if (warmedFullRes.size > 1_500) warmedFullRes.clear()
+                    val snapshot = synchronized(prefetchLock) { prefetchQueue.toList() }
+                    if (snapshot.isEmpty()) return@launch
+                    val lang = currentPrefs.lang
+                    val html = currentPrefs.renderMode == "html"
+                    var warmedAny = false
+                    for ((index, article) in snapshot.withIndex()) {
+                        if (article.imageUrls.isEmpty()) {
+                            article.imageUrls = imageUrlsFor(lang, article.page, article.content, html)
+                        }
+                        val thumbnailLimit = when {
+                            index < PREFETCH_ALL_IMAGES -> CacheConfig.MAX_ARTICLE_IMAGES
+                            index < PREFETCH_PARTIAL_IMAGES -> PREFETCH_WARM_IMAGES
+                            else -> 2
+                        }
+                        val thumbnails = article.imageUrls
+                            .take(thumbnailLimit)
+                            .filter { warmedThumbnails.add(it) }
+                        if (thumbnails.isNotEmpty()) {
+                            ImagePrefetcher.warmPictures(
+                                context = appContext,
+                                thumbnails = thumbnails,
+                                gapMs = IMAGE_PREFETCH_GAP_MS
+                            )
+                            warmedAny = true
+                        }
+                        val fullResLimit = when (index) {
+                            0 -> PREFETCH_WARM_FULL_RES
+                            1 -> PREFETCH_WARM_FULL_RES_NEAR
+                            in 2 until PREFETCH_ALL_IMAGES -> PREFETCH_WARM_FULL_RES_FAR
+                            else -> 0
+                        }
+                        val fullRes = article.imageUrls
+                            .take(fullResLimit)
+                            .mapNotNull { ImagePrefetcher.largeVariant(it) }
+                            .filter { warmedFullRes.add(it) }
+                        if (fullRes.isNotEmpty()) {
+                            ImagePrefetcher.warmPictures(
+                                context = appContext,
+                                thumbnails = emptyList(),
+                                fullRes = fullRes,
+                                gapMs = IMAGE_PREFETCH_GAP_MS
+                            )
+                            warmedAny = true
+                        }
+                    }
+                    if (!warmedAny) return@launch
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLog.w("Prefetch", "could not warm queued pictures: ${e.message}")
             }
         }
     }
@@ -1232,6 +1325,7 @@ class HomeScreenViewModel(
                 if (prefetchQueue.isEmpty()) null else prefetchQueue.removeAt(0)
             } ?: return null
             persistPrefetchQueue()
+            ensureQueuedImageWarm()
             if (pre.key != currentKey) {
                 DebugLog.d("Prefetch", "discarded a stale prepared article ('${pre.page.title}')")
                 continue

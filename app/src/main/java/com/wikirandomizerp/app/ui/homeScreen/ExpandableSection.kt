@@ -74,7 +74,9 @@ fun ExpandableSection(
     checkFirstImage: Boolean = false,
     pageImageUri: String? = null
 ) {
-    com.wikirandomizerp.app.data.TrackRecompositions("ExpandableSection")
+    com.wikirandomizerp.app.data.TrackRecompositions("ExpandableSection") {
+        "blocks=${body.size} expanded=$expanded"
+    }
     // A section whose only content is a cladogram looks empty when collapsed (just a heading),
     // which is why plant articles seemed to have no tree. Start those sections open.
     val containsClade = remember(body) {

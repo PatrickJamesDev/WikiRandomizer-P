@@ -104,6 +104,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -155,6 +156,8 @@ import com.wikirandomizerp.app.FeatureFlags
 import com.wikirandomizerp.app.WikiRandomizerPApplication
 import com.wikirandomizerp.app.data.DebugLog
 import com.wikirandomizerp.app.data.DeveloperMode
+import com.wikirandomizerp.app.data.TrackRecompositions
+import com.wikirandomizerp.app.data.perfMeasure
 import com.wikirandomizerp.app.data.billing.DonationState
 import com.wikirandomizerp.app.data.sync.SyncAuthState
 import com.wikirandomizerp.app.data.SearchHistoryItem
@@ -417,13 +420,39 @@ fun AppScreen(
 
     // When the user opted into Kiwix, the Random button (toolbar, pull-to-refresh and tutorial)
     // opens a random article from the ZIM instead of Wikipedia. Everything else keeps working.
-    val onHomeAction: (HomeAction) -> Unit = { action ->
-        if (action is HomeAction.LoadRandom && kiwixStatus.ready && kiwixStatus.useForRandom) {
-            navController.navigate(KiwixReader(random = true)) {
+    // Keep the callback identity stable: it is passed to the search bar, home screen and article
+    // page, and a new lambda on every AppScreen recomposition used to defeat skipping there.
+    val latestKiwixStatus by rememberUpdatedState(kiwixStatus)
+    val onHomeAction: (HomeAction) -> Unit = remember(viewModel, navController) {
+        { action ->
+            if (action is HomeAction.LoadRandom && latestKiwixStatus.ready && latestKiwixStatus.useForRandom) {
+                navController.navigate(KiwixReader(random = true)) {
+                    launchSingleTop = true
+                }
+            } else {
+                viewModel.onAction(action)
+            }
+        }
+    }
+    val relatedLoader = remember(viewModel) { viewModel::getRelatedArticles }
+    val previewLoader = remember(viewModel) { viewModel::getLinkPreview }
+    val settingsAction = remember(settingsViewModel) { settingsViewModel::onAction }
+    val setShowArticleLanguageSheet: (Boolean) -> Unit = remember {
+        { showArticleLanguageSheet = it }
+    }
+    val openRandomTopics: () -> Unit = remember(navController) {
+        {
+            navController.navigate(RandomTopicsScreen) {
                 launchSingleTop = true
             }
-        } else {
-            viewModel.onAction(action)
+        }
+    }
+    val onSearchBarExpandedChange: (Boolean) -> Unit = remember(scope, searchBarState) {
+        { expanded ->
+            scope.launch {
+                if (expanded) searchBarState.animateToExpanded()
+                else searchBarState.animateToCollapsed()
+            }
         }
     }
 
@@ -645,6 +674,28 @@ fun AppScreen(
                         viewModel::removeSearchHistoryItem
                     )
 
+                val clearSearchHistory: () -> Unit = remember {
+                    {
+                        historyItem = null
+                        setShowDeleteDialog(true)
+                    }
+                }
+                val removeSearchHistoryItem: (SearchHistoryItem) -> Unit = remember {
+                    {
+                        historyItem = it
+                        setShowDeleteDialog(true)
+                    }
+                }
+                val onMenuIconClicked: () -> Unit =
+                    remember(scope, compactWindow, drawerState, railState) {
+                        {
+                            scope.launch {
+                                if (compactWindow) drawerState.open()
+                                else railState.expand()
+                            }
+                        }
+                    }
+
                 Scaffold(
                     topBar = {
                         AnimatedVisibility(
@@ -670,32 +721,12 @@ fun AppScreen(
                                 languageSearchStr = languageSearchStr,
                                 languageSearchQuery = languageSearchQuery,
                                 onAction = onHomeAction,
-                                onSettingsAction = settingsViewModel::onAction,
-                                onSearchBarExpandedChange = {
-                                    scope.launch {
-                                        if (it) searchBarState.animateToExpanded()
-                                        else searchBarState.animateToCollapsed()
-                                    }
-                                },
-                                onNavigateToRandomTopics = {
-                                    navController.navigate(RandomTopicsScreen) {
-                                        launchSingleTop = true
-                                    }
-                                },
-                                clearHistory = {
-                                    historyItem = null
-                                    setShowDeleteDialog(true)
-                                },
-                                removeHistoryItem = {
-                                    historyItem = it
-                                    setShowDeleteDialog(true)
-                                },
-                                onMenuIconClicked = {
-                                    scope.launch {
-                                        if (compactWindow) drawerState.open()
-                                        else railState.expand()
-                                    }
-                                }
+                                onSettingsAction = settingsAction,
+                                onSearchBarExpandedChange = onSearchBarExpandedChange,
+                                onNavigateToRandomTopics = openRandomTopics,
+                                clearHistory = clearSearchHistory,
+                                removeHistoryItem = removeSearchHistoryItem,
+                                onMenuIconClicked = onMenuIconClicked
                             )
                         }
                     },
@@ -733,18 +764,14 @@ fun AppScreen(
                         showLanguageSheet = showArticleLanguageSheet,
                         deepLinkHandled = deepLinkHandled,
                         onAction = onHomeAction,
-                        onSettingsAction = settingsViewModel::onAction,
-                        onNavigateToRandomTopics = {
-                            navController.navigate(RandomTopicsScreen) {
-                                launchSingleTop = true
-                            }
-                        },
-                        setShowArticleLanguageSheet = { showArticleLanguageSheet = it },
+                        onSettingsAction = settingsAction,
+                        onNavigateToRandomTopics = openRandomTopics,
+                        setShowArticleLanguageSheet = setShowArticleLanguageSheet,
                         insets = insets,
                         windowSizeClass = windowSizeClass,
                         modifier = Modifier.fillMaxSize(),
-                        relatedLoader = viewModel::getRelatedArticles,
-                        previewLoader = viewModel::getLinkPreview
+                        relatedLoader = relatedLoader,
+                        previewLoader = previewLoader
                     )
 
                     AnimatedVisibility(
@@ -1302,6 +1329,16 @@ private fun ArticleTabPanel(
         val panelWidth = (maxWidth * 0.88f).coerceAtMost(320.dp)
         val panelWidthPx = with(density) { panelWidth.toPx() }
 
+        // The sheet stays composed while closed. Building all open-tab rows, icons and shortcuts
+        // on the first frame was part of the startup jank. Compose them as soon as the panel is
+        // opening or the edge drag starts, instead of unconditionally at launch.
+        val panelContentNeeded = remember(dragState, panelWidthPx) {
+            derivedStateOf {
+                val offset = dragState.offset
+                !offset.isNaN() && offset < panelWidthPx - 0.5f
+            }
+        }
+
         LaunchedEffect(panelWidthPx) {
             dragState.updateAnchors(
                 DraggableAnchors {
@@ -1397,26 +1434,28 @@ private fun ArticleTabPanel(
         ) {
             // The sheet's content lives in its own function so flipping `open` (which happens
             // when a drag or animation settles) does not re-compose the whole tab list.
-            ArticleTabPanelContent(
-                tabs = tabs,
-                activeTabId = activeTabId,
-                canGoBack = canGoBack,
-                canGoForward = canGoForward,
-                canOpenInBrowser = canOpenInBrowser,
-                imageSearchTitle = imageSearchTitle,
-                onFindImages = onFindImages,
-                onOpenInBrowser = onOpenInBrowser,
-                onBack = onBack,
-                onForward = onForward,
-                onSelectTab = onSelectTab,
-                onCloseTab = onCloseTab,
-                onNewTab = onNewTab,
-                recentlyClosed = recentlyClosed,
-                onReopenClosedTab = onReopenClosedTab,
-                onOpenChange = onOpenChange,
-                showArticleInfoShortcuts = showArticleInfoShortcuts,
-                onOpenArticleInfo = onOpenArticleInfo
-            )
+            if (open || panelContentNeeded.value) {
+                ArticleTabPanelContent(
+                    tabs = tabs,
+                    activeTabId = activeTabId,
+                    canGoBack = canGoBack,
+                    canGoForward = canGoForward,
+                    canOpenInBrowser = canOpenInBrowser,
+                    imageSearchTitle = imageSearchTitle,
+                    onFindImages = onFindImages,
+                    onOpenInBrowser = onOpenInBrowser,
+                    onBack = onBack,
+                    onForward = onForward,
+                    onSelectTab = onSelectTab,
+                    onCloseTab = onCloseTab,
+                    onNewTab = onNewTab,
+                    recentlyClosed = recentlyClosed,
+                    onReopenClosedTab = onReopenClosedTab,
+                    onOpenChange = onOpenChange,
+                    showArticleInfoShortcuts = showArticleInfoShortcuts,
+                    onOpenArticleInfo = onOpenArticleInfo
+                )
+            }
         }
         }
 
@@ -1461,6 +1500,9 @@ private fun ColumnScope.ArticleTabPanelContent(
     showArticleInfoShortcuts: Boolean = false,
     onOpenArticleInfo: (Int) -> Unit = {}
 ) {
+    TrackRecompositions("ArticleTabPanelContent") {
+        "tabs=${tabs.size} active=$activeTabId"
+    }
     val showLanguage = remember(tabs) { tabs.map { it.lang }.distinct().size > 1 }
 
     LazyColumn(
@@ -1469,6 +1511,7 @@ private fun ColumnScope.ArticleTabPanelContent(
         modifier = Modifier
             .fillMaxWidth()
             .weight(1f)
+            .perfMeasure("tab panel list")
     ) {
         item(key = "tabs-title") {
             Row(

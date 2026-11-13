@@ -27,10 +27,11 @@ data class SyncSnapshot(
     }
 }
 
+/** Merge two history snapshots; [now] is supplied by the platform clock. */
 fun mergeSyncSnapshots(
     local: SyncSnapshot,
     remote: SyncSnapshot?,
-    now: Long = System.currentTimeMillis()
+    now: Long
 ): SyncSnapshot {
     if (remote == null) return local.copy(version = local.version + 1)
     val merged = LinkedHashMap<String, SyncRecord>()

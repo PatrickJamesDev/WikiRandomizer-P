@@ -1,7 +1,5 @@
 package com.wikirandomizerp.app.data
 
-import java.util.Locale
-
 object LanguageData {
     val langCodes = listOf(
         "ab",
@@ -1088,10 +1086,4 @@ object LanguageData {
         "ZAM" to "ZMB",
         "ZIM" to "ZWE"
     )
-
-    val countryNameToAlpha2CodeMap = Locale.getISOCountries()
-        .associateBy { Locale.Builder().setRegion(it).build().displayCountry }
-
-    val alpha3CodeToAlpha2CodeMap = Locale.getISOCountries()
-        .associateBy { Locale.Builder().setRegion(it).build().isO3Country }
 }

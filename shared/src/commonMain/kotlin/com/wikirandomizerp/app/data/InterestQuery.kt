@@ -24,7 +24,8 @@ object InterestQuery {
         """^\s*(?:(?:all|every|any|some|the|articles?\s+about|things?\s+about|stuff\s+about|list\s+of)\s+)+""",
         RegexOption.IGNORE_CASE
     )
-    private val fromTail = Regex("""\bfrom\s+([\p{L}][\p{L}\s.'-]*?)\s*$""", RegexOption.IGNORE_CASE)
+    // ASCII class on purpose: Unicode property escapes are not portable to every Kotlin target.
+    private val fromTail = Regex("""\bfrom\s+([A-Za-z][A-Za-z\s.'-]*?)\s*$""", RegexOption.IGNORE_CASE)
 
     /** Common country -> adjective/demonym forms used by Wikipedia category names. */
     private val demonyms = mapOf(

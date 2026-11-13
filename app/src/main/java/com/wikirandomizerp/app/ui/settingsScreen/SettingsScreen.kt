@@ -113,6 +113,8 @@ import com.wikirandomizerp.app.R.string
 import com.wikirandomizerp.app.WikiRandomizerPApplication
 import com.wikirandomizerp.app.data.DeveloperMode
 import com.wikirandomizerp.app.data.LibraryStats
+import com.wikirandomizerp.app.data.TrackRecompositions
+import com.wikirandomizerp.app.data.perfMeasure
 import com.wikirandomizerp.app.data.UpdateResult
 import com.wikirandomizerp.app.data.UpdateState
 import com.wikirandomizerp.app.data.langCodeToName
@@ -259,12 +261,15 @@ fun SettingsScreen(
         }
     }
 
-    val currentLocales =
+    // Service lookup and LocaleList work do not belong in the composition; Settings recomposes
+    // for search, switches and dialogs. The locale list is re-read when this screen is recreated.
+    val currentLocales = remember {
         if (Build.VERSION.SDK_INT >= 33) {
             context
                 .getSystemService(LocaleManager::class.java)
                 .applicationLocales
         } else null
+    }
     val currentLocalesSize = currentLocales?.size() ?: 0
 
     val theme = preferencesState.theme
@@ -326,6 +331,9 @@ fun SettingsScreen(
     val (showLanguageSheet, setShowLanguageSheet) = remember { mutableStateOf(false) }
     val (showAppLocaleSheet, setShowAppLocaleSheet) = remember { mutableStateOf(false) }
     var settingsSearchQuery by rememberSaveable { mutableStateOf("") }
+    TrackRecompositions("SettingsScreen") {
+        "queryLength=${settingsSearchQuery.length} developer=$developerEnabled"
+    }
     var settingsCategory by rememberSaveable { mutableStateOf(SettingsCategory.ROOT) }
     val settingsListState = rememberLazyListState()
     LaunchedEffect(settingsCategory) {
@@ -674,6 +682,7 @@ fun SettingsScreen(
             modifier = Modifier
                 .background(topBarColors.containerColor)
                 .padding(horizontal = 16.dp)
+                .perfMeasure("settings list")
         ) {
             item { Spacer(Modifier.height(8.dp)) }
             item(key = "settings-search") {

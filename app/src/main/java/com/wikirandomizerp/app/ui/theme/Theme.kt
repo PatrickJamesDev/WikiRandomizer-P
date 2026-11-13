@@ -133,19 +133,20 @@ fun WikiRandomizerPTheme(
     }
     CustomColors.black = blackTheme && darkTheme
 
-    val dynamicColorScheme = rememberDynamicColorScheme(
-        seedColor = when (seedColor) {
-            Color.White -> colorScheme.primary
-            else -> seedColor
-        },
-        isDark = darkTheme,
-        specVersion = if (blackTheme && darkTheme) ColorSpec.SpecVersion.SPEC_2021 else ColorSpec.SpecVersion.SPEC_2025,
-        isAmoled = blackTheme && darkTheme
-    )
-
+    // Generating a MaterialKolor scheme is one of the most expensive things in the first frame.
+    // The default ("follow the system seed") uses the platform scheme directly, so only pay for
+    // the generator when a custom seed or the black theme actually needs it.
     val scheme =
         if (seedColor == Color.White && !(blackTheme && darkTheme)) colorScheme
-        else dynamicColorScheme
+        else rememberDynamicColorScheme(
+            seedColor = when (seedColor) {
+                Color.White -> colorScheme.primary
+                else -> seedColor
+            },
+            isDark = darkTheme,
+            specVersion = if (blackTheme && darkTheme) ColorSpec.SpecVersion.SPEC_2021 else ColorSpec.SpecVersion.SPEC_2025,
+            isAmoled = blackTheme && darkTheme
+        )
 
     MaterialExpressiveTheme(
         colorScheme = scheme,

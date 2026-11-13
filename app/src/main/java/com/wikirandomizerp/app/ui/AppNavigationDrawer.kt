@@ -47,6 +47,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -65,6 +66,8 @@ import androidx.window.core.layout.WindowSizeClass
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import com.wikirandomizerp.app.FeatureFlags
+import com.wikirandomizerp.app.data.TrackRecompositions
+import com.wikirandomizerp.app.data.perfMeasure
 import com.wikirandomizerp.app.R.drawable
 import com.wikirandomizerp.app.R.string
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.FeedSection
@@ -98,14 +101,43 @@ fun AppNavigationDrawer(
     content: @Composable () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val items = buildList {
+    TrackRecompositions("AppNavigationDrawer") {
+        "drawer=${drawerState.targetValue} menuRight=$menuOnRight developer=$developerMode"
+    }
+    // Keep the menu model stable across AppScreen recompositions (article scroll-position saves
+    // recompose this whole subtree). The callbacks read the latest lambdas through state, so the
+    // list and its PainterResource lookups are not rebuilt every time.
+    val latestHomeClick by rememberUpdatedState(onHomeClick)
+    val latestVerticalFeedClick by rememberUpdatedState(onVerticalFeedClick)
+    val latestSavedClick by rememberUpdatedState(onSavedArticlesClick)
+    val latestHighlightsClick by rememberUpdatedState(onHighlightsClick)
+    val latestHistoryClick by rememberUpdatedState(onHistoryClick)
+    val latestLibrarySearchClick by rememberUpdatedState(onLibrarySearchClick)
+    val latestCuratorsClick by rememberUpdatedState(onCuratorsClick)
+    val latestTabsClick by rememberUpdatedState(onTabsClick)
+    val latestSettingsClick by rememberUpdatedState(onSettingsClick)
+    // painterResource is composable, so resolve the painters before the remember block.
+    val homeOutlined = painterResource(drawable.outline_home)
+    val homeFilled = painterResource(drawable.filled_home)
+    val feedIcon = painterResource(drawable.feed)
+    val savedOutlined = painterResource(drawable.download_done)
+    val savedFilled = painterResource(drawable.filled_download_done)
+    val highlightIcon = painterResource(drawable.highlight)
+    val historyIcon = painterResource(drawable.history)
+    val historySelected = painterResource(drawable.history_selected)
+    val searchIcon = painterResource(drawable.search)
+    val groupsIcon = painterResource(drawable.groups)
+    val tabIcon = painterResource(drawable.tab)
+    val settingsOutlined = painterResource(drawable.outline_settings)
+    val settingsFilled = painterResource(drawable.filled_settings)
+    val items = remember(developerMode, historyEnabled) { buildList {
         add(
             Item(
                 string.home,
-                painterResource(drawable.outline_home),
-                painterResource(drawable.filled_home),
+                homeOutlined,
+                homeFilled,
                 HomeScreen::class,
-                onHomeClick
+                { latestHomeClick() }
             )
         )
         // Developer preview: hidden for everyone until developer mode is switched on.
@@ -113,48 +145,48 @@ fun AppNavigationDrawer(
             add(
                 Item(
                     string.verticalFeed,
-                    painterResource(drawable.feed),
-                    painterResource(drawable.feed),
+                    feedIcon,
+                    feedIcon,
                     VerticalFeedRoute::class,
-                    onVerticalFeedClick
+                    { latestVerticalFeedClick() }
                 )
             )
         }
         add(
             Item(
                 string.saved,
-                painterResource(drawable.download_done),
-                painterResource(drawable.filled_download_done),
+                savedOutlined,
+                savedFilled,
                 SavedArticlesScreen::class,
-                onSavedArticlesClick
+                { latestSavedClick() }
             )
         )
         add(
             Item(
                 string.savedHighlights,
-                painterResource(drawable.highlight),
-                painterResource(drawable.highlight),
+                highlightIcon,
+                highlightIcon,
                 HighlightsScreen::class,
-                onHighlightsClick
+                { latestHighlightsClick() }
             )
         )
         add(
             Item(
                 string.history,
-                painterResource(drawable.history),
-                painterResource(drawable.history_selected),
+                historyIcon,
+                historySelected,
                 HistoryScreen::class,
-                onHistoryClick,
+                { latestHistoryClick() },
                 historyEnabled
             )
         )
         add(
             Item(
                 string.librarySearch,
-                painterResource(drawable.search),
-                painterResource(drawable.search),
+                searchIcon,
+                searchIcon,
                 LibrarySearchRoute::class,
-                onLibrarySearchClick
+                { latestLibrarySearchClick() }
             )
         )
         // Curators stay fully wired but hidden while the feature is not ready for release.
@@ -162,32 +194,32 @@ fun AppNavigationDrawer(
             add(
                 Item(
                     string.curators,
-                    painterResource(drawable.groups),
-                    painterResource(drawable.groups),
+                    groupsIcon,
+                    groupsIcon,
                     CuratorsScreen::class,
-                    onCuratorsClick
+                    { latestCuratorsClick() }
                 )
             )
         }
         add(
             Item(
                 string.tabs,
-                painterResource(drawable.tab),
-                painterResource(drawable.tab),
+                tabIcon,
+                tabIcon,
                 null,
-                onTabsClick
+                { latestTabsClick() }
             )
         )
         add(
             Item(
                 string.settings,
-                painterResource(drawable.outline_settings),
-                painterResource(drawable.filled_settings),
+                settingsOutlined,
+                settingsFilled,
                 SettingsScreen::class,
-                onSettingsClick
+                { latestSettingsClick() }
             )
         )
-    }
+    } }
 
     val compactScreen =
         remember { !windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND) }
@@ -326,7 +358,13 @@ private fun AppDrawerContent(
     navItems: List<Item>,
     scope: CoroutineScope
 ) {
-    val showingHome = backStackEntry?.destination?.hasRoute(HomeScreen::class) == true
+    // The drawer content stays composed while the drawer is closed. Building every section row
+    // during startup (and then again whenever an article/feed update recomposes this subtree)
+    // showed up as jank in the startup trace. Sections are only needed once the drawer is opening;
+    // keep them while it closes so the rows do not vanish during the close animation.
+    val showingHome =
+        (drawerState.currentValue == DrawerValue.Open || drawerState.targetValue == DrawerValue.Open) &&
+                backStackEntry?.destination?.hasRoute(HomeScreen::class) == true
     // Do not read the feed/article scroll state while the drawer is closed. The drawer content is
     // still composed then, and reading it on every scroll frame was a source of visible jank.
     // Key the remember on the LazyListState identity, not on the whole Article: data-class
@@ -346,7 +384,7 @@ private fun AppDrawerContent(
     LazyColumn(
         contentPadding = PaddingValues(vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().perfMeasure("drawer list")
     ) {
         item(key = "drawer-title") {
             Text(

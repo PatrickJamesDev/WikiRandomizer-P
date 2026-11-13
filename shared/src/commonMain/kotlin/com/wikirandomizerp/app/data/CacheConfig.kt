@@ -18,5 +18,5 @@ object CacheConfig {
     const val MAX_ARTICLE_IMAGES = 100
 
     /** High-resolution (1920 px) renditions warmed per article. */
-    const val MAX_HIGH_RES_IMAGES = 60
+    const val MAX_HIGH_RES_IMAGES = 12
 }

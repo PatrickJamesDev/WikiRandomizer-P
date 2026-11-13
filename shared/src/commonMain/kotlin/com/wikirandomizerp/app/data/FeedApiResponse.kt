@@ -14,9 +14,9 @@ data class FeedApiResponse(
 
 @Serializable
 data class FeedApiTFA(
-    val titles: Titles? = null,
-    val thumbnail: Image? = null,
-    @SerialName("originalimage") val originalImage: Image? = null,
+    val titles: FeedTitles? = null,
+    val thumbnail: FeedImageSource? = null,
+    @SerialName("originalimage") val originalImage: FeedImageSource? = null,
     val lang: String? = null,
     val description: String? = null,
     val extract: String? = null,
@@ -32,35 +32,35 @@ data class FeedApiMostRead(
 @Serializable
 data class FeedApiImage(
     val title: String? = null,
-    val thumbnail: Image? = null,
-    val image: Image? = null,
-    val artist: Artist? = null,
-    val credit: Credit? = null,
-    val description: Description? = null,
+    val thumbnail: FeedImageSource? = null,
+    val image: FeedImageSource? = null,
+    val artist: FeedArtist? = null,
+    val credit: FeedCredit? = null,
+    val description: FeedDescription? = null,
     @SerialName("file_page") val filePage: String? = null
 )
 
 @Serializable
 data class FeedApiNews(
-    val links: List<Article>? = null,
+    val links: List<FeedArticleSummary>? = null,
     val story: String? = null
 )
 
 @Serializable
 data class FeedApiOTD(
     val text: String? = null,
-    val pages: List<Article>? = null,
+    val pages: List<FeedArticleSummary>? = null,
     val year: Int? = null
 )
 
 @Serializable
-data class Titles(
+data class FeedTitles(
     val canonical: String? = null,
     val normalized: String? = null
 )
 
 @Serializable
-data class Image(
+data class FeedImageSource(
     val source: String? = null,
     val width: Int? = null,
     val height: Int? = null
@@ -70,44 +70,44 @@ data class Image(
 data class MostReadArticle(
     val views: Int? = null,
     val rank: Int? = null,
-    @SerialName("view_history") val viewHistory: List<ViewHistory>? = null,
-    val titles: Titles? = null,
-    val thumbnail: Image? = null,
-    @SerialName("originalimage") val originalImage: Image? = null,
+    @SerialName("view_history") val viewHistory: List<FeedViewHistory>? = null,
+    val titles: FeedTitles? = null,
+    val thumbnail: FeedImageSource? = null,
+    @SerialName("originalimage") val originalImage: FeedImageSource? = null,
     val lang: String? = null,
     val description: String? = null,
     val extract: String? = null
 )
 
 @Serializable
-data class Article(
-    val titles: Titles? = null,
-    val thumbnail: Image? = null,
-    @SerialName("originalimage") val originalImage: Image? = null,
+data class FeedArticleSummary(
+    val titles: FeedTitles? = null,
+    val thumbnail: FeedImageSource? = null,
+    @SerialName("originalimage") val originalImage: FeedImageSource? = null,
     val lang: String? = null,
     val description: String? = null,
     val extract: String? = null
 )
 
 @Serializable
-data class ViewHistory(
+data class FeedViewHistory(
     val date: String? = null,
     val views: Int? = null
 )
 
 @Serializable
-data class Artist(
+data class FeedArtist(
     val text: String? = null,
     val name: String? = null
 )
 
 @Serializable
-data class Credit(
+data class FeedCredit(
     val text: String? = null
 )
 
 @Serializable
-data class Description(
+data class FeedDescription(
     val text: String? = null,
     val lang: String? = null
 )
