@@ -92,9 +92,10 @@ several minutes. Later builds are incremental.
 - `iosApp` hosts `ReaderViewController()`, which renders the shared Compose app shell. It picks a
   language, fetches a random summary through Ktor/Darwin, shows the title, description, read time
   and extract, and opens the full article in an embedded `WKWebView` (Android uses `WebView`).
-  The drawer also contains Topics, Saved, History, Search, Stats, Settings and About. Topic picks load random
+  The drawer also contains Topics, Saved, History, Search, Wikipedia, Stats, Settings and About. Topic picks load random
   category articles; Saved articles and opened-article history use the shared `LibraryRepository`;
-  search filters both lists and keeps recent queries; theme and language persist through
+  library search filters both lists and keeps recent queries; the Wikipedia screen runs full-text
+  search through the shared search-source contract; theme and language persist through
   `NSUserDefaults` via the shared `SettingsStore`.
 - The Android app keeps all of its existing features; `build_ios.sh` does not change the APK.
 - Remaining Android screens are migrated into `shared/src/commonMain` in phases, then both hosts

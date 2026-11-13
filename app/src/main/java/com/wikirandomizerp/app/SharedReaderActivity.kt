@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.remember
 import org.nsh07.wikireader.shared.reader.AndroidRandomArticleSource
+import org.nsh07.wikireader.shared.reader.AndroidWikipediaSearchSource
 import org.nsh07.wikireader.shared.settings.AndroidSettingsStore
 import org.nsh07.wikireader.shared.ui.ReaderApp
 
@@ -22,9 +23,11 @@ class SharedReaderActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val source = remember { AndroidRandomArticleSource() }
+            val searchSource = remember { AndroidWikipediaSearchSource() }
             val settingsStore = remember { AndroidSettingsStore(this) }
             ReaderApp(
                 source = source,
+                searchSource = searchSource,
                 settingsStore = settingsStore
             )
         }

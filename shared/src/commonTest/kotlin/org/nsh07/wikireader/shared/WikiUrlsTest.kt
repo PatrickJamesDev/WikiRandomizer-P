@@ -57,6 +57,22 @@ class WikiUrlsTest {
     }
 
     @Test
+    fun searchApiUrlUsesGeneratorSearchAndEncodesQuery() {
+        assertEquals(
+            "https://en.wikipedia.org/w/api.php?action=query&generator=search" +
+                "&gsrsearch=black%20hole&gsrnamespace=0&gsrlimit=20" +
+                "&gsrprop=snippet|titlesnippet|redirecttitle" +
+                "&prop=pageimages&piprop=thumbnail&pithumbsize=250" +
+                "&format=json&formatversion=2",
+            WikiUrls.searchApiUrl("en", " black hole ")
+        )
+        assertTrue(
+            WikiUrls.searchApiUrl("de", "Köln", limit = 5)
+                .contains("gsrsearch=K%C3%B6ln")
+        )
+    }
+
+    @Test
     fun textHelpersAreUsefulForCards() {
         assertEquals("Hello world", WikiText.plainText("<b>Hello</b>&nbsp;world"))
         assertEquals(1, WikiText.readingMinutes("one two three", wordsPerMinute = 3))

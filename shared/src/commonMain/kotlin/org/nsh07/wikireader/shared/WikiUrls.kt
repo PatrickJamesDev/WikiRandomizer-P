@@ -31,6 +31,14 @@ object WikiUrls {
     fun searchUrl(lang: String, query: String): String =
         "https://${host(lang)}/w/index.php?search=${encodeQuery(query)}"
 
+    /** Full-text search via the MediaWiki generator API, including thumbnails and snippets. */
+    fun searchApiUrl(lang: String, query: String, limit: Int = 20): String =
+        "https://${host(lang)}/w/api.php?action=query&generator=search" +
+            "&gsrsearch=${encodeQuery(query)}&gsrnamespace=0&gsrlimit=$limit" +
+            "&gsrprop=snippet|titlesnippet|redirecttitle" +
+            "&prop=pageimages&piprop=thumbnail&pithumbsize=250" +
+            "&format=json&formatversion=2"
+
     fun categoryMembersUrl(lang: String, category: String, limit: Int = 50): String =
         "https://${host(lang)}/w/api.php?action=query&list=categorymembers" +
             "&cmtitle=${encodeQuery("Category:$category")}" +

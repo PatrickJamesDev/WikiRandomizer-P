@@ -57,20 +57,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.wikirandomizerp.app.data.LanguageData
+import com.wikirandomizerp.app.data.WikiSearchResult
 import com.wikirandomizerp.app.data.WikiTopic
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.nsh07.wikireader.shared.ArticleImage
 import org.nsh07.wikireader.shared.ArticleSummary
 import org.nsh07.wikireader.shared.WikiText
 import org.nsh07.wikireader.shared.WikiUrls
 import org.nsh07.wikireader.shared.library.LibraryEntry
 import org.nsh07.wikireader.shared.library.LibraryRepository
 import org.nsh07.wikireader.shared.reader.RandomArticleSource
+import org.nsh07.wikireader.shared.reader.WikipediaSearchSource
 import org.nsh07.wikireader.shared.reader.findTopicByCategory
 import org.nsh07.wikireader.shared.settings.SettingsKeys
 import org.nsh07.wikireader.shared.settings.SettingsStore
-import org.nsh07.wikireader.shared.ui.settings.AboutScreen
 import org.nsh07.wikireader.shared.ui.article.PlatformArticleWebView
+import org.nsh07.wikireader.shared.ui.search.WikipediaSearchScreen
+import org.nsh07.wikireader.shared.ui.settings.AboutScreen
 import org.nsh07.wikireader.shared.ui.library.LibraryScreen
 import org.nsh07.wikireader.shared.ui.library.LibrarySearchScreen
 import org.nsh07.wikireader.shared.ui.settings.SettingsScreen
@@ -81,7 +86,7 @@ import org.nsh07.wikireader.shared.ui.settings.THEME_LIGHT
 import org.nsh07.wikireader.shared.ui.settings.THEME_SYSTEM
 import org.nsh07.wikireader.shared.ui.theme.WikiReaderTheme
 
-private enum class ReaderDestination { READER, TOPICS, SAVED, HISTORY, SEARCH, STATS, SETTINGS, ABOUT }
+private enum class ReaderDestination { READER, TOPICS, SAVED, HISTORY, SEARCH, WIKI_SEARCH, STATS, SETTINGS, ABOUT }
 
 private data class OpenArticle(
     val language: String,
@@ -92,6 +97,7 @@ private data class OpenArticle(
 @Composable
 fun ReaderApp(
     source: RandomArticleSource,
+    searchSource: WikipediaSearchSource,
     settingsStore: SettingsStore,
     modifier: Modifier = Modifier
 ) {
@@ -123,6 +129,11 @@ fun ReaderApp(
         var openArticle by remember { mutableStateOf<OpenArticle?>(null) }
         var librarySearchQuery by remember { mutableStateOf("") }
         var recentSearches by remember { mutableStateOf(library.recentSearches()) }
+        var wikiSearchQuery by remember { mutableStateOf("") }
+        var wikiSearchResults by remember { mutableStateOf<List<WikiSearchResult>>(emptyList()) }
+        var wikiSearchLoading by remember { mutableStateOf(false) }
+        var wikiSearchError by remember { mutableStateOf<String?>(null) }
+        var wikiSearchRetry by remember { mutableIntStateOf(0) }
         var selectedTopic by remember {
             mutableStateOf<WikiTopic?>(
                 settingsStore.getString(SettingsKeys.TOPIC, "")
@@ -177,6 +188,29 @@ fun ReaderApp(
 
         LaunchedEffect(source) {
             loadRandom(language, selectedTopic)
+        }
+
+        LaunchedEffect(wikiSearchQuery, language, wikiSearchRetry) {
+            val normalized = wikiSearchQuery.trim()
+            if (normalized.length < 2) {
+                wikiSearchResults = emptyList()
+                wikiSearchLoading = false
+                wikiSearchError = null
+                return@LaunchedEffect
+            }
+            delay(350)
+            wikiSearchLoading = true
+            wikiSearchError = null
+            try {
+                wikiSearchResults = searchSource.search(language, normalized)
+                wikiSearchLoading = false
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Throwable) {
+                wikiSearchResults = emptyList()
+                wikiSearchError = "Could not search Wikipedia. Check your connection and try again."
+                wikiSearchLoading = false
+            }
         }
 
         ModalNavigationDrawer(
@@ -247,6 +281,16 @@ fun ReaderApp(
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
                     NavigationDrawerItem(
+                        label = { Text("Wikipedia") },
+                        selected = destination == ReaderDestination.WIKI_SEARCH,
+                        onClick = {
+                            destination = ReaderDestination.WIKI_SEARCH
+                            openArticle = null
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                    NavigationDrawerItem(
                         label = { Text("Stats") },
                         selected = destination == ReaderDestination.STATS,
                         onClick = {
@@ -301,6 +345,7 @@ fun ReaderApp(
                                 ReaderDestination.SAVED -> "Saved"
                                 ReaderDestination.HISTORY -> "History"
                                 ReaderDestination.SEARCH -> "Search"
+                                ReaderDestination.WIKI_SEARCH -> "Wikipedia"
                                 ReaderDestination.STATS -> "Stats"
                                 ReaderDestination.SETTINGS -> "Settings"
                                 ReaderDestination.ABOUT -> "About"
@@ -314,6 +359,7 @@ fun ReaderApp(
                                 )
                                 val subtitle = when {
                                     openArticle != null -> languageName(openArticle?.language ?: language)
+                                    destination == ReaderDestination.WIKI_SEARCH -> languageName(language)
                                     destination != ReaderDestination.READER -> null
                                     selectedTopic != null -> "${languageName(language)} · ${selectedTopic?.label}"
                                     else -> languageName(language)
@@ -435,6 +481,33 @@ fun ReaderApp(
                                         language
                                     )
                                     openInReader(entry.language, entry.article)
+                                }
+                            )
+
+                            ReaderDestination.WIKI_SEARCH -> WikipediaSearchScreen(
+                                query = wikiSearchQuery,
+                                language = language,
+                                results = wikiSearchResults,
+                                isLoading = wikiSearchLoading,
+                                errorMessage = wikiSearchError,
+                                onQueryChange = { wikiSearchQuery = it },
+                                onRetry = { wikiSearchRetry++ },
+                                onOpen = { result ->
+                                    openInReader(
+                                        language,
+                                        ArticleSummary(
+                                            pageid = result.pageId,
+                                            title = result.title,
+                                            extract = WikiText.plainText(result.snippet),
+                                            thumbnail = result.thumbnail?.let { thumbnail ->
+                                                ArticleImage(
+                                                    source = thumbnail.source,
+                                                    width = thumbnail.width,
+                                                    height = thumbnail.height
+                                                )
+                                            }
+                                        )
+                                    )
                                 }
                             )
 
