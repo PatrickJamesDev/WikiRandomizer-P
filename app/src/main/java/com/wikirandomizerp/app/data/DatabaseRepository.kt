@@ -6,14 +6,12 @@ interface DatabaseRepository {
     suspend fun insertSearchHistory(search: SearchHistoryItem, deduplicate: Boolean = true)
     suspend fun deleteSearchHistory(search: SearchHistoryItem)
     suspend fun deleteAllSearchHistory()
-    suspend fun deleteOldSearchHistory()
     fun getSearchHistory(): Flow<List<SearchHistoryItem>>
 
     suspend fun insertViewHistory(viewHistoryItem: ViewHistoryItem)
     suspend fun deleteViewHistory(viewHistoryItem: ViewHistoryItem)
     suspend fun deleteViewHistoryByTitle(title: String, lang: String)
     suspend fun deleteAllViewHistory()
-    suspend fun deleteOldViewHistory()
     fun getViewHistory(): Flow<List<ViewHistoryItem>>
     fun getRecentLanguages(): Flow<List<String>>
     suspend fun getViewedTitles(lang: String): List<String>
@@ -91,13 +89,12 @@ class AppDatabaseRepository(
         searchHistoryDao.delete(search)
 
     override suspend fun deleteAllSearchHistory() = searchHistoryDao.deleteAll()
-    override suspend fun deleteOldSearchHistory() = searchHistoryDao.deleteOld()
     override fun getSearchHistory(): Flow<List<SearchHistoryItem>> =
         searchHistoryDao.getSearchHistory()
 
     override suspend fun insertViewHistory(viewHistoryItem: ViewHistoryItem) {
         // Keep one entry per article (moved to the top) instead of only de-duplicating
-        // consecutive visits, so revisits don't flood the 200-item history.
+        // consecutive visits; history has no fixed length limit.
         viewHistoryDao.deleteByTitle(viewHistoryItem.title, viewHistoryItem.lang)
         viewHistoryDao.insert(viewHistoryItem)
     }
@@ -109,7 +106,6 @@ class AppDatabaseRepository(
         viewHistoryDao.deleteByTitle(title, lang)
 
     override suspend fun deleteAllViewHistory() = viewHistoryDao.deleteAll()
-    override suspend fun deleteOldViewHistory() = viewHistoryDao.deleteOld()
     override fun getViewHistory(): Flow<List<ViewHistoryItem>> = viewHistoryDao.getViewHistory()
     override fun getRecentLanguages(): Flow<List<String>> = viewHistoryDao.getRecentLanguages()
     override suspend fun getViewedTitles(lang: String): List<String> =

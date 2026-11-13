@@ -74,6 +74,8 @@ fun FullScreenImage(
     background: Boolean,
     modifier: Modifier = Modifier,
     link: String? = null,
+    articleTitle: String? = null,
+    articleLang: String? = null,
     onBack: () -> Unit,
 ) {
     var currentLightStatusBars = true
@@ -131,13 +133,27 @@ fun FullScreenImage(
         }
     }
 
-    val download = rememberImageDownload(photo?.source, photoDesc ?: title)
+    val download = rememberImageDownload(
+        url = photo?.source,
+        description = photoDesc ?: title,
+        articleTitle = articleTitle,
+        articleLang = articleLang,
+        thumbnailUrl = photo?.source
+    )
+    val saveToGallery = rememberSaveImage(
+        url = photo?.source,
+        description = photoDesc ?: title,
+        articleTitle = articleTitle,
+        articleLang = articleLang,
+        thumbnailUrl = photo?.source
+    )
+    var showImageActions by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
-    val longPress = remember(download, haptic) {
+    val longPress = remember(download, saveToGallery, haptic) {
         {
-            if (download != null) {
+            if (download != null || saveToGallery != null) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                download()
+                showImageActions = true
             }
         }
     }
@@ -153,6 +169,7 @@ fun FullScreenImage(
                         description = title,
                         link = link,
                         onDownload = download,
+                        onSaveToGallery = saveToGallery,
                         onBack = onBack
                     )
                 }
@@ -237,6 +254,12 @@ fun FullScreenImage(
                     }
                 }
         }
+        ImageActionDialog(
+            visible = showImageActions,
+            onDismiss = { showImageActions = false },
+            onDownload = download,
+            onSaveToGallery = saveToGallery
+        )
     }
 }
 
@@ -250,6 +273,8 @@ fun FullScreenArticleImage(
     modifier: Modifier = Modifier,
     link: String? = null,
     background: Boolean,
+    articleTitle: String? = null,
+    articleLang: String? = null,
     onBack: () -> Unit,
 ) {
     var currentLightStatusBars = true
@@ -308,13 +333,27 @@ fun FullScreenArticleImage(
         }
     }
 
-    val download = rememberImageDownload(uri, description)
+    val download = rememberImageDownload(
+        url = uri,
+        description = description,
+        articleTitle = articleTitle,
+        articleLang = articleLang,
+        thumbnailUrl = uri
+    )
+    val saveToGallery = rememberSaveImage(
+        url = uri,
+        description = description,
+        articleTitle = articleTitle,
+        articleLang = articleLang,
+        thumbnailUrl = uri
+    )
+    var showImageActions by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
-    val longPress = remember(download, haptic) {
+    val longPress = remember(download, saveToGallery, haptic) {
         {
-            if (download != null) {
+            if (download != null || saveToGallery != null) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                download()
+                showImageActions = true
             }
         }
     }
@@ -330,6 +369,7 @@ fun FullScreenArticleImage(
                         description = description,
                         link = link,
                         onDownload = download,
+                        onSaveToGallery = saveToGallery,
                         onBack = onBack
                     )
                 }
@@ -408,6 +448,12 @@ fun FullScreenArticleImage(
                 }
             }
         }
+        ImageActionDialog(
+            visible = showImageActions,
+            onDismiss = { showImageActions = false },
+            onDownload = download,
+            onSaveToGallery = saveToGallery
+        )
     }
 }
 

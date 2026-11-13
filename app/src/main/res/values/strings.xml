@@ -186,8 +186,11 @@
     <string name="popularityPreferPopular">Prefer widely-read articles</string>
     <string name="popularityPopularOnly">Only popular articles (most read 25%)</string>
     <string name="downloadImage">Download image</string>
+    <string name="saveImageToGallery">Save to gallery</string>
     <string name="imageDownloading">Downloading…</string>
     <string name="imageSavedTo">Saved to %1$s</string>
+    <string name="imageSavedToGallery">Saved to your gallery</string>
+    <string name="imageSaveToGalleryFailed">Could not save the image to your gallery</string>
     <string name="imageDownloadFailed">Download failed: %1$s</string>
     <string name="indexServiceChannel">Library download</string>
     <string name="indexServiceTitle">Building your article library</string>
@@ -306,7 +309,7 @@
     <string name="savedArticles">Saved articles</string>
     <string name="savedImages">Saved images</string>
     <string name="savedImagesEmpty">No saved images yet</string>
-    <string name="savedImagesEmptyDesc">Long-press a picture in an article or its full-screen view to save it here.</string>
+    <string name="savedImagesEmptyDesc">Long-press a picture, or use Save to gallery in the full-screen view, to keep it here.</string>
     <string name="savedImageNoArticle">This image is not linked to an article.</string>
     <string name="scrollLeft">Scroll left</string>
     <string name="scrollRight">Scroll right</string>

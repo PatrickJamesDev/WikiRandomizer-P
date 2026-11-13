@@ -205,8 +205,6 @@ class SettingsViewModel(
             appDatabaseRepository.insertUserLanguage(
                 UserLanguage(lang, langCodeToName(lang), selected = true)
             )
-            appDatabaseRepository.deleteOldSearchHistory()
-            appDatabaseRepository.deleteOldViewHistory()
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {

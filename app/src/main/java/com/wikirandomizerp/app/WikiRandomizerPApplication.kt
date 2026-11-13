@@ -1,5 +1,6 @@
 package com.wikirandomizerp.app
 
+import android.app.ActivityManager
 import android.app.Application
 import android.content.ComponentCallbacks2
 import android.content.Context
@@ -99,8 +100,17 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
         registerComponentCallbacks(object : ComponentCallbacks2 {
             override fun onTrimMemory(level: Int) {
                 DebugLog.crumb("onTrimMemory level=$level ${DebugLog.memory()}")
-                if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
-                    runCatching { SingletonImageLoader.get(this@WikiRandomizerPApplication).memoryCache?.clear() }
+                // Do not throw the whole image cache away at RUNNING_LOW: the visible article then
+                // re-decodes every picture, which caused a wave of jank right after the trim.
+                // Trimming to half keeps the pictures on screen while still releasing memory;
+                // only a complete background trim clears everything.
+                runCatching {
+                    val cache = SingletonImageLoader.get(this@WikiRandomizerPApplication).memoryCache
+                        ?: return@runCatching
+                    if (level >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE) cache.clear()
+                    else if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+                        cache.trimToSize(cache.maxSize / 2)
+                    }
                 }
             }
 
@@ -111,6 +121,9 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
             override fun onConfigurationChanged(newConfig: Configuration) {}
         })
     }
+
+    private fun isLowRamDevice(): Boolean =
+        (getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)?.isLowRamDevice == true
 
     override fun newImageLoader(context: Context): ImageLoader {
         return ImageLoader.Builder(context)
@@ -127,7 +140,10 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
             )
             .memoryCache(
                 coil3.memory.MemoryCache.Builder()
-                    .maxSizePercent(this, 0.25)
+                    // Cap image memory adaptively: 25% of a 512 MB heap is 128 MB, which the app
+                    // reaches quickly on article-heavy pages and then fights with GC. 20% keeps
+                    // enough decoded pictures for smooth scrolling without that pressure.
+                    .maxSizePercent(this, if (isLowRamDevice()) 0.12 else 0.20)
                     .build()
             )
             .components {

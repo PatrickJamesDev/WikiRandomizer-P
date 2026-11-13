@@ -424,6 +424,7 @@ fun AppHomeScreen(
                         // sections.
                         val latestArticle by rememberUpdatedState(entry)
                         val latestImageBackground by rememberUpdatedState(preferencesState.imageBackground)
+                        val latestLang by rememberUpdatedState(preferencesState.lang)
                         val onImageClick: () -> Unit = remember(entry.uid) {
                             {
                                 val article = latestArticle
@@ -434,6 +435,8 @@ fun AppHomeScreen(
                                         title = article.title,
                                         background = latestImageBackground,
                                         link = article.photo?.source,
+                                        articleTitle = article.title,
+                                        articleLang = article.currentLang ?: latestLang,
                                         onBack = popImage
                                     )
                                 )
@@ -509,6 +512,8 @@ fun AppHomeScreen(
                             title = it.title,
                             background = it.background,
                             link = it.link,
+                            articleTitle = it.articleTitle,
+                            articleLang = it.articleLang,
                             onBack = it.onBack
                         )
                     }
@@ -531,6 +536,8 @@ fun AppHomeScreen(
                             sharedScope = this@SharedTransitionLayout,
                             background = it.background,
                             link = it.link,
+                            articleTitle = it.articleTitle,
+                            articleLang = it.articleLang,
                             onBack = it.onBack
                         )
                     }

@@ -143,12 +143,21 @@ fun SharedTransitionScope.FullScreenGallery(
         pageUrl = item.pageUrl,
         thumbnailUrl = item.thumbnailUrl
     )
+    val saveToGallery = rememberSaveImage(
+        url = item.uri,
+        description = item.caption.ifBlank { null },
+        articleTitle = item.articleTitle,
+        articleLang = item.articleLang,
+        pageUrl = item.pageUrl,
+        thumbnailUrl = item.thumbnailUrl
+    )
+    var showImageActions by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
-    val longPress = remember(download, haptic) {
+    val longPress = remember(download, saveToGallery, haptic) {
         {
-            if (download != null) {
+            if (download != null || saveToGallery != null) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                download()
+                showImageActions = true
             }
         }
     }
@@ -202,6 +211,7 @@ fun SharedTransitionScope.FullScreenGallery(
                 description = counter,
                 link = item.pageUrl,
                 onDownload = download,
+                onSaveToGallery = saveToGallery,
                 onBack = onBack
             )
         }
@@ -233,6 +243,12 @@ fun SharedTransitionScope.FullScreenGallery(
             }
         }
     }
+    ImageActionDialog(
+        visible = showImageActions,
+        onDismiss = { showImageActions = false },
+        onDownload = download,
+        onSaveToGallery = saveToGallery
+    )
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

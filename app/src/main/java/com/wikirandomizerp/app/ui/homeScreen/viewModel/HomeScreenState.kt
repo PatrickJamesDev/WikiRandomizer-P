@@ -181,6 +181,8 @@ sealed class HomeSubscreen {
             val background: Boolean,
             val modifier: Modifier = Modifier,
             val link: String? = null,
+            val articleTitle: String? = null,
+            val articleLang: String? = null,
             val onBack: () -> Unit,
             /** Unique per push: two taps on the same picture must never produce two equal entries. */
             val uid: Long = nextArticleUid(),
@@ -201,6 +203,8 @@ sealed class HomeSubscreen {
             val modifier: Modifier = Modifier,
             val link: String? = null,
             val background: Boolean,
+            val articleTitle: String? = null,
+            val articleLang: String? = null,
             val onBack: () -> Unit,
             val uid: Long = nextArticleUid(),
         ) : Image()

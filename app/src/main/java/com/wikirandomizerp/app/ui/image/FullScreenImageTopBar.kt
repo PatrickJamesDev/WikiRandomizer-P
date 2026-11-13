@@ -36,6 +36,7 @@ fun SharedTransitionScope.FullScreenImageTopBar(
     description: String,
     link: String? = null,
     onDownload: (() -> Unit)? = null,
+    onSaveToGallery: (() -> Unit)? = null,
     onBack: () -> Unit,
 ) {
     val sendIntent: Intent = Intent()
@@ -94,6 +95,18 @@ fun SharedTransitionScope.FullScreenImageTopBar(
                         painterResource(R.drawable.download),
                         tint = Color.White,
                         contentDescription = stringResource(R.string.downloadImage)
+                    )
+                }
+            }
+            if (onSaveToGallery != null) {
+                IconButton(
+                    shapes = IconButtonDefaults.shapes(),
+                    onClick = onSaveToGallery
+                ) {
+                    Icon(
+                        painterResource(R.drawable.image),
+                        tint = Color.White,
+                        contentDescription = stringResource(R.string.saveImageToGallery)
                     )
                 }
             }

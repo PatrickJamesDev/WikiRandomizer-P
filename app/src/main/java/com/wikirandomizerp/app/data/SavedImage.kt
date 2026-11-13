@@ -4,9 +4,9 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
- * A picture the reader explicitly saved. The image itself is also written to the phone's gallery;
- * [localUri] points at that copy so the in-app Gallery keeps working after the article cache is
- * trimmed. [articleTitle]/[articleLang] let a tap reopen the Wikipedia article it came from.
+ * A picture the reader explicitly saved. A downloaded copy is written to the phone's gallery and
+ * [localUri] points at it; "Save to gallery" entries keep [localUri] null and use the remote
+ * thumbnail instead. [articleTitle]/[articleLang] let a tap reopen the Wikipedia article it came from.
  */
 @Entity(tableName = "saved_image")
 data class SavedImage(

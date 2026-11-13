@@ -136,10 +136,11 @@ fun WelcomeTutorial(
                 .padding(20.dp)
                 .widthIn(max = 460.dp)
                 .fillMaxWidth()
-                // Wrap the page content instead of forcing a near-full-screen card. The max height
-                // only kicks in on short screens; the body scrolls there, while normal phones no
-                // longer show a large empty gap above and below the text.
-                .heightIn(max = 520.dp)
+                // A stable minimum height keeps the footer (dots + Back/Skip/Next) in exactly the
+                // same place on every page; without it the card wrapped to each page's text and the
+                // buttons jumped around. The body gets the leftover space and scrolls if a page is
+                // taller, so no extra screen space is reserved beyond this compact card.
+                .heightIn(min = 440.dp, max = 520.dp)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -151,7 +152,7 @@ fun WelcomeTutorial(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier
-                        .weight(1f, fill = false)
+                        .weight(1f)
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
                 ) {

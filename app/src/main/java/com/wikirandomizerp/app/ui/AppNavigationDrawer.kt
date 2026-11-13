@@ -198,7 +198,8 @@ fun AppNavigationDrawer(
                 searchIcon,
                 searchIcon,
                 LibrarySearchRoute::class,
-                { latestLibrarySearchClick() }
+                { latestLibrarySearchClick() },
+                closeBeforeNavigate = true
             )
         )
         // Curators stay fully wired but hidden while the feature is not ready for release.
@@ -421,8 +422,17 @@ private fun AppDrawerContent(
                         // Screens replace the current destination anyway. Items without a route
                         // (Tabs) close the drawer themselves before opening their panel, so the
                         // two animations run in sequence instead of on top of each other.
-                        if (item.route != null) scope.launch { drawerState.close() }
-                        item.onClick()
+                        if (item.closeBeforeNavigate) {
+                            // The full-screen library search also opens the keyboard. Wait for
+                            // the drawer animation to finish so both transitions do not overlap.
+                            scope.launch {
+                                drawerState.close()
+                                item.onClick()
+                            }
+                        } else {
+                            if (item.route != null) scope.launch { drawerState.close() }
+                            item.onClick()
+                        }
                     }
                 },
                 icon = {
@@ -787,7 +797,9 @@ private data class Item(
     /** Null for actions that do not correspond to a navigation destination (e.g. Tabs). */
     val route: KClass<out Any>?,
     val onClick: () -> Unit,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
+    /** Waits for the drawer to close before running [onClick] (for screens with their own animation). */
+    val closeBeforeNavigate: Boolean = false
 )
 
 /**
