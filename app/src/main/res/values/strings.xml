@@ -304,6 +304,10 @@
     <string name="resetSettingsIconDesc">Reset settings to default</string>
     <string name="saved">Saved</string>
     <string name="savedArticles">Saved articles</string>
+    <string name="savedImages">Saved images</string>
+    <string name="savedImagesEmpty">No saved images yet</string>
+    <string name="savedImagesEmptyDesc">Long-press a picture in an article or its full-screen view to save it here.</string>
+    <string name="savedImageNoArticle">This image is not linked to an article.</string>
     <string name="scrollLeft">Scroll left</string>
     <string name="scrollRight">Scroll right</string>
     <string name="scroll_to_top">Scroll to top</string>

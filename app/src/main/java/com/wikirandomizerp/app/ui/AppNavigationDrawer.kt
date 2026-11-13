@@ -89,6 +89,7 @@ fun AppNavigationDrawer(
     onLibrarySearchClick: () -> Unit = {},
     onHomeClick: () -> Unit,
     onSavedArticlesClick: () -> Unit,
+    onSavedImagesClick: () -> Unit,
     onHighlightsClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onCuratorsClick: () -> Unit,
@@ -110,6 +111,7 @@ fun AppNavigationDrawer(
     val latestHomeClick by rememberUpdatedState(onHomeClick)
     val latestVerticalFeedClick by rememberUpdatedState(onVerticalFeedClick)
     val latestSavedClick by rememberUpdatedState(onSavedArticlesClick)
+    val latestSavedImagesClick by rememberUpdatedState(onSavedImagesClick)
     val latestHighlightsClick by rememberUpdatedState(onHighlightsClick)
     val latestHistoryClick by rememberUpdatedState(onHistoryClick)
     val latestLibrarySearchClick by rememberUpdatedState(onLibrarySearchClick)
@@ -122,6 +124,7 @@ fun AppNavigationDrawer(
     val feedIcon = painterResource(drawable.feed)
     val savedOutlined = painterResource(drawable.download_done)
     val savedFilled = painterResource(drawable.filled_download_done)
+    val savedImagesIcon = painterResource(drawable.image)
     val highlightIcon = painterResource(drawable.highlight)
     val historyIcon = painterResource(drawable.history)
     val historySelected = painterResource(drawable.history_selected)
@@ -159,6 +162,15 @@ fun AppNavigationDrawer(
                 savedFilled,
                 SavedArticlesScreen::class,
                 { latestSavedClick() }
+            )
+        )
+        add(
+            Item(
+                string.savedImages,
+                savedImagesIcon,
+                savedImagesIcon,
+                SavedImagesRoute::class,
+                { latestSavedImagesClick() }
             )
         )
         add(

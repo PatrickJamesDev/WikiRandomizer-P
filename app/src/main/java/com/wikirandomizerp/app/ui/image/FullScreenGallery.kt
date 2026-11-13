@@ -43,7 +43,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -133,7 +135,23 @@ fun SharedTransitionScope.FullScreenGallery(
     }
 
     val item = items[pagerState.currentPage.coerceIn(0, items.lastIndex)]
-    val download = rememberImageDownload(item.uri, item.caption.ifBlank { null })
+    val download = rememberImageDownload(
+        url = item.uri,
+        description = item.caption.ifBlank { null },
+        articleTitle = item.articleTitle,
+        articleLang = item.articleLang,
+        pageUrl = item.pageUrl,
+        thumbnailUrl = item.thumbnailUrl
+    )
+    val haptic = LocalHapticFeedback.current
+    val longPress = remember(download, haptic) {
+        {
+            if (download != null) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                download()
+            }
+        }
+    }
     val colorScheme = MaterialTheme.colorScheme
     val typography = MaterialTheme.typography
     val captionText = remember(item.caption) {
@@ -164,6 +182,7 @@ fun SharedTransitionScope.FullScreenGallery(
                 background = background,
                 doubleTapSpec = doubleTapSpec,
                 onTap = { barsRequested = !barsRequested },
+                onLongPress = longPress,
                 onScaleChanged = { scale ->
                     if (page == pagerState.currentPage) {
                         if (scale > 1.1f && currentScale <= 1.1f) barsRequested = false
@@ -224,6 +243,7 @@ private fun GalleryImagePage(
     background: Boolean,
     doubleTapSpec: androidx.compose.animation.core.AnimationSpec<Float>,
     onTap: () -> Unit,
+    onLongPress: () -> Unit,
     onScaleChanged: (Float) -> Unit
 ) {
     val context = LocalContext.current
@@ -243,7 +263,9 @@ private fun GalleryImagePage(
         model = ImageRequest.Builder(context)
             .data(item.uri)
             .diskCacheKey(ImageCacheKeys.body(item.uri))
-            .crossfade(true)
+            // No crossfade when the viewer opens: the bitmap either comes straight from the
+            // preloaded disk cache or shows the progress indicator on black, never a white frame.
+            .crossfade(false)
             .build(),
         contentScale = ContentScale.Fit
     )
@@ -267,7 +289,8 @@ private fun GalleryImagePage(
                 scope = scope,
                 doubleTapSpec = doubleTapSpec,
                 onTap = onTap,
-                onScaleChanged = onScaleChanged
+                onScaleChanged = onScaleChanged,
+                onLongPress = onLongPress
             )
     ) {
         when (painterState) {

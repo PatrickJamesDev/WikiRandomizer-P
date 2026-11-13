@@ -35,7 +35,9 @@ fun SharedTransitionScope.PageImage(
     painterState: AsyncImagePainter.State,
     background: Boolean,
     contentScale: ContentScale,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Backing colour while the bitmap decodes; full-screen viewers pass black to avoid a flash. */
+    loadingColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest
 ) {
     when (painterState) {
         is AsyncImagePainter.State.Success -> {
@@ -61,7 +63,7 @@ fun SharedTransitionScope.PageImage(
                 modifier = modifier
                     .fillMaxWidth()
                     .aspectRatio(safeAspectRatio(photo.width, photo.height))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .background(loadingColor)
             )
         }
 
@@ -96,7 +98,8 @@ fun SharedTransitionScope.PageImage(
     painter: AsyncImagePainter,
     painterState: AsyncImagePainter.State,
     contentScale: ContentScale,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    loadingColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest
 ) {
     when (painterState) {
         is AsyncImagePainter.State.Success -> {
@@ -118,7 +121,7 @@ fun SharedTransitionScope.PageImage(
             Box(
                 modifier = modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .background(loadingColor)
             )
         }
 

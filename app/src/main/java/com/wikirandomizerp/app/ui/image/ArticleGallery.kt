@@ -15,7 +15,12 @@ data class ArticleGalleryItem(
     /** Caption as wikitext (links/templates are flattened to plain text when shown). */
     val caption: String,
     /** The picture's page on Wikipedia/Commons, for "share" and "open in browser". */
-    val pageUrl: String? = null
+    val pageUrl: String? = null,
+    /** Article the picture came from, so a saved copy can reopen it. */
+    val articleTitle: String = "",
+    val articleLang: String = "",
+    /** Small rendition cached for the in-app gallery grid. */
+    val thumbnailUrl: String? = null
 )
 
 /** Builds the combined gallery of an article. Pure functions, cheap enough to run on a tap. */
@@ -34,7 +39,9 @@ object ArticleGalleryBuilder {
         leadSource: String?,
         leadCaption: String,
         extract: List<List<AnnotatedString>>,
-        commons: CommonsCategoryGallery?
+        commons: CommonsCategoryGallery?,
+        articleTitle: String = "",
+        articleLang: String = ""
     ): List<ArticleGalleryItem> {
         val out = ArrayList<ArticleGalleryItem>()
         val seen = HashSet<String>()
@@ -42,7 +49,16 @@ object ArticleGalleryBuilder {
         fun add(uri: String, caption: String, pageUrl: String?) {
             val key = keyOf(uri) ?: return
             if (!seen.add(key)) return
-            out.add(ArticleGalleryItem(uri, caption, pageUrl))
+            out.add(
+                ArticleGalleryItem(
+                    uri = uri,
+                    caption = caption,
+                    pageUrl = pageUrl,
+                    articleTitle = articleTitle,
+                    articleLang = articleLang.ifBlank { lang },
+                    thumbnailUrl = uri
+                )
+            )
         }
 
         fun filePage(name: String) =

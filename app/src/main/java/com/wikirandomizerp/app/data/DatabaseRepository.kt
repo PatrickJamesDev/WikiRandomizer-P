@@ -46,6 +46,11 @@ interface DatabaseRepository {
     suspend fun insertSavedHighlight(highlight: SavedHighlight): Long
     suspend fun findSavedHighlight(title: String, lang: String, text: String): SavedHighlight?
     suspend fun getSavedHighlightsForArticle(title: String, lang: String): List<SavedHighlight>
+    suspend fun insertSavedImage(image: SavedImage, deduplicate: Boolean = true): Long
+    suspend fun deleteSavedImage(image: SavedImage)
+    suspend fun deleteAllSavedImages()
+    fun getSavedImages(): Flow<List<SavedImage>>
+    suspend fun countSavedImages(): Int
     suspend fun deleteSavedHighlight(id: Long)
     suspend fun deleteAllSavedHighlights()
     fun getSavedHighlights(): Flow<List<SavedHighlight>>
@@ -72,6 +77,7 @@ class AppDatabaseRepository(
     private val searchHistoryDao: SearchHistoryDao,
     private val savedArticleDao: SavedArticleDao,
     private val savedHighlightDao: SavedHighlightDao,
+    private val savedImageDao: SavedImageDao,
     private val vocabularyDao: VocabularyDao,
     private val viewHistoryDao: ViewHistoryDao,
     private val userLanguageDao: UserLanguageDao
@@ -187,6 +193,18 @@ class AppDatabaseRepository(
 
     override fun getSavedHighlights(): Flow<List<SavedHighlight>> =
         savedHighlightDao.getAll()
+
+    override suspend fun insertSavedImage(image: SavedImage, deduplicate: Boolean): Long {
+        if (deduplicate) {
+            savedImageDao.deduplicate(image.imageUrl, image.articleTitle, image.articleLang)
+        }
+        return savedImageDao.insert(image)
+    }
+
+    override suspend fun deleteSavedImage(image: SavedImage) = savedImageDao.delete(image)
+    override suspend fun deleteAllSavedImages() = savedImageDao.deleteAll()
+    override fun getSavedImages(): Flow<List<SavedImage>> = savedImageDao.getSavedImages()
+    override suspend fun countSavedImages(): Int = savedImageDao.count()
 
     override suspend fun searchSavedHighlights(query: String): List<SavedHighlight> =
         if (query.isBlank()) emptyList() else savedHighlightDao.search(query)

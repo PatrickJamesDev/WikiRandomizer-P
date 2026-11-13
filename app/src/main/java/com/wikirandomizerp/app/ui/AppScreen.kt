@@ -178,6 +178,7 @@ import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeAction
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeScreenViewModel
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeSubscreen
 import com.wikirandomizerp.app.ui.savedArticlesScreen.SavedArticlesScreenRoot
+import com.wikirandomizerp.app.ui.savedImagesScreen.SavedImagesScreen
 import com.wikirandomizerp.app.ui.searchScreen.LibrarySearchScreenRoot
 import com.wikirandomizerp.app.ui.commonsScreen.CommonsGalleryScreen
 import com.wikirandomizerp.app.ui.dictionaryScreen.DictionaryDialog
@@ -260,6 +261,7 @@ fun AppScreen(
     val backStack = viewModel.backStack
 
     val searchHistory by viewModel.searchHistoryFlow.collectAsState(emptyList())
+    val savedImages by viewModel.savedImagesFlow.collectAsStateWithLifecycle(emptyList())
     val recentLangs by viewModel.recentLangsFlow.collectAsStateWithLifecycle(emptyList())
     val userLangs by viewModel.userLangsFlow.collectAsState(
         listOf(
@@ -571,6 +573,15 @@ fun AppScreen(
                 restoreState = true
             }
         },
+        onSavedImagesClick = {
+            navController.navigate(SavedImagesRoute) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+        },
         onHighlightsClick = {
             navController.navigate(HighlightsScreen) {
                 popUpTo(navController.graph.findStartDestination().id) {
@@ -861,6 +872,18 @@ fun AppScreen(
                     onBack = navController::navigateUp,
                     saveFolders = preferencesState.saveFolders,
                     saveNotes = preferencesState.saveNotes
+                )
+            }
+
+            composable<SavedImagesRoute> {
+                SavedImagesScreen(
+                    savedImages = savedImages,
+                    onOpenArticle = { title, lang ->
+                        navController.navigateUp()
+                        viewModel.onAction(HomeAction.LoadPage(title, lang))
+                    },
+                    onDelete = viewModel::deleteSavedImage,
+                    onBack = navController::navigateUp
                 )
             }
 
@@ -1925,6 +1948,9 @@ data class HomeScreen(
 
 @Serializable
 object SavedArticlesScreen
+
+@Serializable
+object SavedImagesRoute
 
 @Serializable
 object HighlightsScreen

@@ -164,8 +164,22 @@ fun AppSearchBar(
         }
     }
 
+    // Submit once and clear the field. The overlay closes on the article, so the old query used
+    // to sit in the bar until the next search; reopening it also hid the history list behind the
+    // previous results. An empty field is not debounced: clearing after submit must not race the
+    // in-flight search and wipe its results.
+    val submitSearch: (String) -> Unit = { raw ->
+        val query = raw.trim()
+        if (query.isNotEmpty()) {
+            onSearchBarExpandedChange(false)
+            onAction(HomeAction.LoadSearch(query))
+            onAction(HomeAction.SetQuery(""))
+        }
+    }
+
     LaunchedEffect(textFieldState.text) {
-        onAction(HomeAction.LoadSearchResultsDebounced(textFieldState.text.toString()))
+        val query = textFieldState.text.toString()
+        if (query.isNotBlank()) onAction(HomeAction.LoadSearchResultsDebounced(query))
     }
 
     // The bottom reading toolbar asks for search by bumping focusRequest. Expand first:
@@ -184,10 +198,7 @@ fun AppSearchBar(
             SearchBarDefaults.InputField(
                 textFieldState = textFieldState,
                 searchBarState = searchBarState,
-                onSearch = {
-                    onSearchBarExpandedChange(false)
-                    onAction(HomeAction.LoadSearch(it))
-                },
+                onSearch = submitSearch,
                 placeholder = {
                     val alignment by animateHorizontalAlignmentAsState(
                         if (searchBarState.targetValue == SearchBarValue.Expanded) -1f else 0f,
@@ -271,8 +282,7 @@ fun AppSearchBar(
                             shapes = IconButtonDefaults.shapes(),
                             onClick = {
                                 if (searchBarState.currentValue == SearchBarValue.Expanded) {
-                                    onSearchBarExpandedChange(false)
-                                    onAction(HomeAction.LoadSearch(textFieldState.text.toString()))
+                                    submitSearch(textFieldState.text.toString())
                                 }
                                 else
                                     focusRequester.requestFocus()
@@ -399,9 +409,7 @@ fun AppSearchBar(
                                     onAction = onAction,
                                     removeHistoryItem = removeHistoryItem,
                                     onClick = {
-                                        textFieldState.setTextAndPlaceCursorAtEnd(searchHistory[it].query)
-                                        onSearchBarExpandedChange(false)
-                                        onAction(HomeAction.LoadSearch(searchHistory[it].query))
+                                        submitSearch(searchHistory[it].query)
                                     }
                                 )
                             }

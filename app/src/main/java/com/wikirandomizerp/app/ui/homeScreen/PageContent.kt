@@ -5,7 +5,9 @@ import android.net.Uri
 import com.wikirandomizerp.app.data.ArticleRow
 import com.wikirandomizerp.app.data.DebugLog
 import com.wikirandomizerp.app.data.LinkPreview
+import com.wikirandomizerp.app.ui.image.ArticleImageContext
 import com.wikirandomizerp.app.ui.image.ImageAspectCache
+import com.wikirandomizerp.app.ui.image.LocalArticleImageContext
 import com.wikirandomizerp.app.ui.image.ArticleGalleryBuilder
 import com.wikirandomizerp.app.ui.image.ArticleGalleryItem
 import com.wikirandomizerp.app.ui.image.ImagePrefetcher
@@ -422,14 +424,27 @@ fun PageContent(
                     leadSource = src,
                     leadCaption = article.title,
                     extract = article.extract,
-                    commons = latestCommons
+                    commons = latestCommons,
+                    articleTitle = article.title,
+                    articleLang = lang
                 )
                 val index = ArticleGalleryBuilder.indexOf(items, uri)
                 if (index >= 0) latestOpenGallery(items, index)
                 else {
                     // A picture the page scan does not know (e.g. one inside an infobox): show it
                     // first, the rest of the article's pictures follow.
-                    latestOpenGallery(listOf(ArticleGalleryItem(uri, description)) + items, 0)
+                    latestOpenGallery(
+                        listOf(
+                            ArticleGalleryItem(
+                                uri = uri,
+                                caption = description,
+                                articleTitle = article.title,
+                                articleLang = lang,
+                                thumbnailUrl = uri
+                            )
+                        ) + items,
+                        0
+                    )
                 }
             }
         }
@@ -472,7 +487,10 @@ fun PageContent(
             commonsGalleryLoaded?.let { ImagePrefetcher.preloadCommons(prefetchContext, it) }
         }
 
-        CompositionLocalProvider(LocalLinkTapGuard provides linkGuard) {
+        CompositionLocalProvider(
+            LocalLinkTapGuard provides linkGuard,
+            LocalArticleImageContext provides ArticleImageContext(content.title, lang)
+        ) {
         HighlightSelectionContainer(
             onSaveHighlight = onSaveHighlight,
             onSearchInBrowser = onSearchInBrowser,

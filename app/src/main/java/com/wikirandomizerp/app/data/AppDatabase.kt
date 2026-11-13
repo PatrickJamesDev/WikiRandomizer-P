@@ -13,19 +13,21 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ViewHistoryItem::class,
         SavedArticle::class,
         SavedHighlight::class,
+        SavedImage::class,
         VocabularyWord::class,
         UserLanguage::class,
         StringPreference::class,
         IntPreference::class,
         BooleanPreference::class
     ],
-    version = 5
+    version = 6
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun searchHistoryDao(): SearchHistoryDao
     abstract fun savedArticleDao(): SavedArticleDao
     abstract fun savedHighlightDao(): SavedHighlightDao
+    abstract fun savedImageDao(): SavedImageDao
     abstract fun vocabularyDao(): VocabularyDao
     abstract fun viewHistoryDao(): ViewHistoryDao
     abstract fun userLanguageDao(): UserLanguageDao
@@ -90,6 +92,24 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** v6: images explicitly saved from articles, with their article and local gallery URI. */
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `saved_image` (" +
+                            "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                            "`imageUrl` TEXT NOT NULL, " +
+                            "`localUri` TEXT, " +
+                            "`thumbnailUrl` TEXT, " +
+                            "`description` TEXT, " +
+                            "`articleTitle` TEXT NOT NULL, " +
+                            "`articleLang` TEXT NOT NULL, " +
+                            "`pageUrl` TEXT, " +
+                            "`savedAt` INTEGER NOT NULL)"
+                )
+            }
+        }
+
         /**
          * Folds the write-ahead log into the main database file so that file alone is a complete,
          * consistent copy (needed before copying it into a backup).
@@ -120,7 +140,9 @@ abstract class AppDatabase : RoomDatabase() {
                 Instance ?: Room.databaseBuilder(
                     context.applicationContext, AppDatabase::class.java, "app_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(
+                        MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6
+                    )
                     .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = false)
                     .build()
                     .also { Instance = it }

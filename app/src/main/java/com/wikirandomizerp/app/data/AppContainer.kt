@@ -147,6 +147,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
             searchHistoryDao = AppDatabase.getDatabase(context).searchHistoryDao(),
             savedArticleDao = AppDatabase.getDatabase(context).savedArticleDao(),
             savedHighlightDao = AppDatabase.getDatabase(context).savedHighlightDao(),
+            savedImageDao = AppDatabase.getDatabase(context).savedImageDao(),
             vocabularyDao = AppDatabase.getDatabase(context).vocabularyDao(),
             viewHistoryDao = AppDatabase.getDatabase(context).viewHistoryDao(),
             userLanguageDao = AppDatabase.getDatabase(context).userLanguageDao()

@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -135,32 +133,32 @@ fun WelcomeTutorial(
             ),
             shape = RoundedCornerShape(28.dp),
             modifier = Modifier
-                .padding(24.dp)
-                .widthIn(max = 480.dp)
+                .padding(20.dp)
+                .widthIn(max = 460.dp)
                 .fillMaxWidth()
-                .heightIn(max = 640.dp)
-                // A fixed card height keeps the Back / Next buttons in the same place on every
-                // page; only the body scrolls when a page is taller than the screen.
-                .fillMaxHeight(0.92f)
+                // Wrap the page content instead of forcing a near-full-screen card. The max height
+                // only kicks in on short screens; the body scrolls there, while normal phones no
+                // longer show a large empty gap above and below the text.
+                .heightIn(max = 520.dp)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp)
+                    .fillMaxWidth()
+                    .padding(20.dp)
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(1f, fill = false)
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .size(64.dp)
+                            .size(56.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primaryContainer)
                     ) {
@@ -168,16 +166,14 @@ fun WelcomeTutorial(
                             painterResource(page.icon),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(28.dp)
                         )
                     }
-                    Spacer(Modifier.height(16.dp))
                     Text(
                         stringResource(page.title),
                         style = MaterialTheme.typography.headlineSmall,
                         textAlign = TextAlign.Center
                     )
-                    Spacer(Modifier.height(8.dp))
                     Text(
                         stringResource(page.body),
                         style = MaterialTheme.typography.bodyLarge,
@@ -187,7 +183,6 @@ fun WelcomeTutorial(
 
                     when (page.action) {
                         StepAction.TOPICS -> {
-                            Spacer(Modifier.height(16.dp))
                             FilledTonalButton(
                                 shapes = ButtonDefaults.shapes(),
                                 onClick = {
@@ -199,7 +194,6 @@ fun WelcomeTutorial(
                         }
 
                         StepAction.RANDOM -> {
-                            Spacer(Modifier.height(16.dp))
                             FilledTonalButton(
                                 shapes = ButtonDefaults.shapes(),
                                 onClick = {
@@ -211,7 +205,6 @@ fun WelcomeTutorial(
                         }
 
                         StepAction.SETTINGS -> {
-                            Spacer(Modifier.height(16.dp))
                             FilledTonalButton(
                                 shapes = ButtonDefaults.shapes(),
                                 onClick = {
@@ -226,7 +219,7 @@ fun WelcomeTutorial(
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     for (i in tutorialPages.indices) {
                         Box(
@@ -240,7 +233,7 @@ fun WelcomeTutorial(
                         )
                     }
                 }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()

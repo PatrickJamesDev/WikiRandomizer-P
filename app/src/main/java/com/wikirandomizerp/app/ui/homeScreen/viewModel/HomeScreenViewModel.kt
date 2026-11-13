@@ -241,6 +241,7 @@ class HomeScreenViewModel(
     val searchHistoryFlow = appDatabaseRepository.getSearchHistory().distinctUntilChanged()
     val recentLangsFlow = appDatabaseRepository.getRecentLanguages().distinctUntilChanged()
     val userLangsFlow = appDatabaseRepository.getUserLanguages().distinctUntilChanged()
+    val savedImagesFlow = appDatabaseRepository.getSavedImages().distinctUntilChanged()
 
     @OptIn(FlowPreview::class)
     val languageSearchQuery = languageSearchStr.debounce(500L)
@@ -2457,6 +2458,12 @@ class HomeScreenViewModel(
         _showTutorial.value = true
     }
 
+    fun deleteSavedImage(image: com.wikirandomizerp.app.data.SavedImage) {
+        viewModelScope.launch(Dispatchers.IO + errorHandler) {
+            appDatabaseRepository.deleteSavedImage(image)
+        }
+    }
+
     // 笏笏 Start-up: reopen the last article, prepare random ones 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
 
     private suspend fun readLastArticle(): Pair<String, String>? {
@@ -2466,23 +2473,9 @@ class HomeScreenViewModel(
     }
 
     private suspend fun startUp() {
-        migrateTopicSelection()
-        try {
-            // Bound the permanent seen list: oldest entries may be offered again eventually.
-            topicIndexProvider(preferencesState.value.lang).pruneSeen()
-        } catch (e: Exception) {
-            DebugLog.w("Startup", "could not prune the seen list: ${e.message}")
-        }
-        try {
-            if (appPreferencesRepository.readBooleanPreference("tutorial-done") != true) {
-                _showTutorial.value = true
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            DebugLog.w("Startup", "could not read the tutorial flag: ${e.message}")
-        }
-
+        // Wakeup order matters: restore the article the reader left on screen before migration,
+        // tutorial checks, feed loading and prefetch work. Those used to do database and network
+        // I/O first, delaying the only thing the user was waiting to see.
         val last = try {
             readLastArticle()
         } catch (e: CancellationException) {
@@ -2509,15 +2502,37 @@ class HomeScreenViewModel(
                 fromRestore = true,
                 initialScroll = restoredTab?.let { it.scrollIndex to it.scrollOffset }
             )
-            loadFeed(silent = true)
         } else {
             // No restorable article, or the Wikipedia language changed since it was read: show a
             // feed in the current language instead of reopening an article in the old one.
             loadFeed()
         }
 
-        restorePrefetchQueue()
-        schedulePrefetch()
+        viewModelScope.launch(Dispatchers.IO + errorHandler) {
+            if (last != null && last.second == currentLang) {
+                loadFeed(silent = true)
+            }
+            migrateTopicSelection()
+            try {
+                // Bound the permanent seen list: oldest entries may be offered again eventually.
+                topicIndexProvider(preferencesState.value.lang).pruneSeen()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLog.w("Startup", "could not prune the seen list: ${e.message}")
+            }
+            try {
+                if (appPreferencesRepository.readBooleanPreference("tutorial-done") != true) {
+                    _showTutorial.value = true
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLog.w("Startup", "could not read the tutorial flag: ${e.message}")
+            }
+            restorePrefetchQueue()
+            schedulePrefetch()
+        }
 
         // An interrupted build (app closed, process killed, device slept) resumes by itself. The
         // membership rows are already on disk, so this only fills in the missing details.

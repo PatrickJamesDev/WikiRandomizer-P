@@ -43,9 +43,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.coerceAtLeast
@@ -89,7 +91,7 @@ fun FullScreenImage(
         model = ImageRequest.Builder(context)
             .data(displaySource)
             .diskCacheKey(ImageCacheKeys.body(displaySource))
-            .crossfade(true)
+            .crossfade(false)
             .build(),
         contentScale = contentScale,
     )
@@ -130,6 +132,15 @@ fun FullScreenImage(
     }
 
     val download = rememberImageDownload(photo?.source, photoDesc ?: title)
+    val haptic = LocalHapticFeedback.current
+    val longPress = remember(download, haptic) {
+        {
+            if (download != null) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                download()
+            }
+        }
+    }
     with(sharedScope) {
         Scaffold(
             topBar = {
@@ -198,7 +209,8 @@ fun FullScreenImage(
                                 scope = coroutineScope,
                                 doubleTapSpec = doubleTapSpec,
                                 onTap = { showTopBar = !showTopBar },
-                                onScaleChanged = { showTopBar = it <= 1.1f }
+                                onScaleChanged = { showTopBar = it <= 1.1f },
+                                onLongPress = longPress
                             )
                     ) {
                         PageImage(
@@ -208,6 +220,7 @@ fun FullScreenImage(
                             painterState = painterState,
                             contentScale = contentScale,
                             background = background,
+                            loadingColor = Color.Transparent,
                             modifier = Modifier
                                 .onSizeChanged { zoom.size = it }
                                 .graphicsLayer {
@@ -255,7 +268,7 @@ fun FullScreenArticleImage(
         model = ImageRequest.Builder(context)
             .data(displaySource)
             .diskCacheKey(ImageCacheKeys.body(displaySource))
-            .crossfade(true)
+            .crossfade(false)
             .build(),
         contentScale = contentScale,
     )
@@ -296,6 +309,15 @@ fun FullScreenArticleImage(
     }
 
     val download = rememberImageDownload(uri, description)
+    val haptic = LocalHapticFeedback.current
+    val longPress = remember(download, haptic) {
+        {
+            if (download != null) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                download()
+            }
+        }
+    }
     with(sharedScope) {
         Scaffold(
             topBar = {
@@ -359,7 +381,8 @@ fun FullScreenArticleImage(
                             scope = scope,
                             doubleTapSpec = doubleTapSpec,
                             onTap = { showTopBar = !showTopBar },
-                            onScaleChanged = { showTopBar = it <= 1.1f }
+                            onScaleChanged = { showTopBar = it <= 1.1f },
+                            onLongPress = longPress
                         )
                 ) {
                     PageImage(
@@ -369,6 +392,7 @@ fun FullScreenArticleImage(
                         painterState = painterState,
                         contentScale = contentScale,
                         background = background,
+                        loadingColor = Color.Transparent,
                         modifier = Modifier
                             .onSizeChanged { zoom.size = it }
                             .graphicsLayer {
