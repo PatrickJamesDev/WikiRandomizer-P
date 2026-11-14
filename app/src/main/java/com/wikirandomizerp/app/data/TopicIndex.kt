@@ -223,6 +223,19 @@ class TopicIndex private constructor(context: Context, val lang: String) :
         return out
     }
 
+    /**
+     * Enabled topics whose article details are complete. Picking from an incomplete topic during
+     * a rebuild can expose unrelated category members, so shortcut entry points use this list.
+     */
+    fun completeEnabledTopics(): List<String> {
+        val out = ArrayList<String>()
+        readableDatabase.rawQuery(
+            "SELECT topic FROM topics WHERE enabled = 1 AND complete = 1 ORDER BY topic",
+            null
+        ).use { c -> while (c.moveToNext()) out.add(c.getString(0)) }
+        return out
+    }
+
     fun isTopicEnabled(topic: String): Boolean =
         readableDatabase.rawQuery(
             "SELECT 1 FROM topics WHERE topic = ? AND enabled = 1", arrayOf(topic)
@@ -272,7 +285,7 @@ class TopicIndex private constructor(context: Context, val lang: String) :
      */
     fun relatedArticles(title: String, limit: Int): List<ArticleRow> {
         if (limit <= 0) return emptyList()
-        val topics = topicsForTitle(title).ifEmpty { enabledTopics().take(3) }
+        val topics = topicsForTitle(title).ifEmpty { completeEnabledTopics().take(3) }
         if (topics.isEmpty()) return emptyList()
         val normalized = title.replace('_', ' ').trim()
         return pick(
@@ -712,6 +725,28 @@ class TopicIndex private constructor(context: Context, val lang: String) :
     fun isSeen(title: String): Boolean =
         readableDatabase.rawQuery("SELECT 1 FROM seen WHERE title = ?", arrayOf(title))
             .use { it.moveToFirst() }
+
+    /**
+     * Batch form of [isSeen] for random fallbacks that receive several titles at once. One query
+     * instead of one per page keeps the fallback cheap even when many articles are already read.
+     */
+    fun seenAmong(titles: Collection<String>): Set<String> {
+        val unique = titles.asSequence()
+            .filter { it.isNotBlank() }
+            .distinct()
+            .toList()
+        if (unique.isEmpty()) return emptySet()
+        val out = HashSet<String>()
+        // Older Android SQLite builds cap bound variables at 999.
+        for (batch in unique.chunked(900)) {
+            val placeholders = batch.joinToString(",") { "?" }
+            readableDatabase.rawQuery(
+                "SELECT title FROM seen WHERE title IN ($placeholders)",
+                batch.toTypedArray()
+            ).use { cursor -> while (cursor.moveToNext()) out.add(cursor.getString(0)) }
+        }
+        return out
+    }
 
     /** User pressed "Start over": forget everything that was shown. */
     fun clearSeen() {

@@ -23,6 +23,7 @@ import com.wikirandomizerp.app.R
 import com.wikirandomizerp.app.WikiRandomizerPApplication
 import com.wikirandomizerp.app.data.AppLaunchExtras
 import com.wikirandomizerp.app.data.DebugLog
+import com.wikirandomizerp.app.data.LanguagePinnedWikipediaRepository
 import com.wikirandomizerp.app.data.TopicIndex
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
@@ -105,7 +106,7 @@ class DailyArticleWorker(
         val lang = DailyArticleScheduler.language(context, prefs.lang)
         return try {
             val index = TopicIndex.get(context, lang)
-            val topics = index.enabledTopics()
+            val topics = index.completeEnabledTopics()
             val title = if (topics.isNotEmpty()) {
                 index.pick(
                     topics = topics,
@@ -115,12 +116,14 @@ class DailyArticleWorker(
                     limit = 1
                 ).firstOrNull()?.title
             } else {
-                application.container.wikipediaRepository
-                    .getRandomResult()
-                    .query?.pages?.firstOrNull()?.title
-            }
-            if (!title.isNullOrBlank()) {
+                null
+            } ?: randomUnseenTitle(application, lang, index)
+            if (!title.isNullOrBlank() &&
                 DailyArticleNotifier.notify(context, title, lang)
+            ) {
+                // The notification is the only place this article was shown; remember it so the
+                // next daily pick cannot offer the same title again.
+                index.markSeen(title)
             }
             Result.success()
         } catch (c: kotlinx.coroutines.CancellationException) {
@@ -130,6 +133,30 @@ class DailyArticleWorker(
             if (runAttemptCount >= 3) Result.success() else Result.retry()
         }
     }
+}
+
+/**
+ * General-random fallback for the daily notification. Pins the request to [lang] and skips the
+ * permanent seen list, because the plain random endpoint has no concept of read articles.
+ */
+private suspend fun randomUnseenTitle(
+    application: WikiRandomizerPApplication,
+    lang: String,
+    index: TopicIndex
+): String? {
+    val repository = LanguagePinnedWikipediaRepository(
+        application.container.wikipediaRepository,
+        application.container.interceptor,
+        lang
+    )
+    repeat(4) {
+        val pages = repository.getRandomResult().query?.pages.orEmpty()
+            .filter { it.title.isNotBlank() }
+        if (pages.isEmpty()) return@repeat
+        val seen = index.seenAmong(pages.map { it.title })
+        pages.firstOrNull { it.title !in seen }?.let { return it.title }
+    }
+    return null
 }
 
 object DailyArticleNotifier {
@@ -150,12 +177,13 @@ object DailyArticleNotifier {
         )
     }
 
-    fun notify(context: Context, title: String, lang: String) {
+    /** @return true when a notification was actually posted. */
+    fun notify(context: Context, title: String, lang: String): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
             PackageManager.PERMISSION_GRANTED
         ) {
-            return
+            return false
         }
         ensureChannel(context)
         val open = Intent(context, MainActivity::class.java).apply {
@@ -178,10 +206,12 @@ object DailyArticleNotifier {
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
-        runCatching {
-            ContextCompat.getSystemService(context, NotificationManager::class.java)
-                ?.notify(NOTIFICATION_ID, notification)
-        }
+        val manager = ContextCompat.getSystemService(context, NotificationManager::class.java)
+            ?: return false
+        return runCatching {
+            manager.notify(NOTIFICATION_ID, notification)
+            true
+        }.getOrDefault(false)
     }
 
     private const val NOTIFICATION_ID = 4201

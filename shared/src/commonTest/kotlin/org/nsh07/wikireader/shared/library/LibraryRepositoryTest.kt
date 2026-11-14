@@ -92,6 +92,20 @@ class LibraryRepositoryTest {
     }
 
     @Test
+    fun seenCacheReflectsMutations() {
+        val store = MemorySettingsStore()
+        val repository = LibraryRepository(store)
+
+        assertTrue(repository.seenArticles().isEmpty())
+        repository.markSeen("en", "Kotlin")
+        assertEquals(1, repository.seenArticles().size)
+        assertTrue(repository.isSeen("en", "Kotlin"))
+        repository.clearSeen()
+        assertTrue(repository.seenArticles().isEmpty())
+        assertFalse(repository.isSeen("en", "Kotlin"))
+    }
+
+    @Test
     fun clearsSeenArticles() {
         val store = MemorySettingsStore()
         val repository = LibraryRepository(store)

@@ -49,6 +49,10 @@ class LibraryRepository(private val settingsStore: SettingsStore) {
         encodeDefaults = true
     }
 
+    // Seen checks run for every random candidate. Keep the decoded list in memory instead of
+    // parsing the settings JSON again for each title.
+    private var seenCache: List<SeenArticle>? = null
+
     fun saved(): List<LibraryEntry> = read(SettingsKeys.SAVED_ARTICLES)
 
     fun history(): List<LibraryEntry> = read(SettingsKeys.ARTICLE_HISTORY)
@@ -85,7 +89,8 @@ class LibraryRepository(private val settingsStore: SettingsStore) {
 
     fun clearSearches(): List<SearchQuery> = writeSearches(emptyList())
 
-    fun seenArticles(): List<SeenArticle> = readSeen()
+    fun seenArticles(): List<SeenArticle> =
+        seenCache ?: readSeen().also { seenCache = it }
 
     fun isSeen(language: String, title: String): Boolean {
         val key = SeenArticle(language, title).key
@@ -103,11 +108,13 @@ class LibraryRepository(private val settingsStore: SettingsStore) {
         val updated = (listOf(entry) + seenArticles().filterNot { it.key == entry.key })
             .take(MAX_SEEN)
         settingsStore.putString(SettingsKeys.SEEN_ARTICLES, json.encodeToString(updated))
+        seenCache = updated
         return updated
     }
 
     fun clearSeen(): List<SeenArticle> {
         settingsStore.putString(SettingsKeys.SEEN_ARTICLES, "[]")
+        seenCache = emptyList()
         return emptyList()
     }
 

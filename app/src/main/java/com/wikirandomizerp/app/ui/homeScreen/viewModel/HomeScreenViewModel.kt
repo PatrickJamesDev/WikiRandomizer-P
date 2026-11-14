@@ -1775,7 +1775,9 @@ class HomeScreenViewModel(
     ): Int = withContext(Dispatchers.IO) {
         val lang = preferencesState.value.lang
         val index = topicIndexProvider(lang)
-        val topics = index.libraryStats().topics.filter { it.enabled }.map { it.topic }
+        val topics = index.libraryStats().topics
+            .filter { it.enabled && it.complete }
+            .map { it.topic }
         val rows = balancedOfflineRows(count, topics, lang, index)
         val kind = if (preferencesState.value.renderMode == "html") "html" else "wikitext"
         var stored = 0
@@ -2649,7 +2651,7 @@ class HomeScreenViewModel(
             val title = withContext(Dispatchers.IO) {
                 runCatching {
                     val index = topicIndexProvider(prefs.lang)
-                    val topics = index.enabledTopics()
+                    val topics = index.completeEnabledTopics()
                     if (topics.isEmpty()) {
                         null
                     } else {
@@ -4203,8 +4205,9 @@ class HomeScreenViewModel(
             }
             if (pages.isEmpty()) return@repeat
             lastCandidate = lastCandidate ?: pages.first()
+            val seen = index.seenAmong(pages.map { it.title })
             val unseen = pages.filterNot { page ->
-                page.title in sessionSeen || index.isSeen(page.title)
+                page.title in sessionSeen || page.title in seen
             }
             if (unseen.isNotEmpty()) return unseen.randomOrNull()
             DebugLog.d(
