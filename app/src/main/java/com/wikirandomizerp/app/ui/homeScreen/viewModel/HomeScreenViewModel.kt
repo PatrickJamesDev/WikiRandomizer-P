@@ -4186,10 +4186,39 @@ class HomeScreenViewModel(
         return randomArticleFromWikipedia()
     }
 
-    private suspend fun randomArticleFromWikipedia(): WikiApiPage? =
-        withHost(preferencesState.value.lang) {
-            wikipediaRepository.getRandomResult().query?.pages?.randomOrNull()
+    /**
+     * Wikipedia's general random endpoint ignores the on-device seen list. That is fine while a
+     * complete topic library can serve the pick, but after an app/database upgrade the library is
+     * briefly marked incomplete (it has to fetch the new metadata). During that window this
+     * fallback used to show articles the reader had already finished. Query a few random pages
+     * and skip every title that is in either the permanent seen table or this session's set.
+     */
+    private suspend fun randomArticleFromWikipedia(): WikiApiPage? {
+        val lang = preferencesState.value.lang
+        val index = topicIndexProvider(lang)
+        var lastCandidate: WikiApiPage? = null
+        repeat(4) {
+            val pages = withHost(lang) {
+                wikipediaRepository.getRandomResult().query?.pages.orEmpty()
+            }
+            if (pages.isEmpty()) return@repeat
+            lastCandidate = lastCandidate ?: pages.first()
+            val unseen = pages.filterNot { page ->
+                page.title in sessionSeen || index.isSeen(page.title)
+            }
+            if (unseen.isNotEmpty()) return unseen.randomOrNull()
+            DebugLog.d(
+                "Random",
+                "general random returned only already-seen articles; retrying (${pages.size} checked)"
+            )
         }
+        DebugLog.w(
+            "Random",
+            "no unseen article from Wikipedia's random endpoint after 4 attempts; repeating one"
+        )
+        lastCandidate?.let { notifyAllSeenRepeat() }
+        return lastCandidate
+    }
 
     private var lastAllSeenNoticeMs = 0L
 

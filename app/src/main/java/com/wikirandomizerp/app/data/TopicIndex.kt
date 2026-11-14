@@ -81,12 +81,45 @@ class TopicIndex private constructor(context: Context, val lang: String) :
      * request. The library is only a cache of public data, so start it again from empty.
      */
     override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        // The library itself is a rebuildable cache, but the seen list is user history: keep it
+        // when an older build is installed over a newer one. Older schemas may not have seen_at.
+        val seen = ArrayList<Pair<String, Long>>()
+        runCatching {
+            db.rawQuery("SELECT title, seen_at FROM seen", null).use { cursor ->
+                while (cursor.moveToNext()) seen.add(cursor.getString(0) to cursor.getLong(1))
+            }
+        }.onFailure {
+            runCatching {
+                db.rawQuery("SELECT title FROM seen", null).use { cursor ->
+                    val now = System.currentTimeMillis()
+                    while (cursor.moveToNext()) seen.add(cursor.getString(0) to now)
+                }
+            }
+        }
         for (table in listOf(
             "articles", "membership", "topics", "seen", "feedback", "reading", "topic_affinity"
         )) {
             db.execSQL("DROP TABLE IF EXISTS $table")
         }
         onCreate(db)
+        if (seen.isNotEmpty()) {
+            db.beginTransaction()
+            try {
+                val insert = db.compileStatement(
+                    "INSERT OR IGNORE INTO seen(title, seen_at) VALUES(?, ?)"
+                )
+                for ((title, seenAt) in seen) {
+                    insert.bindString(1, title)
+                    insert.bindLong(2, seenAt)
+                    insert.executeInsert()
+                    insert.clearBindings()
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+            DebugLog.w("TopicIndex", "downgrade rebuild kept ${seen.size} seen article(s)")
+        }
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
