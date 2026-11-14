@@ -20,4 +20,5 @@ object SettingsKeys {
     const val SEARCH_HISTORY = "wikiSearchHistory"
     const val SEEN_ARTICLES = "wikiSeenArticles"
     const val BROWSING_HISTORY = "wikiBrowsingHistory"
+    const val FOLLOWED_CURATORS = "wikiFollowedCurators"
 }

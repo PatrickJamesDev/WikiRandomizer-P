@@ -28,8 +28,14 @@ internal fun ComposeReaderRoot() {
 
     val source = remember { KtorRandomArticleSource() }
     val searchSource = remember { KtorWikipediaSearchSource() }
+    val curatorSource = remember { KtorCuratorSource() }
     val settingsStore = remember { IosSettingsStore() }
-    ReaderApp(source = source, searchSource = searchSource, settingsStore = settingsStore)
+    ReaderApp(
+        source = source,
+        searchSource = searchSource,
+        curatorSource = curatorSource,
+        settingsStore = settingsStore
+    )
 }
 
 fun ReaderViewController(): UIViewController = ComposeUIViewController {

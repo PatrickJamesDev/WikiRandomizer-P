@@ -66,15 +66,18 @@ import org.nsh07.wikireader.shared.ArticleImage
 import org.nsh07.wikireader.shared.ArticleSummary
 import org.nsh07.wikireader.shared.WikiText
 import org.nsh07.wikireader.shared.WikiUrls
+import org.nsh07.wikireader.shared.library.CuratorFollowStore
 import org.nsh07.wikireader.shared.library.LibraryEntry
 import org.nsh07.wikireader.shared.library.LibraryRepository
 import org.nsh07.wikireader.shared.library.SeenArticle
+import org.nsh07.wikireader.shared.reader.CuratorSource
 import org.nsh07.wikireader.shared.reader.RandomArticleSource
 import org.nsh07.wikireader.shared.reader.WikipediaSearchSource
 import org.nsh07.wikireader.shared.reader.findTopicByCategory
 import org.nsh07.wikireader.shared.settings.SettingsKeys
 import org.nsh07.wikireader.shared.settings.SettingsStore
 import org.nsh07.wikireader.shared.ui.article.PlatformArticleWebView
+import org.nsh07.wikireader.shared.ui.curators.CuratorsScreen
 import org.nsh07.wikireader.shared.ui.search.WikipediaSearchScreen
 import org.nsh07.wikireader.shared.ui.settings.AboutScreen
 import org.nsh07.wikireader.shared.ui.library.LibraryScreen
@@ -87,7 +90,9 @@ import org.nsh07.wikireader.shared.ui.settings.THEME_LIGHT
 import org.nsh07.wikireader.shared.ui.settings.THEME_SYSTEM
 import org.nsh07.wikireader.shared.ui.theme.WikiReaderTheme
 
-private enum class ReaderDestination { READER, TOPICS, SAVED, HISTORY, SEARCH, WIKI_SEARCH, STATS, SETTINGS, ABOUT }
+private enum class ReaderDestination {
+    READER, TOPICS, SAVED, HISTORY, SEARCH, WIKI_SEARCH, CURATORS, STATS, SETTINGS, ABOUT
+}
 
 private const val RANDOM_UNSEEN_ATTEMPTS = 8
 
@@ -101,6 +106,7 @@ private data class OpenArticle(
 fun ReaderApp(
     source: RandomArticleSource,
     searchSource: WikipediaSearchSource,
+    curatorSource: CuratorSource,
     settingsStore: SettingsStore,
     modifier: Modifier = Modifier
 ) {
@@ -127,9 +133,11 @@ fun ReaderApp(
         var requestId by remember { mutableIntStateOf(0) }
         var showLanguagePicker by remember { mutableStateOf(false) }
         val library = remember(settingsStore) { LibraryRepository(settingsStore) }
+        val curatorFollows = remember(settingsStore) { CuratorFollowStore(settingsStore) }
         var savedEntries by remember { mutableStateOf(library.saved()) }
         var historyEntries by remember { mutableStateOf(library.history()) }
         var seenArticles by remember { mutableStateOf(library.seenArticles()) }
+        var followedCurators by remember { mutableStateOf(curatorFollows.followed()) }
         var browsingHistory by remember {
             mutableStateOf(
                 settingsStore.getString(SettingsKeys.BROWSING_HISTORY, "true").toBoolean()
@@ -319,6 +327,16 @@ fun ReaderApp(
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
                     NavigationDrawerItem(
+                        label = { Text("Curators") },
+                        selected = destination == ReaderDestination.CURATORS,
+                        onClick = {
+                            destination = ReaderDestination.CURATORS
+                            openArticle = null
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                    NavigationDrawerItem(
                         label = { Text("Stats") },
                         selected = destination == ReaderDestination.STATS,
                         onClick = {
@@ -374,6 +392,7 @@ fun ReaderApp(
                                 ReaderDestination.HISTORY -> "History"
                                 ReaderDestination.SEARCH -> "Search"
                                 ReaderDestination.WIKI_SEARCH -> "Wikipedia"
+                                ReaderDestination.CURATORS -> "Curators"
                                 ReaderDestination.STATS -> "Stats"
                                 ReaderDestination.SETTINGS -> "Settings"
                                 ReaderDestination.ABOUT -> "About"
@@ -539,6 +558,30 @@ fun ReaderApp(
                                             }
                                         )
                                     )
+                                }
+                            )
+
+                            ReaderDestination.CURATORS -> CuratorsScreen(
+                                source = curatorSource,
+                                followed = followedCurators,
+                                interests = remember(savedEntries, historyEntries) {
+                                    (savedEntries + historyEntries)
+                                        .map { it.article.title.trim().lowercase() }
+                                        .toSet()
+                                },
+                                onToggleFollow = { id ->
+                                    followedCurators = curatorFollows.toggle(id)
+                                },
+                                onOpenArticle = { pickLanguage, title ->
+                                    if (title.isNotBlank()) {
+                                        openInReader(
+                                            pickLanguage,
+                                            ArticleSummary(
+                                                title = title.replace('_', ' '),
+                                                extract = ""
+                                            )
+                                        )
+                                    }
                                 }
                             )
 

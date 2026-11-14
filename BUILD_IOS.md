@@ -96,8 +96,9 @@ several minutes. Later builds are incremental.
   category articles; Saved articles (including folders and personal notes), opened-article history
   and the seen-article list use the shared `LibraryRepository`; random picks skip already-seen titles and Settings can forget them;
   library search filters both lists and keeps recent queries; the Wikipedia screen runs full-text
-  search through the shared search-source contract; theme and language persist through
-  `NSUserDefaults` via the shared `SettingsStore`.
+  search through the shared search-source contract; community curators load from GitHub and can
+  be followed; theme, language and browsing-history prefs persist through `NSUserDefaults` via the
+  shared `SettingsStore`.
 - The Android app keeps all of its existing features; `build_ios.sh` does not change the APK.
 - Remaining Android screens are migrated into `shared/src/commonMain` in phases, then both hosts
   use the same implementation.
