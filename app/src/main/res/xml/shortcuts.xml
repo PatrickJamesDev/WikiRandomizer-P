@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/shuffle"
+        android:shortcutId="random_from_topics"
+        android:shortcutLongLabel="@string/shortcutRandomFromTopicsLong"
+        android:shortcutShortLabel="@string/shortcutRandomFromTopicsShort">
+        <intent
+            android:action="com.wikirandomizerp.app.action.RANDOM_FROM_TOPICS"
+            android:targetClass="com.wikirandomizerp.app.MainActivity"
+            android:targetPackage="com.wikirandomizerp.app" />
+    </shortcut>
+</shortcuts>

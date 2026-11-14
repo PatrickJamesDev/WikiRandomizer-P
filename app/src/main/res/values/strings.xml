@@ -783,4 +783,9 @@
     <string name="settingINaturalistGalleryHelp">Adds community photos from iNaturalist below the Commons gallery on species articles. Each photo can open in iNaturalist.</string>
     <string name="settingSwipeGesturesHelp">Swipe right inside an article to go back and left to go forward. Edge swipes remain reserved for the menu and tabs.</string>
     <string name="settingWikivoyageHelp">Switches search, topics and random articles to Wikivoyage travel guides. Restart the app after changing this.</string>
+
+    <!-- Quick Settings tile and launcher shortcut -->
+    <string name="quickTileLabel">Random article</string>
+    <string name="shortcutRandomFromTopicsShort">Random</string>
+    <string name="shortcutRandomFromTopicsLong">Random from my topics</string>
 </resources>
