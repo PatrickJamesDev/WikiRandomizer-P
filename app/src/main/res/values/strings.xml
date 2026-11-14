@@ -771,4 +771,16 @@
     <string name="widget_dev_only">Add it from Settings once developer mode is on</string>
     <string name="widget_disabled">Enable the widget in Settings to use it</string>
     <string name="widget_description">Open a random article from your topic libraries</string>
+
+    <!-- Short help dialogs for ambiguous settings -->
+    <string name="settingDataSaverHelp">Turns off article images and the home feed to reduce data use. Article text and search still work.</string>
+    <string name="settingSaveOfflineHelp">When on, the full article text is stored on this device. When off, saving only bookmarks the article and it still needs a connection to open.</string>
+    <string name="settingExpandSectionsHelp">Opens every collapsible section as soon as an article loads, so you do not have to tap each heading.</string>
+    <string name="settingSearchHistoryHelp">Stores the terms you search for so you can reuse them. You can clear them from the search screen or Data settings.</string>
+    <string name="settingPullForRandomHelp">Pull down on an article to load a new random article instead of refreshing the current page.</string>
+    <string name="settingPreloadArticlesHelp">Prepares the next random articles in the background so Shuffle feels instant. This uses a little extra data and storage.</string>
+    <string name="settingPersonalizationHelp">Uses reading time, scroll depth and likes to favor topics you actually read. All learning stays on this device, and turning it off forgets what was learned.</string>
+    <string name="settingINaturalistGalleryHelp">Adds community photos from iNaturalist below the Commons gallery on species articles. Each photo can open in iNaturalist.</string>
+    <string name="settingSwipeGesturesHelp">Swipe right inside an article to go back and left to go forward. Edge swipes remain reserved for the menu and tabs.</string>
+    <string name="settingWikivoyageHelp">Switches search, topics and random articles to Wikivoyage travel guides. Restart the app after changing this.</string>
 </resources>

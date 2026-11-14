@@ -326,6 +326,7 @@ fun SettingsScreen(
     val (showDebugLog, setShowDebugLog) = remember { mutableStateOf(false) }
     val (showBugReport, setShowBugReport) = remember { mutableStateOf(false) }
     val (showResetSettingsDialog, setShowResetSettingsDialog) = remember { mutableStateOf(false) }
+    var helpSetting by remember { mutableStateOf<SettingsSwitchItem?>(null) }
     val (showColorSchemeDialog, setShowColorSchemeDialog) = remember { mutableStateOf(false) }
     val (showFontDialog, setShowFontDialog) = remember { mutableStateOf(false) }
     val (showLanguageSheet, setShowLanguageSheet) = remember { mutableStateOf(false) }
@@ -399,7 +400,8 @@ fun SettingsScreen(
                 R.drawable.data_saver_on,
                 string.settingDataSaver,
                 string.settingDataSaverDesc,
-                SettingsAction::SaveDataSaver
+                SettingsAction::SaveDataSaver,
+                help = R.string.settingDataSaverHelp
             ),
             SettingsSwitchItem(
                 preferencesState.feedEnabled,
@@ -414,7 +416,8 @@ fun SettingsScreen(
                 R.drawable.expand_all,
                 string.settingExpandSections,
                 string.settingExpandSectionsDesc,
-                SettingsAction::SaveExpandedSections
+                SettingsAction::SaveExpandedSections,
+                help = R.string.settingExpandSectionsHelp
             ),
             SettingsSwitchItem(
                 preferencesState.imageBackground,
@@ -442,7 +445,8 @@ fun SettingsScreen(
                 R.drawable.download,
                 string.settingSaveOffline,
                 string.settingSaveOfflineDesc,
-                SettingsAction::SaveSaveOffline
+                SettingsAction::SaveSaveOffline,
+                help = R.string.settingSaveOfflineHelp
             ),
             SettingsSwitchItem(
                 preferencesState.saveFolders,
@@ -470,14 +474,16 @@ fun SettingsScreen(
                 R.drawable.search_history,
                 string.settingSearchHistory,
                 string.settingSearchHistoryDesc,
-                SettingsAction::SaveSearchHistory
+                SettingsAction::SaveSearchHistory,
+                help = R.string.settingSearchHistoryHelp
             ),
             SettingsSwitchItem(
                 preferencesState.pullForRandom,
                 R.drawable.keyboard_arrow_down,
                 string.settingPullForRandom,
                 string.settingPullForRandomDesc,
-                SettingsAction::SavePullForRandom
+                SettingsAction::SavePullForRandom,
+                help = R.string.settingPullForRandomHelp
             ),
             SettingsSwitchItem(
                 preferencesState.preloadArticles,
@@ -485,14 +491,16 @@ fun SettingsScreen(
                 string.settingPreloadArticles,
                 string.settingPreloadArticlesDesc,
                 SettingsAction::SavePreloadArticles,
-                enabled = !preferencesState.dataSaver
+                enabled = !preferencesState.dataSaver,
+                help = R.string.settingPreloadArticlesHelp
             ),
             SettingsSwitchItem(
                 preferencesState.personalizationEnabled,
                 R.drawable.thumb_up,
                 string.settingPersonalization,
                 string.settingPersonalizationDesc,
-                SettingsAction::SavePersonalization
+                SettingsAction::SavePersonalization,
+                help = R.string.settingPersonalizationHelp
             ),
             SettingsSwitchItem(
                 preferencesState.reduceMotion,
@@ -527,21 +535,24 @@ fun SettingsScreen(
                 R.drawable.menu_open,
                 string.settingSwipeGestures,
                 string.settingSwipeGesturesDesc,
-                SettingsAction::SaveSwipeGestures
+                SettingsAction::SaveSwipeGestures,
+                help = R.string.settingSwipeGesturesHelp
             ),
             SettingsSwitchItem(
                 preferencesState.wikivoyageEnabled,
                 R.drawable.translate,
                 string.settingWikivoyage,
                 string.settingWikivoyageDesc,
-                SettingsAction::SaveWikivoyage
+                SettingsAction::SaveWikivoyage,
+                help = R.string.settingWikivoyageHelp
             ),
             SettingsSwitchItem(
                 preferencesState.inaturalistGallery,
                 R.drawable.leaf,
                 string.settingINaturalistGallery,
                 string.settingINaturalistGalleryDesc,
-                SettingsAction::SaveINaturalistGallery
+                SettingsAction::SaveINaturalistGallery,
+                help = R.string.settingINaturalistGalleryHelp
             ),
         )
     }
@@ -613,6 +624,21 @@ fun SettingsScreen(
                 lastSyncAt = localSyncStore.lastSyncAt
             }
         )
+    }
+    helpSetting?.let { item ->
+        val helpText = item.help
+        if (helpText != null) {
+            AlertDialog(
+                onDismissRequest = { helpSetting = null },
+                title = { Text(stringResource(item.label)) },
+                text = { Text(stringResource(helpText)) },
+                confirmButton = {
+                    TextButton(onClick = { helpSetting = null }) {
+                        Text(stringResource(string.close))
+                    }
+                }
+            )
+        }
     }
     if (showDebugLog) DebugLogDialog(onDismiss = { setShowDebugLog(false) })
     if (showBugReport) BugReportDialog(
@@ -1655,7 +1681,28 @@ fun SettingsScreen(
                     leadingContent = {
                         Icon(painterResource(item.icon), contentDescription = null)
                     },
-                    headlineContent = { Text(stringResource(item.label)) },
+                    headlineContent = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = stringResource(item.label),
+                                modifier = Modifier.weight(1f)
+                            )
+                            val help = item.help
+                            if (help != null) {
+                                IconButton(
+                                    onClick = { helpSetting = item },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.outline_info),
+                                        contentDescription = stringResource(string.information),
+                                        tint = colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    },
                     supportingContent = { Text(stringResource(item.description)) },
                     trailingContent = {
                         Switch(
@@ -2622,5 +2669,6 @@ data class SettingsSwitchItem(
     val label: Int,
     val description: Int,
     val actionConstructor: (Boolean) -> SettingsAction,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
+    val help: Int? = null
 )
