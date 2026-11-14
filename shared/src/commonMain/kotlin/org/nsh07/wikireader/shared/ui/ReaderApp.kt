@@ -472,8 +472,8 @@ fun ReaderApp(
                                 onOpen = { entry -> openInReader(entry.language, entry.article) },
                                 onRemove = { entry -> savedEntries = library.removeSaved(entry) },
                                 onClear = { savedEntries = library.clearSaved() },
-                                onEditNote = { entry, note ->
-                                    savedEntries = library.setSavedNote(entry, note)
+                                onEditDetails = { entry, folder, note ->
+                                    savedEntries = library.setSavedDetails(entry, folder, note)
                                 }
                             )
 

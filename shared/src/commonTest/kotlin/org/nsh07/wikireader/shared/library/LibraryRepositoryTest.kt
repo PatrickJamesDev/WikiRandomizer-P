@@ -1,6 +1,7 @@
 package org.nsh07.wikireader.shared.library
 
 import org.nsh07.wikireader.shared.ArticleSummary
+import org.nsh07.wikireader.shared.settings.SettingsKeys
 import org.nsh07.wikireader.shared.settings.SettingsStore
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,6 +53,57 @@ class LibraryRepositoryTest {
         assertEquals(listOf("Compose", "Kotlin"), reopened.map { it.article.title })
         assertEquals("Read again", reopened.last().note)
         assertEquals(null, reopened.first().note)
+    }
+
+    @Test
+    fun savesFoldersAndNotesTogether() {
+        val store = MemorySettingsStore()
+        val repository = LibraryRepository(store)
+        val kotlin = LibraryEntry("en", ArticleSummary(title = "Kotlin", extract = ""))
+        val compose = LibraryEntry("en", ArticleSummary(title = "Compose", extract = ""))
+        repository.addSaved(kotlin)
+        repository.addSaved(compose)
+
+        repository.setSavedDetails(kotlin, "  Research  ", "  Check this  ")
+        repository.setSavedFolder(compose, "Reading")
+
+        val reopened = LibraryRepository(store).saved()
+        assertEquals(listOf("Compose", "Kotlin"), reopened.map { it.article.title })
+        assertEquals("Research", reopened.last().folder)
+        assertEquals("Check this", reopened.last().note)
+        assertEquals("Reading", reopened.first().folder)
+        assertEquals(listOf("Reading", "Research"), LibraryRepository(store).savedFolders())
+    }
+
+    @Test
+    fun savedFoldersDeduplicateCaseInsensitively() {
+        val store = MemorySettingsStore()
+        val repository = LibraryRepository(store)
+        repository.addSaved(
+            LibraryEntry("en", ArticleSummary(title = "A", extract = ""), folder = "Research")
+        )
+        repository.addSaved(
+            LibraryEntry("en", ArticleSummary(title = "B", extract = ""), folder = "research")
+        )
+        repository.addSaved(
+            LibraryEntry("en", ArticleSummary(title = "C", extract = ""), folder = " ")
+        )
+
+        assertEquals(listOf("Research"), repository.savedFolders())
+    }
+
+    @Test
+    fun oldSavedEntriesDecodeWithoutFolderOrNote() {
+        val store = MemorySettingsStore()
+        store.putString(
+            SettingsKeys.SAVED_ARTICLES,
+            """[{"language":"en","article":{"title":"Kotlin","extract":""}}]"""
+        )
+
+        val entry = LibraryRepository(store).saved().single()
+        assertEquals("Kotlin", entry.article.title)
+        assertEquals(null, entry.folder)
+        assertEquals(null, entry.note)
     }
 
     @Test

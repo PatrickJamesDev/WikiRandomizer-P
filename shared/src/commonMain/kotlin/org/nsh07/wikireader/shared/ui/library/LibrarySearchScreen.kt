@@ -190,6 +190,7 @@ private fun List<LibraryEntry>.matching(query: String): List<LibraryEntry> {
         entry.article.title.contains(query, ignoreCase = true) ||
             entry.article.summaryDescription?.contains(query, ignoreCase = true) == true ||
             entry.note?.contains(query, ignoreCase = true) == true ||
+            entry.folder?.contains(query, ignoreCase = true) == true ||
             languageName(entry.language).contains(query, ignoreCase = true)
     }
 }

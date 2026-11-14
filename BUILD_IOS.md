@@ -93,8 +93,8 @@ several minutes. Later builds are incremental.
   language, fetches a random summary through Ktor/Darwin, shows the title, description, read time
   and extract, and opens the full article in an embedded `WKWebView` (Android uses `WebView`).
   The drawer also contains Topics, Saved, History, Search, Wikipedia, Stats, Settings and About. Topic picks load random
-  category articles; Saved articles (including personal notes), opened-article history and the
-  seen-article list use the shared `LibraryRepository`; random picks skip already-seen titles and Settings can forget them;
+  category articles; Saved articles (including folders and personal notes), opened-article history
+  and the seen-article list use the shared `LibraryRepository`; random picks skip already-seen titles and Settings can forget them;
   library search filters both lists and keeps recent queries; the Wikipedia screen runs full-text
   search through the shared search-source contract; theme and language persist through
   `NSUserDefaults` via the shared `SettingsStore`.

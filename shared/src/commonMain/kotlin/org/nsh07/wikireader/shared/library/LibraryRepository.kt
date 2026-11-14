@@ -13,7 +13,9 @@ data class LibraryEntry(
     val language: String,
     val article: ArticleSummary,
     /** Optional personal note shown in the Saved list. Old entries decode with no note. */
-    val note: String? = null
+    val note: String? = null,
+    /** Optional user folder. Old entries decode with no folder. */
+    val folder: String? = null
 ) {
     val key: String
         get() = "${language.lowercase()}|${article.title.trim().lowercase()}"
@@ -76,7 +78,30 @@ class LibraryRepository(private val settingsStore: SettingsStore) {
     }
 
     fun setSavedNote(entry: LibraryEntry, note: String?): List<LibraryEntry> =
-        updateSaved(entry.copy(note = note?.trim()?.takeIf { it.isNotEmpty() }))
+        setSavedDetails(entry, entry.folder, note)
+
+    fun setSavedFolder(entry: LibraryEntry, folder: String?): List<LibraryEntry> =
+        setSavedDetails(entry, folder, entry.note)
+
+    /** Saves both editable fields at once, as the shared details dialog does. */
+    fun setSavedDetails(
+        entry: LibraryEntry,
+        folder: String?,
+        note: String?
+    ): List<LibraryEntry> = updateSaved(
+        entry.copy(
+            folder = folder?.trim()?.takeIf { it.isNotEmpty() },
+            note = note?.trim()?.takeIf { it.isNotEmpty() }
+        )
+    )
+
+    /** Folder names currently used by saved articles, deduplicated case-insensitively. */
+    fun savedFolders(): List<String> =
+        saved().asSequence()
+            .mapNotNull { it.folder?.trim()?.takeIf { name -> name.isNotEmpty() } }
+            .distinctBy { it.lowercase() }
+            .sortedBy { it.lowercase() }
+            .toList()
 
     fun clearSaved(): List<LibraryEntry> =
         write(SettingsKeys.SAVED_ARTICLES, emptyList())
