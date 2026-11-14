@@ -1200,6 +1200,16 @@ fun AppScreen(
         onOpenArticleInfo = { tab ->
             articleInfoTab = tab
             showArticleInfo = true
+        },
+        showSimpleEnglish = currentArticle != null && currentArticle.title != "Error" &&
+                (currentArticle.currentLang ?: preferencesState.lang) != "simple",
+        onExplainSimply = {
+            currentArticle?.let {
+                viewModel.openSimpleEnglish(
+                    it.title,
+                    it.currentLang ?: preferencesState.lang
+                )
+            }
         }
     )
 
@@ -1325,7 +1335,9 @@ private fun ArticleTabPanel(
     recentlyClosed: List<ArticleTab>,
     onReopenClosedTab: () -> Unit,
     showArticleInfoShortcuts: Boolean = false,
-    onOpenArticleInfo: (Int) -> Unit = {}
+    onOpenArticleInfo: (Int) -> Unit = {},
+    showSimpleEnglish: Boolean = false,
+    onExplainSimply: () -> Unit = {}
 ) {
     // Back closes the panel first, like the navigation drawer on the left.
     BackHandler(enabled = open) { onOpenChange(false) }
@@ -1476,7 +1488,9 @@ private fun ArticleTabPanel(
                     onReopenClosedTab = onReopenClosedTab,
                     onOpenChange = onOpenChange,
                     showArticleInfoShortcuts = showArticleInfoShortcuts,
-                    onOpenArticleInfo = onOpenArticleInfo
+                    onOpenArticleInfo = onOpenArticleInfo,
+                    showSimpleEnglish = showSimpleEnglish,
+                    onExplainSimply = onExplainSimply
                 )
             }
         }
@@ -1521,7 +1535,9 @@ private fun ColumnScope.ArticleTabPanelContent(
     onReopenClosedTab: () -> Unit,
     onOpenChange: (Boolean) -> Unit,
     showArticleInfoShortcuts: Boolean = false,
-    onOpenArticleInfo: (Int) -> Unit = {}
+    onOpenArticleInfo: (Int) -> Unit = {},
+    showSimpleEnglish: Boolean = false,
+    onExplainSimply: () -> Unit = {}
 ) {
     TrackRecompositions("ArticleTabPanelContent") {
         "tabs=${tabs.size} active=$activeTabId"
@@ -1683,7 +1699,9 @@ private fun ColumnScope.ArticleTabPanelContent(
     }
 
     // Pinned under the list so it stays visible however far the tab list is scrolled.
-    if (imageSearchTitle != null || recentlyClosed.isNotEmpty() || showArticleInfoShortcuts) {
+    if (imageSearchTitle != null || recentlyClosed.isNotEmpty() || showArticleInfoShortcuts ||
+        showSimpleEnglish
+    ) {
         HorizontalDivider(modifier = Modifier.padding(horizontal = 28.dp))
         Column(
             verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -1728,6 +1746,18 @@ private fun ColumnScope.ArticleTabPanelContent(
                         onOpenArticleInfo(1)
                     },
                     icon = { Icon(painterResource(R.drawable.history), null) },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+            }
+            if (showSimpleEnglish) {
+                NavigationDrawerItem(
+                    label = { Text(stringResource(R.string.explainSimply)) },
+                    selected = false,
+                    onClick = {
+                        onOpenChange(false)
+                        onExplainSimply()
+                    },
+                    icon = { Icon(painterResource(R.drawable.translate), null) },
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
             }

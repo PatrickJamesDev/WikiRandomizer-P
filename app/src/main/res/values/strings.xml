@@ -788,4 +788,8 @@
     <string name="quickTileLabel">Random article</string>
     <string name="shortcutRandomFromTopicsShort">Random</string>
     <string name="shortcutRandomFromTopicsLong">Random from my topics</string>
+
+    <!-- Simple English shortcut -->
+    <string name="explainSimply">Explain it simply</string>
+    <string name="simpleEnglishUnavailable">No Simple English version was found for this article.</string>
 </resources>

@@ -2615,6 +2615,33 @@ class HomeScreenViewModel(
         }
     }
 
+    /**
+     * Opens the Simple English Wikipedia version of [title] when one exists. The lookup runs in
+     * the "simple" language context, so it never changes the user's default Wikipedia language.
+     */
+    fun openSimpleEnglish(title: String, lang: String) {
+        if (lang == "simple" || title.isBlank() || title == "Error") return
+        viewModelScope.launch(errorHandler) {
+            val simpleWikipedia = LanguagePinnedWikipediaRepository(
+                wikipediaRepository,
+                interceptor,
+                "simple"
+            )
+            val page = withContext(Dispatchers.IO) {
+                runCatching { simpleWikipedia.getPageInfo(listOf(title)) }.getOrNull()
+            }?.query
+                ?.pages
+                ?.firstOrNull()
+            if (page == null || page.missing || page.pageid == 0 || page.title.isBlank()) {
+                snackBarHostState.showSnackbar(
+                    appContext.getString(R.string.simpleEnglishUnavailable)
+                )
+                return@launch
+            }
+            loadPage(title = page.title, lang = "simple", random = false)
+        }
+    }
+
     /** Opens a random article from the enabled topic libraries, falling back to any random page. */
     fun openRandomFromTopics() {
         viewModelScope.launch(errorHandler) {
