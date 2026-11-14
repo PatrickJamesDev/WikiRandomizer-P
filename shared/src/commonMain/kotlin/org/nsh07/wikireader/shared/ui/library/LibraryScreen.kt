@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,6 +48,8 @@ import org.nsh07.wikireader.shared.ui.languageName
 
 private const val NO_FOLDER_FILTER = "\u0000no-folder"
 
+private enum class LibrarySort { RECENT, TITLE }
+
 @Composable
 fun LibraryScreen(
     entries: List<LibraryEntry>,
@@ -60,16 +63,31 @@ fun LibraryScreen(
     var confirmClear by remember { mutableStateOf(false) }
     var editDetailsFor by remember { mutableStateOf<LibraryEntry?>(null) }
     var folderFilter by remember { mutableStateOf<String?>(null) }
+    var languageFilter by remember { mutableStateOf<String?>(null) }
+    var sort by remember { mutableStateOf(LibrarySort.RECENT) }
 
     val folderNames = entries.mapNotNull { entry ->
         entry.folder?.trim()?.takeIf { it.isNotEmpty() }
     }.distinctBy { it.lowercase() }.sortedBy { it.lowercase() }
+    val languages = entries.map { it.language }.distinct()
+        .sortedBy { languageName(it).lowercase() }
     val hasFolderless = entries.any { it.folder.isNullOrBlank() }
-    val visibleEntries = when (folderFilter) {
-        null -> entries
-        NO_FOLDER_FILTER -> entries.filter { it.folder.isNullOrBlank() }
-        else -> entries.filter { it.folder.equals(folderFilter, ignoreCase = true) }
-    }
+    val visibleEntries = entries
+        .filter { entry ->
+            val folderOk = when (folderFilter) {
+                null -> true
+                NO_FOLDER_FILTER -> entry.folder.isNullOrBlank()
+                else -> entry.folder.equals(folderFilter, ignoreCase = true)
+            }
+            folderOk && (languageFilter == null || entry.language == languageFilter)
+        }
+        .let { filtered ->
+            if (sort == LibrarySort.TITLE) {
+                filtered.sortedBy { it.article.title.lowercase() }
+            } else {
+                filtered
+            }
+        }
 
     LaunchedEffect(folderNames, hasFolderless) {
         val selected = folderFilter ?: return@LaunchedEffect
@@ -78,6 +96,10 @@ fun LibraryScreen(
         } else if (folderNames.none { it.equals(selected, ignoreCase = true) }) {
             folderFilter = null
         }
+    }
+    LaunchedEffect(languages) {
+        val selected = languageFilter ?: return@LaunchedEffect
+        if (selected !in languages) languageFilter = null
     }
 
     if (entries.isEmpty()) {
@@ -94,7 +116,7 @@ fun LibraryScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (folderFilter == null) {
+                        text = if (folderFilter == null && languageFilter == null) {
                             "${entries.size} ${if (entries.size == 1) "article" else "articles"}"
                         } else {
                             "${visibleEntries.size} of ${entries.size} articles"
@@ -109,13 +131,51 @@ fun LibraryScreen(
                 }
             }
 
-            if (folderNames.isNotEmpty()) {
+            if (languages.size > 1 || folderNames.isNotEmpty()) {
                 item {
-                    FolderFilterRow(
-                        folders = folderNames,
-                        hasFolderless = hasFolderless,
-                        selected = folderFilter,
-                        onSelect = { folderFilter = it }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (languages.size > 1) {
+                            FilterChipRow {
+                                FilterChip(
+                                    selected = languageFilter == null,
+                                    onClick = { languageFilter = null },
+                                    label = { Text("All languages") }
+                                )
+                                languages.forEach { code ->
+                                    val isSelected = languageFilter == code
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            languageFilter = if (isSelected) null else code
+                                        },
+                                        label = { Text(languageName(code)) }
+                                    )
+                                }
+                            }
+                        }
+                        if (folderNames.isNotEmpty()) {
+                            FolderFilterRow(
+                                folders = folderNames,
+                                hasFolderless = hasFolderless,
+                                selected = folderFilter,
+                                onSelect = { folderFilter = it }
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                FilterChipRow {
+                    FilterChip(
+                        selected = sort == LibrarySort.RECENT,
+                        onClick = { sort = LibrarySort.RECENT },
+                        label = { Text("Newest") }
+                    )
+                    FilterChip(
+                        selected = sort == LibrarySort.TITLE,
+                        onClick = { sort = LibrarySort.TITLE },
+                        label = { Text("Title A-Z") }
                     )
                 }
             }
@@ -123,7 +183,7 @@ fun LibraryScreen(
             if (visibleEntries.isEmpty()) {
                 item {
                     Text(
-                        text = "No saved articles in this folder.",
+                        text = "No articles match these filters.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -294,22 +354,28 @@ internal fun LibraryRow(
 }
 
 @Composable
+private fun FilterChipRow(content: @Composable RowScope.() -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        content = content
+    )
+}
+
+@Composable
 private fun FolderFilterRow(
     folders: List<String>,
     hasFolderless: Boolean,
     selected: String?,
     onSelect: (String?) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
+    FilterChipRow {
         FilterChip(
             selected = selected == null,
             onClick = { onSelect(null) },
-            label = { Text("All") }
+            label = { Text("All folders") }
         )
         folders.forEach { folder ->
             val isSelected = selected.equals(folder, ignoreCase = true)
