@@ -11,7 +11,9 @@ import org.nsh07.wikireader.shared.settings.SettingsStore
 @Serializable
 data class LibraryEntry(
     val language: String,
-    val article: ArticleSummary
+    val article: ArticleSummary,
+    /** Optional personal note shown in the Saved list. Old entries decode with no note. */
+    val note: String? = null
 ) {
     val key: String
         get() = "${language.lowercase()}|${article.title.trim().lowercase()}"
@@ -62,6 +64,19 @@ class LibraryRepository(private val settingsStore: SettingsStore) {
 
     fun removeSaved(entry: LibraryEntry): List<LibraryEntry> =
         write(SettingsKeys.SAVED_ARTICLES, saved().filterNot { it.key == entry.key })
+
+    /** Replaces the saved entry that matches [entry]'s article, preserving its list position. */
+    fun updateSaved(entry: LibraryEntry): List<LibraryEntry> {
+        val current = saved()
+        if (current.none { it.key == entry.key }) return current
+        return write(
+            SettingsKeys.SAVED_ARTICLES,
+            current.map { if (it.key == entry.key) entry else it }
+        )
+    }
+
+    fun setSavedNote(entry: LibraryEntry, note: String?): List<LibraryEntry> =
+        updateSaved(entry.copy(note = note?.trim()?.takeIf { it.isNotEmpty() }))
 
     fun clearSaved(): List<LibraryEntry> =
         write(SettingsKeys.SAVED_ARTICLES, emptyList())

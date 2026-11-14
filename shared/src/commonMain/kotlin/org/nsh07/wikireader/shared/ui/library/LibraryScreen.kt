@@ -20,6 +20,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -46,9 +47,11 @@ fun LibraryScreen(
     emptyDescription: String,
     onOpen: (LibraryEntry) -> Unit,
     onRemove: (LibraryEntry) -> Unit,
-    onClear: () -> Unit
+    onClear: () -> Unit,
+    onEditNote: ((LibraryEntry, String?) -> Unit)? = null
 ) {
     var confirmClear by remember { mutableStateOf(false) }
+    var editNoteFor by remember { mutableStateOf<LibraryEntry?>(null) }
 
     if (entries.isEmpty()) {
         EmptyLibrary(title = emptyTitle, description = emptyDescription)
@@ -79,12 +82,24 @@ fun LibraryScreen(
                 LibraryRow(
                     entry = entry,
                     onOpen = { onOpen(entry) },
-                    onRemove = { onRemove(entry) }
+                    onRemove = { onRemove(entry) },
+                    onNote = onEditNote?.let { { editNoteFor = entry } }
                 )
             }
 
             item { Spacer(Modifier.height(24.dp)) }
         }
+    }
+
+    editNoteFor?.let { entry ->
+        NoteDialog(
+            entry = entry,
+            onDismiss = { editNoteFor = null },
+            onSave = { note ->
+                onEditNote?.invoke(entry, note)
+                editNoteFor = null
+            }
+        )
     }
 
     if (confirmClear) {
@@ -115,7 +130,8 @@ fun LibraryScreen(
 internal fun LibraryRow(
     entry: LibraryEntry,
     onOpen: () -> Unit,
-    onRemove: (() -> Unit)?
+    onRemove: (() -> Unit)?,
+    onNote: (() -> Unit)? = null
 ) {
     Card(
         modifier = Modifier
@@ -184,15 +200,65 @@ internal fun LibraryRow(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
+                val note = entry.note
+                if (!note.isNullOrBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = note,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
-            if (onRemove != null) {
-                TextButton(onClick = onRemove) {
-                    Text("Remove")
+            Column(horizontalAlignment = Alignment.End) {
+                if (onNote != null) {
+                    TextButton(onClick = onNote) {
+                        Text(if (entry.note.isNullOrBlank()) "Note" else "Edit")
+                    }
+                }
+                if (onRemove != null) {
+                    TextButton(onClick = onRemove) {
+                        Text("Remove")
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun NoteDialog(
+    entry: LibraryEntry,
+    onDismiss: () -> Unit,
+    onSave: (String?) -> Unit
+) {
+    var text by remember(entry.key) { mutableStateOf(entry.note.orEmpty()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Note") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { if (it.length <= 2_000) text = it },
+                label = { Text("Personal note") },
+                minLines = 3,
+                maxLines = 6
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(text) }) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

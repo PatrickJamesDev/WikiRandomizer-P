@@ -471,7 +471,10 @@ fun ReaderApp(
                                 emptyDescription = "Tap Save on a random article to keep it here.",
                                 onOpen = { entry -> openInReader(entry.language, entry.article) },
                                 onRemove = { entry -> savedEntries = library.removeSaved(entry) },
-                                onClear = { savedEntries = library.clearSaved() }
+                                onClear = { savedEntries = library.clearSaved() },
+                                onEditNote = { entry, note ->
+                                    savedEntries = library.setSavedNote(entry, note)
+                                }
                             )
 
                             ReaderDestination.HISTORY -> LibraryScreen(

@@ -37,6 +37,24 @@ class LibraryRepositoryTest {
     }
 
     @Test
+    fun savesAndUpdatesPersonalNotesWithoutChangingOrder() {
+        val store = MemorySettingsStore()
+        val repository = LibraryRepository(store)
+        val kotlin = LibraryEntry("en", ArticleSummary(title = "Kotlin", extract = ""))
+        val compose = LibraryEntry("en", ArticleSummary(title = "Compose", extract = ""))
+        repository.addSaved(kotlin)
+        repository.addSaved(compose)
+
+        repository.setSavedNote(kotlin, "  Read again  ")
+        repository.setSavedNote(compose, "   ")
+
+        val reopened = LibraryRepository(store).saved()
+        assertEquals(listOf("Compose", "Kotlin"), reopened.map { it.article.title })
+        assertEquals("Read again", reopened.last().note)
+        assertEquals(null, reopened.first().note)
+    }
+
+    @Test
     fun searchHistoryDeduplicatesAndKeepsNewestFirst() {
         val store = MemorySettingsStore()
         val repository = LibraryRepository(store)
