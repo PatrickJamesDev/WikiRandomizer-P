@@ -71,6 +71,7 @@ import org.nsh07.wikireader.shared.library.LibraryEntry
 import org.nsh07.wikireader.shared.library.LibraryRepository
 import org.nsh07.wikireader.shared.library.SeenArticle
 import org.nsh07.wikireader.shared.reader.CuratorSource
+import org.nsh07.wikireader.shared.reader.FeedSource
 import org.nsh07.wikireader.shared.reader.RandomArticleSource
 import org.nsh07.wikireader.shared.reader.WikipediaSearchSource
 import org.nsh07.wikireader.shared.reader.findTopicByCategory
@@ -78,6 +79,7 @@ import org.nsh07.wikireader.shared.settings.SettingsKeys
 import org.nsh07.wikireader.shared.settings.SettingsStore
 import org.nsh07.wikireader.shared.ui.article.PlatformArticleWebView
 import org.nsh07.wikireader.shared.ui.curators.CuratorsScreen
+import org.nsh07.wikireader.shared.ui.feed.FeedScreen
 import org.nsh07.wikireader.shared.ui.search.WikipediaSearchScreen
 import org.nsh07.wikireader.shared.ui.settings.AboutScreen
 import org.nsh07.wikireader.shared.ui.library.LibraryScreen
@@ -91,7 +93,7 @@ import org.nsh07.wikireader.shared.ui.settings.THEME_SYSTEM
 import org.nsh07.wikireader.shared.ui.theme.WikiReaderTheme
 
 private enum class ReaderDestination {
-    READER, TOPICS, SAVED, HISTORY, SEARCH, WIKI_SEARCH, CURATORS, STATS, SETTINGS, ABOUT
+    READER, FEED, TOPICS, SAVED, HISTORY, SEARCH, WIKI_SEARCH, CURATORS, STATS, SETTINGS, ABOUT
 }
 
 private const val RANDOM_UNSEEN_ATTEMPTS = 8
@@ -107,6 +109,7 @@ fun ReaderApp(
     source: RandomArticleSource,
     searchSource: WikipediaSearchSource,
     curatorSource: CuratorSource,
+    feedSource: FeedSource,
     settingsStore: SettingsStore,
     modifier: Modifier = Modifier
 ) {
@@ -277,6 +280,16 @@ fun ReaderApp(
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
                     NavigationDrawerItem(
+                        label = { Text("Discover") },
+                        selected = destination == ReaderDestination.FEED,
+                        onClick = {
+                            destination = ReaderDestination.FEED
+                            openArticle = null
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                    NavigationDrawerItem(
                         label = { Text("Topics") },
                         selected = destination == ReaderDestination.TOPICS,
                         onClick = {
@@ -393,6 +406,7 @@ fun ReaderApp(
                                 ReaderDestination.SEARCH -> "Search"
                                 ReaderDestination.WIKI_SEARCH -> "Wikipedia"
                                 ReaderDestination.CURATORS -> "Curators"
+                                ReaderDestination.FEED -> "Discover"
                                 ReaderDestination.STATS -> "Stats"
                                 ReaderDestination.SETTINGS -> "Settings"
                                 ReaderDestination.ABOUT -> "About"
@@ -475,6 +489,24 @@ fun ReaderApp(
                         )
                     } else {
                         when (destination) {
+                            ReaderDestination.FEED -> FeedScreen(
+                                source = feedSource,
+                                language = language,
+                                languageName = languageName(language),
+                                onOpenArticle = { feedLanguage, title ->
+                                    if (title.isNotBlank()) {
+                                        openInReader(
+                                            feedLanguage,
+                                            ArticleSummary(
+                                                title = title.replace('_', ' '),
+                                                extract = ""
+                                            )
+                                        )
+                                    }
+                                },
+                                onOpenUrl = { uriHandler.openUri(it) }
+                            )
+
                             ReaderDestination.TOPICS -> TopicsScreen(
                                 selected = selectedTopic,
                                 onSelect = { topic ->

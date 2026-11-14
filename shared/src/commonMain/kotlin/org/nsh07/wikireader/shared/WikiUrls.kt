@@ -39,6 +39,10 @@ object WikiUrls {
             "&prop=pageimages&piprop=thumbnail&pithumbsize=250" +
             "&format=json&formatversion=2"
 
+    /** Wikipedia's daily featured feed: article, most-read, picture, news and on-this-day. */
+    fun feedUrl(lang: String, datePath: String): String =
+        "https://${host(lang)}/api/rest_v1/feed/featured/${datePath.trim('/')}"
+
     fun categoryMembersUrl(lang: String, category: String, limit: Int = 50): String =
         "https://${host(lang)}/w/api.php?action=query&list=categorymembers" +
             "&cmtitle=${encodeQuery("Category:$category")}" +
