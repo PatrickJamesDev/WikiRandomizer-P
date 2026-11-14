@@ -26,6 +26,16 @@ data class SearchQuery(
         get() = "${language.lowercase()}|${query.trim().lowercase()}"
 }
 
+/** A title the reader has already been shown, remembered across launches and app updates. */
+@Serializable
+data class SeenArticle(
+    val language: String,
+    val title: String
+) {
+    val key: String
+        get() = "${language.lowercase()}|${title.trim().lowercase()}"
+}
+
 /**
  * Small shared Saved/History store.
  *
@@ -75,6 +85,32 @@ class LibraryRepository(private val settingsStore: SettingsStore) {
 
     fun clearSearches(): List<SearchQuery> = writeSearches(emptyList())
 
+    fun seenArticles(): List<SeenArticle> = readSeen()
+
+    fun isSeen(language: String, title: String): Boolean {
+        val key = SeenArticle(language, title).key
+        return seenArticles().any { it.key == key }
+    }
+
+    /**
+     * Remembers [title] as shown. Newest entries are kept first, so a bounded list forgets the
+     * oldest articles first instead of losing the current reading session.
+     */
+    fun markSeen(language: String, title: String): List<SeenArticle> {
+        val trimmed = title.trim()
+        if (trimmed.isEmpty()) return seenArticles()
+        val entry = SeenArticle(language, trimmed)
+        val updated = (listOf(entry) + seenArticles().filterNot { it.key == entry.key })
+            .take(MAX_SEEN)
+        settingsStore.putString(SettingsKeys.SEEN_ARTICLES, json.encodeToString(updated))
+        return updated
+    }
+
+    fun clearSeen(): List<SeenArticle> {
+        settingsStore.putString(SettingsKeys.SEEN_ARTICLES, "[]")
+        return emptyList()
+    }
+
     private fun prepend(entry: LibraryEntry, entries: List<LibraryEntry>): List<LibraryEntry> =
         listOf(entry) + entries.filterNot { it.key == entry.key }
 
@@ -100,8 +136,16 @@ class LibraryRepository(private val settingsStore: SettingsStore) {
         return entries
     }
 
+    private fun readSeen(): List<SeenArticle> =
+        runCatching {
+            json.decodeFromString<List<SeenArticle>>(
+                settingsStore.getString(SettingsKeys.SEEN_ARTICLES, "[]")
+            )
+        }.getOrDefault(emptyList())
+
     private companion object {
         const val MAX_HISTORY = 200
         const val MAX_SEARCHES = 12
+        const val MAX_SEEN = 5_000
     }
 }

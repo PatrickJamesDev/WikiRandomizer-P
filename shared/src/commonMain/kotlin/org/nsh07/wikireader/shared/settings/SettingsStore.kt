@@ -18,4 +18,5 @@ object SettingsKeys {
     const val SAVED_ARTICLES = "wikiSavedArticles"
     const val ARTICLE_HISTORY = "wikiArticleHistory"
     const val SEARCH_HISTORY = "wikiSearchHistory"
+    const val SEEN_ARTICLES = "wikiSeenArticles"
 }

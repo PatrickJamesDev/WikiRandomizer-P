@@ -31,8 +31,10 @@ import androidx.compose.ui.unit.dp
 fun SettingsScreen(
     themeMode: String,
     languageName: String,
+    seenCount: Int,
     onThemeModeChange: (String) -> Unit,
     onLanguageClick: () -> Unit,
+    onClearSeen: () -> Unit,
     onAboutClick: () -> Unit
 ) {
     LazyColumn(
@@ -77,6 +79,23 @@ fun SettingsScreen(
                 title = "Wikipedia language",
                 subtitle = languageName,
                 onClick = onLanguageClick
+            )
+        }
+
+        item {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+            SectionHeader("Reading")
+        }
+
+        item {
+            SettingsRow(
+                title = "Forget seen articles",
+                subtitle = if (seenCount == 0) {
+                    "No articles remembered yet"
+                } else {
+                    "$seenCount articles will be offered again"
+                },
+                onClick = onClearSeen
             )
         }
 

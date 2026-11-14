@@ -68,6 +68,7 @@ import org.nsh07.wikireader.shared.WikiText
 import org.nsh07.wikireader.shared.WikiUrls
 import org.nsh07.wikireader.shared.library.LibraryEntry
 import org.nsh07.wikireader.shared.library.LibraryRepository
+import org.nsh07.wikireader.shared.library.SeenArticle
 import org.nsh07.wikireader.shared.reader.RandomArticleSource
 import org.nsh07.wikireader.shared.reader.WikipediaSearchSource
 import org.nsh07.wikireader.shared.reader.findTopicByCategory
@@ -87,6 +88,8 @@ import org.nsh07.wikireader.shared.ui.settings.THEME_SYSTEM
 import org.nsh07.wikireader.shared.ui.theme.WikiReaderTheme
 
 private enum class ReaderDestination { READER, TOPICS, SAVED, HISTORY, SEARCH, WIKI_SEARCH, STATS, SETTINGS, ABOUT }
+
+private const val RANDOM_UNSEEN_ATTEMPTS = 8
 
 private data class OpenArticle(
     val language: String,
@@ -126,6 +129,7 @@ fun ReaderApp(
         val library = remember(settingsStore) { LibraryRepository(settingsStore) }
         var savedEntries by remember { mutableStateOf(library.saved()) }
         var historyEntries by remember { mutableStateOf(library.history()) }
+        var seenArticles by remember { mutableStateOf(library.seenArticles()) }
         var openArticle by remember { mutableStateOf<OpenArticle?>(null) }
         var librarySearchQuery by remember { mutableStateOf("") }
         var recentSearches by remember { mutableStateOf(library.recentSearches()) }
@@ -147,13 +151,29 @@ fun ReaderApp(
             isLoading = true
             errorMessage = null
             try {
-                val result = if (topic == null) {
-                    source.randomSummary(code)
-                } else {
-                    source.randomSummaryForTopic(code, topic.category)
+                var candidate: ArticleSummary? = null
+                repeat(RANDOM_UNSEEN_ATTEMPTS) {
+                    val result = if (topic == null) {
+                        source.randomSummary(code)
+                    } else {
+                        source.randomSummaryForTopic(code, topic.category)
+                    }
+                    candidate = result
+                    if (currentRequest != requestId) return
+                    val key = SeenArticle(code, result.title).key
+                    if (seenArticles.none { it.key == key }) {
+                        if (currentRequest == requestId) {
+                            article = result
+                            seenArticles = library.markSeen(code, result.title)
+                            isLoading = false
+                        }
+                        return
+                    }
                 }
+                // The source kept returning titles that were already shown. Show one rather than
+                // an error page, but do not grow the seen list with another duplicate.
                 if (currentRequest == requestId) {
-                    article = result
+                    article = candidate
                     isLoading = false
                 }
             } catch (error: Throwable) {
@@ -181,6 +201,7 @@ fun ReaderApp(
 
         fun openInReader(language: String, summary: ArticleSummary) {
             historyEntries = library.addHistory(LibraryEntry(language, summary))
+            seenArticles = library.markSeen(language, summary.title)
             openArticle = OpenArticle(language, summary)
         }
 
@@ -521,11 +542,13 @@ fun ReaderApp(
                             ReaderDestination.SETTINGS -> SettingsScreen(
                                 themeMode = themeMode,
                                 languageName = languageName(language),
+                                seenCount = seenArticles.size,
                                 onThemeModeChange = { mode ->
                                     themeMode = mode
                                     settingsStore.putString(SettingsKeys.THEME, mode)
                                 },
                                 onLanguageClick = { showLanguagePicker = true },
+                                onClearSeen = { seenArticles = library.clearSeen() },
                                 onAboutClick = { destination = ReaderDestination.ABOUT }
                             )
 

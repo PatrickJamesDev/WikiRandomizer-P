@@ -4,6 +4,7 @@ import org.nsh07.wikireader.shared.ArticleSummary
 import org.nsh07.wikireader.shared.settings.SettingsStore
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class LibraryRepositoryTest {
@@ -72,6 +73,32 @@ class LibraryRepositoryTest {
 
         assertEquals(0, repository.clearSearches().size)
         assertEquals(0, LibraryRepository(store).recentSearches().size)
+    }
+
+    @Test
+    fun seenArticlesPersistAndDeduplicateCaseInsensitively() {
+        val store = MemorySettingsStore()
+        val repository = LibraryRepository(store)
+
+        repository.markSeen("en", "Kotlin")
+        repository.markSeen("en", "kotlin")
+        repository.markSeen("de", "Kotlin")
+
+        val seen = LibraryRepository(store).seenArticles()
+        assertEquals(2, seen.size)
+        assertTrue(repository.isSeen("en", "KOTLIN"))
+        assertTrue(repository.isSeen("de", "kotlin"))
+        assertFalse(repository.isSeen("fr", "Kotlin"))
+    }
+
+    @Test
+    fun clearsSeenArticles() {
+        val store = MemorySettingsStore()
+        val repository = LibraryRepository(store)
+        repository.markSeen("en", "Kotlin")
+
+        assertEquals(0, repository.clearSeen().size)
+        assertFalse(LibraryRepository(store).isSeen("en", "Kotlin"))
     }
 
     private class MemorySettingsStore : SettingsStore {
