@@ -19,6 +19,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,8 +33,10 @@ fun SettingsScreen(
     themeMode: String,
     languageName: String,
     seenCount: Int,
+    browsingHistory: Boolean,
     onThemeModeChange: (String) -> Unit,
     onLanguageClick: () -> Unit,
+    onBrowsingHistoryChange: (Boolean) -> Unit,
     onClearSeen: () -> Unit,
     onAboutClick: () -> Unit
 ) {
@@ -79,6 +82,19 @@ fun SettingsScreen(
                 title = "Wikipedia language",
                 subtitle = languageName,
                 onClick = onLanguageClick
+            )
+        }
+
+        item {
+            SettingsToggleRow(
+                title = "Browsing history",
+                subtitle = if (browsingHistory) {
+                    "Opened articles are remembered on this device"
+                } else {
+                    "Opened articles are not added to History"
+                },
+                checked = browsingHistory,
+                onCheckedChange = onBrowsingHistoryChange
             )
         }
 
@@ -231,6 +247,34 @@ private fun ThemeChoice(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun SettingsToggleRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .clickable { onCheckedChange(!checked) }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

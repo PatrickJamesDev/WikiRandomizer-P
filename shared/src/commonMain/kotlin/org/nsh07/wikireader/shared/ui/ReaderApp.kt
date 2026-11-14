@@ -130,6 +130,11 @@ fun ReaderApp(
         var savedEntries by remember { mutableStateOf(library.saved()) }
         var historyEntries by remember { mutableStateOf(library.history()) }
         var seenArticles by remember { mutableStateOf(library.seenArticles()) }
+        var browsingHistory by remember {
+            mutableStateOf(
+                settingsStore.getString(SettingsKeys.BROWSING_HISTORY, "true").toBoolean()
+            )
+        }
         var openArticle by remember { mutableStateOf<OpenArticle?>(null) }
         var librarySearchQuery by remember { mutableStateOf("") }
         var recentSearches by remember { mutableStateOf(library.recentSearches()) }
@@ -200,7 +205,9 @@ fun ReaderApp(
         }
 
         fun openInReader(language: String, summary: ArticleSummary) {
-            historyEntries = library.addHistory(LibraryEntry(language, summary))
+            if (browsingHistory) {
+                historyEntries = library.addHistory(LibraryEntry(language, summary))
+            }
             seenArticles = library.markSeen(language, summary.title)
             openArticle = OpenArticle(language, summary)
         }
@@ -546,11 +553,19 @@ fun ReaderApp(
                                 themeMode = themeMode,
                                 languageName = languageName(language),
                                 seenCount = seenArticles.size,
+                                browsingHistory = browsingHistory,
                                 onThemeModeChange = { mode ->
                                     themeMode = mode
                                     settingsStore.putString(SettingsKeys.THEME, mode)
                                 },
                                 onLanguageClick = { showLanguagePicker = true },
+                                onBrowsingHistoryChange = { enabled ->
+                                    browsingHistory = enabled
+                                    settingsStore.putString(
+                                        SettingsKeys.BROWSING_HISTORY,
+                                        enabled.toString()
+                                    )
+                                },
                                 onClearSeen = { seenArticles = library.clearSeen() },
                                 onAboutClick = { destination = ReaderDestination.ABOUT }
                             )
