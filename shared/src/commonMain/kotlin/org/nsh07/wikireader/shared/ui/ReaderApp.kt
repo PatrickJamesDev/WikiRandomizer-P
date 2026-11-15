@@ -1000,6 +1000,11 @@ fun ReaderApp(
                                     highlights = highlightRepository.highlights()
                                     vocabulary = vocabularyRepository.words()
                                     followedCurators = curatorFollows.followed()
+                                    article = null
+                                    openArticle = null
+                                    openTabs = emptyList()
+                                    destination = ReaderDestination.READER
+                                    scope.launch { loadRandom(language, selectedTopic) }
                                 }
                             )
 
