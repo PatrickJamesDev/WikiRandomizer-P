@@ -1168,6 +1168,9 @@ fun ReaderApp(
                             settingsStore.putString(SettingsKeys.ARTICLE_FONT_FAMILY, "sans")
                             article = null
                             openArticle = null
+                            openTabs = emptyList()
+                            galleryArticle = null
+                            verticalFeed = null
                             destination = ReaderDestination.READER
                             scope.launch { loadRandom("en", null) }
                         }
