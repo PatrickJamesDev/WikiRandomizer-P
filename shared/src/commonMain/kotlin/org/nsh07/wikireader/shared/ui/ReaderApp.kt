@@ -1,6 +1,7 @@
 package org.nsh07.wikireader.shared.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -985,6 +986,8 @@ fun ReaderApp(
                                     followedCurators = curatorFollows.followed()
                                 }
                             )
+
+                            ReaderDestination.GALLERY -> Unit
 
                             ReaderDestination.ABOUT -> AboutScreen(
                                 onOpenRepository = {

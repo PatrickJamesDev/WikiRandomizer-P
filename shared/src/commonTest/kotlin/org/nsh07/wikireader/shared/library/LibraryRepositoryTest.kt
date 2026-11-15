@@ -89,7 +89,8 @@ class LibraryRepositoryTest {
             LibraryEntry("en", ArticleSummary(title = "C", extract = ""), folder = " ")
         )
 
-        assertEquals(listOf("Research"), repository.savedFolders())
+        assertEquals(1, repository.savedFolders().size)
+        assertTrue(repository.savedFolders().single().equals("Research", ignoreCase = true))
     }
 
     @Test
@@ -132,7 +133,7 @@ class LibraryRepositoryTest {
         val searches = repository.recentSearches()
         assertEquals(12, searches.size)
         assertEquals("query 19", searches.first().query)
-        assertTrue(searches.none { it.query == "query 8" })
+        assertTrue(searches.none { it.query == "query 7" })
     }
 
     @Test

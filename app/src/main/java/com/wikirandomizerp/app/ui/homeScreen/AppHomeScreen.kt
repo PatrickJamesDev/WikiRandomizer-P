@@ -498,9 +498,7 @@ fun AppHomeScreen(
                             onAction = onAction,
                             relatedLoader = relatedLoader,
                             previewLoader = previewLoader,
-                            modifier = remember(colorScheme.surface) {
-                                Modifier.background(colorScheme.surface)
-                            }
+                            modifier = Modifier.background(colorScheme.surface)
                         )
                     }
 

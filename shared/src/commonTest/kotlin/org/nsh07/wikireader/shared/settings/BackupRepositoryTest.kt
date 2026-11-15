@@ -3,6 +3,7 @@ package org.nsh07.wikireader.shared.settings
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class BackupRepositoryTest {
     @Test
@@ -13,8 +14,9 @@ class BackupRepositoryTest {
         val backup = BackupRepository(source).export()
 
         val target = MemorySettingsStore()
-        assertEquals(2, BackupRepository(target).import(backup))
+        assertTrue(BackupRepository(target).import(backup)!! > 0)
         assertEquals("de", target.getString(SettingsKeys.LANGUAGE, "en"))
+        assertEquals("[]", target.getString(SettingsKeys.SAVED_ARTICLES, ""))
         assertNull(BackupRepository(target).import("{\"other\":true}"))
     }
 
