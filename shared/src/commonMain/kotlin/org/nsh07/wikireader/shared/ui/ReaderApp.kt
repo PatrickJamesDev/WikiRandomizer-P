@@ -84,6 +84,8 @@ import org.nsh07.wikireader.shared.reader.ArticleLanguagesSource
 import org.nsh07.wikireader.shared.reader.CuratorSource
 import org.nsh07.wikireader.shared.reader.DictionarySource
 import org.nsh07.wikireader.shared.reader.FeedSource
+import org.nsh07.wikireader.shared.reader.INaturalistSource
+import org.nsh07.wikireader.shared.reader.INaturalistUrls
 import org.nsh07.wikireader.shared.reader.RandomArticleSource
 import org.nsh07.wikireader.shared.reader.WikipediaSearchSource
 import org.nsh07.wikireader.shared.reader.findTopicByCategory
@@ -140,6 +142,7 @@ fun ReaderApp(
     commonsSource: CommonsSource,
     articleInfoSource: ArticleInfoSource,
     articleLanguagesSource: ArticleLanguagesSource,
+    iNaturalistSource: INaturalistSource,
     settingsStore: SettingsStore,
     modifier: Modifier = Modifier
 ) {
@@ -1052,6 +1055,19 @@ fun ReaderApp(
                 onLanguages = {
                     showArticleTools = false
                     showArticleLanguages = true
+                },
+                onINaturalist = {
+                    val article = openArticle
+                    showArticleTools = false
+                    if (article != null) {
+                        scope.launch {
+                            val taxonId = iNaturalistSource.taxonId(article.summary.title)
+                            uriHandler.openUri(
+                                taxonId?.let(INaturalistUrls::taxonUrl)
+                                    ?: INaturalistUrls.searchUrl(article.summary.title)
+                            )
+                        }
+                    }
                 },
                 onDismiss = { showArticleTools = false }
             )

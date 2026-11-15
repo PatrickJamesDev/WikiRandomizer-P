@@ -20,6 +20,7 @@ fun ArticleToolsDialog(
     title: String,
     onArticleInfo: () -> Unit,
     onLanguages: () -> Unit,
+    onINaturalist: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val uriHandler = LocalUriHandler.current
@@ -36,6 +37,9 @@ fun ArticleToolsDialog(
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 ToolButton("Article information") {
                     onArticleInfo()
+                }
+                ToolButton("View on iNaturalist") {
+                    onINaturalist()
                 }
                 ToolButton("Article languages") {
                     onLanguages()

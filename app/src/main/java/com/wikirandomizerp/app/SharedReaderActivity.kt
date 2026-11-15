@@ -11,6 +11,7 @@ import org.nsh07.wikireader.shared.reader.AndroidCommonsSource
 import org.nsh07.wikireader.shared.reader.AndroidCuratorSource
 import org.nsh07.wikireader.shared.reader.AndroidDictionarySource
 import org.nsh07.wikireader.shared.reader.AndroidFeedSource
+import org.nsh07.wikireader.shared.reader.AndroidINaturalistSource
 import org.nsh07.wikireader.shared.reader.AndroidRandomArticleSource
 import org.nsh07.wikireader.shared.reader.AndroidWikipediaSearchSource
 import org.nsh07.wikireader.shared.settings.AndroidSettingsStore
@@ -36,6 +37,7 @@ class SharedReaderActivity : ComponentActivity() {
             val commonsSource = remember { AndroidCommonsSource() }
             val articleInfoSource = remember { AndroidArticleInfoSource() }
             val articleLanguagesSource = remember { AndroidArticleLanguagesSource() }
+            val iNaturalistSource = remember { AndroidINaturalistSource() }
             val settingsStore = remember { AndroidSettingsStore(this) }
             ReaderApp(
                 source = source,
@@ -46,6 +48,7 @@ class SharedReaderActivity : ComponentActivity() {
                 commonsSource = commonsSource,
                 articleInfoSource = articleInfoSource,
                 articleLanguagesSource = articleLanguagesSource,
+                iNaturalistSource = iNaturalistSource,
                 settingsStore = settingsStore
             )
         }
