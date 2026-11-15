@@ -31,6 +31,19 @@ class WikiUrlsTest {
     }
 
     @Test
+    fun articleToolUrlsUseMediaWikiConventions() {
+        assertEquals(
+            "https://en.wikipedia.org/wiki/Talk%3ACaf%C3%A9",
+            WikiUrls.talkPageUrl("en", "Café")
+        )
+        assertEquals(
+            "https://en.wikipedia.org/w/index.php?title=Caf%C3%A9&action=history",
+            WikiUrls.historyUrl("en", "Café")
+        )
+        assertTrue(WikiUrls.whatLinksHereUrl("en", "Café").endsWith("/Caf%C3%A9"))
+    }
+
+    @Test
     fun fileUrlsSupportOptionalResizeWidth() {
         assertEquals(
             "https://en.wikipedia.org/wiki/Special:FilePath/Example.jpg",

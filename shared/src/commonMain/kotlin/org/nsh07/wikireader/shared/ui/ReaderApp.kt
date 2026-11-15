@@ -87,6 +87,7 @@ import org.nsh07.wikireader.shared.reader.findTopicByCategory
 import org.nsh07.wikireader.shared.settings.BackupRepository
 import org.nsh07.wikireader.shared.settings.SettingsKeys
 import org.nsh07.wikireader.shared.settings.SettingsStore
+import org.nsh07.wikireader.shared.ui.article.ArticleToolsDialog
 import org.nsh07.wikireader.shared.ui.article.PlatformArticleWebView
 import org.nsh07.wikireader.shared.ui.backup.BackupScreen
 import org.nsh07.wikireader.shared.ui.commons.CommonsGalleryScreen
@@ -176,6 +177,7 @@ fun ReaderApp(
             )
         }
         var openArticle by remember { mutableStateOf<OpenArticle?>(null) }
+        var showArticleTools by remember { mutableStateOf(false) }
         var openTabs by remember { mutableStateOf<List<OpenArticle>>(emptyList()) }
         var verticalFeed by remember { mutableStateOf<FeedApiResponse?>(null) }
         var galleryArticle by remember { mutableStateOf<OpenArticle?>(null) }
@@ -543,6 +545,9 @@ fun ReaderApp(
                                     }
                                 ) {
                                     Text("Browser")
+                                }
+                                TextButton(onClick = { showArticleTools = true }) {
+                                    Text("Tools")
                                 }
                             } else if (destination == ReaderDestination.READER) {
                                 TextButton(onClick = { showLanguagePicker = true }) {
@@ -981,6 +986,14 @@ fun ReaderApp(
                     }
                 }
             }
+        }
+
+        if (showArticleTools && openArticle != null) {
+            ArticleToolsDialog(
+                language = openArticle!!.language,
+                title = openArticle!!.summary.title,
+                onDismiss = { showArticleTools = false }
+            )
         }
 
         if (showLanguagePicker) {

@@ -22,6 +22,18 @@ object WikiUrls {
 
     fun mainPageUrl(lang: String): String = articleUrl(lang, "Main_Page")
 
+    fun talkPageUrl(lang: String, title: String): String =
+        articleUrl(lang, "Talk:${normalizeTitle(title)}")
+
+    fun historyUrl(lang: String, title: String): String =
+        "https://${host(lang)}/w/index.php?title=${encodeQuery(title)}&action=history"
+
+    fun pageInfoUrl(lang: String, title: String): String =
+        "https://${host(lang)}/w/index.php?title=${encodeQuery(title)}&action=info"
+
+    fun whatLinksHereUrl(lang: String, title: String): String =
+        "https://${host(lang)}/wiki/Special:WhatLinksHere/${encodeTitle(title)}"
+
     fun randomSummaryUrl(lang: String): String =
         "https://${host(lang)}/api/rest_v1/page/random/summary"
 
