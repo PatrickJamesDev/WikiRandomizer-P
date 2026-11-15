@@ -1,6 +1,7 @@
 package org.nsh07.wikireader.shared.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -32,6 +34,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -68,6 +71,7 @@ import org.nsh07.wikireader.shared.ArticleSummary
 import org.nsh07.wikireader.shared.WikiText
 import org.nsh07.wikireader.shared.WikiUrls
 import org.nsh07.wikireader.shared.library.CuratorFollowStore
+import org.nsh07.wikireader.shared.library.HighlightRepository
 import org.nsh07.wikireader.shared.library.LibraryEntry
 import org.nsh07.wikireader.shared.library.LibraryRepository
 import org.nsh07.wikireader.shared.library.SavedImageRepository
@@ -83,6 +87,7 @@ import org.nsh07.wikireader.shared.ui.article.PlatformArticleWebView
 import org.nsh07.wikireader.shared.ui.curators.CuratorsScreen
 import org.nsh07.wikireader.shared.ui.feed.FeedScreen
 import org.nsh07.wikireader.shared.ui.feed.VerticalFeedScreen
+import org.nsh07.wikireader.shared.ui.highlights.HighlightsScreen
 import org.nsh07.wikireader.shared.ui.images.SavedImagesScreen
 import org.nsh07.wikireader.shared.ui.search.WikipediaSearchScreen
 import org.nsh07.wikireader.shared.ui.settings.AboutScreen
@@ -97,7 +102,8 @@ import org.nsh07.wikireader.shared.ui.settings.THEME_SYSTEM
 import org.nsh07.wikireader.shared.ui.theme.WikiReaderTheme
 
 private enum class ReaderDestination {
-    READER, FEED, TOPICS, SAVED, HISTORY, IMAGES, SEARCH, WIKI_SEARCH, CURATORS, STATS, SETTINGS, ABOUT
+    READER, FEED, TOPICS, SAVED, HISTORY, IMAGES, HIGHLIGHTS, SEARCH, WIKI_SEARCH, CURATORS,
+    STATS, SETTINGS, ABOUT
 }
 
 private const val RANDOM_UNSEEN_ATTEMPTS = 8
@@ -105,7 +111,10 @@ private const val RANDOM_UNSEEN_ATTEMPTS = 8
 private data class OpenArticle(
     val language: String,
     val summary: ArticleSummary
-)
+) {
+    val key: String
+        get() = "${language.lowercase()}|${summary.title.trim().lowercase()}"
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -142,8 +151,10 @@ fun ReaderApp(
         val library = remember(settingsStore) { LibraryRepository(settingsStore) }
         val curatorFollows = remember(settingsStore) { CuratorFollowStore(settingsStore) }
         val savedImageRepository = remember(settingsStore) { SavedImageRepository(settingsStore) }
+        val highlightRepository = remember(settingsStore) { HighlightRepository(settingsStore) }
         var savedEntries by remember { mutableStateOf(library.saved()) }
         var savedImages by remember { mutableStateOf(savedImageRepository.images()) }
+        var highlights by remember { mutableStateOf(highlightRepository.highlights()) }
         var historyEntries by remember { mutableStateOf(library.history()) }
         var seenArticles by remember { mutableStateOf(library.seenArticles()) }
         var followedCurators by remember { mutableStateOf(curatorFollows.followed()) }
@@ -153,6 +164,7 @@ fun ReaderApp(
             )
         }
         var openArticle by remember { mutableStateOf<OpenArticle?>(null) }
+        var openTabs by remember { mutableStateOf<List<OpenArticle>>(emptyList()) }
         var verticalFeed by remember { mutableStateOf<FeedApiResponse?>(null) }
         var librarySearchQuery by remember { mutableStateOf("") }
         var recentSearches by remember { mutableStateOf(library.recentSearches()) }
@@ -227,7 +239,18 @@ fun ReaderApp(
                 historyEntries = library.addHistory(LibraryEntry(language, summary))
             }
             seenArticles = library.markSeen(language, summary.title)
-            openArticle = OpenArticle(language, summary)
+            val candidate = OpenArticle(language, summary)
+            val existing = openTabs.firstOrNull { it.key == candidate.key }
+            openTabs = if (existing == null) openTabs + candidate else openTabs
+            openArticle = existing ?: candidate
+        }
+
+        fun closeTab(tab: OpenArticle) {
+            val remaining = openTabs.filterNot { it.key == tab.key }
+            openTabs = remaining
+            if (openArticle?.key == tab.key) {
+                openArticle = remaining.lastOrNull()
+            }
         }
 
         val openArticleSaved = openArticle?.let { isSaved(it.language, it.summary) } == true
@@ -337,6 +360,16 @@ fun ReaderApp(
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
                     NavigationDrawerItem(
+                        label = { Text("Highlights") },
+                        selected = destination == ReaderDestination.HIGHLIGHTS,
+                        onClick = {
+                            destination = ReaderDestination.HIGHLIGHTS
+                            openArticle = null
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                    NavigationDrawerItem(
                         label = { Text("Search") },
                         selected = destination == ReaderDestination.SEARCH,
                         onClick = {
@@ -421,6 +454,7 @@ fun ReaderApp(
                                 ReaderDestination.SAVED -> "Saved"
                                 ReaderDestination.HISTORY -> "History"
                                 ReaderDestination.IMAGES -> "Pictures"
+                                ReaderDestination.HIGHLIGHTS -> "Highlights"
                                 ReaderDestination.SEARCH -> "Search"
                                 ReaderDestination.WIKI_SEARCH -> "Wikipedia"
                                 ReaderDestination.CURATORS -> "Curators"
@@ -498,14 +532,24 @@ fun ReaderApp(
                 ) {
                     val currentOpen = openArticle
                     if (currentOpen != null) {
-                        PlatformArticleWebView(
-                            url = WikiUrls.articleUrl(
-                                currentOpen.language,
-                                currentOpen.summary.title
-                            ),
-                            fontScale = articleFontScale,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            if (openTabs.size > 1) {
+                                ArticleTabStrip(
+                                    tabs = openTabs,
+                                    selected = currentOpen,
+                                    onSelect = { openArticle = it },
+                                    onClose = { closeTab(it) }
+                                )
+                            }
+                            PlatformArticleWebView(
+                                url = WikiUrls.articleUrl(
+                                    currentOpen.language,
+                                    currentOpen.summary.title
+                                ),
+                                fontScale = articleFontScale,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     } else if (destination == ReaderDestination.FEED && verticalFeed != null) {
                         VerticalFeedScreen(
                             feed = verticalFeed!!,
@@ -609,6 +653,25 @@ fun ReaderApp(
                                     savedImages = savedImageRepository.remove(image)
                                 },
                                 onClear = { savedImages = savedImageRepository.clear() }
+                            )
+
+                            ReaderDestination.HIGHLIGHTS -> HighlightsScreen(
+                                highlights = highlights,
+                                onOpenArticle = { highlightLanguage, title ->
+                                    if (title.isNotBlank()) {
+                                        openInReader(
+                                            highlightLanguage,
+                                            ArticleSummary(
+                                                title = title.replace('_', ' '),
+                                                extract = ""
+                                            )
+                                        )
+                                    }
+                                },
+                                onDelete = { highlight ->
+                                    highlights = highlightRepository.remove(highlight)
+                                },
+                                onClear = { highlights = highlightRepository.clear() }
                             )
 
                             ReaderDestination.SEARCH -> LibrarySearchScreen(
@@ -745,6 +808,15 @@ fun ReaderApp(
                                         articleTitle = title,
                                         articleLanguage = lang
                                     )
+                                },
+                                onSaveHighlight = { lang, title, text, thumbnail, description ->
+                                    highlights = highlightRepository.add(
+                                        language = lang,
+                                        title = title,
+                                        text = text,
+                                        thumbnail = thumbnail,
+                                        description = description
+                                    )
                                 }
                             )
                         }
@@ -772,6 +844,56 @@ fun ReaderApp(
 }
 
 @Composable
+private fun ArticleTabStrip(
+    tabs: List<OpenArticle>,
+    selected: OpenArticle,
+    onSelect: (OpenArticle) -> Unit,
+    onClose: (OpenArticle) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        tabs.forEach { tab ->
+            val isSelected = tab.key == selected.key
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.secondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainer
+                }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(start = 12.dp, end = 4.dp)
+                ) {
+                    Text(
+                        tab.summary.title,
+                        style = MaterialTheme.typography.labelMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .clickable { onSelect(tab) }
+                            .padding(vertical = 8.dp)
+                    )
+                    TextButton(
+                        onClick = { onClose(tab) },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(4.dp)
+                    ) {
+                        Text("×", style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun ReaderContent(
     article: ArticleSummary?,
     isLoading: Boolean,
@@ -782,7 +904,8 @@ private fun ReaderContent(
     onRetry: () -> Unit,
     topicLabel: String?,
     onOpenArticle: (ArticleSummary) -> Unit,
-    onSaveImage: (String, String, String) -> Unit
+    onSaveImage: (String, String, String) -> Unit,
+    onSaveHighlight: (String, String, String, String?, String?) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -793,7 +916,16 @@ private fun ReaderContent(
                 onToggleSave = onToggleSave,
                 topicLabel = topicLabel,
                 onOpenArticle = { onOpenArticle(article) },
-                onSaveImage = { imageUrl -> onSaveImage(imageUrl, article.title, language) }
+                onSaveImage = { imageUrl -> onSaveImage(imageUrl, article.title, language) },
+                onSaveHighlight = {
+                    onSaveHighlight(
+                        language,
+                        article.title,
+                        article.extract,
+                        article.thumbnail?.source,
+                        article.summaryDescription
+                    )
+                }
             )
 
             isLoading -> LoadingState()
@@ -856,7 +988,8 @@ private fun ArticleContent(
     onToggleSave: () -> Unit,
     topicLabel: String?,
     onOpenArticle: () -> Unit,
-    onSaveImage: (String) -> Unit
+    onSaveImage: (String) -> Unit,
+    onSaveHighlight: () -> Unit
 ) {
     val readingMinutes = WikiText.readingMinutes(article.extract)
     LazyColumn(
@@ -973,9 +1106,16 @@ private fun ArticleContent(
                             Text("Read article")
                         }
                     }
-                    if (!thumbnail.isNullOrBlank()) {
-                        TextButton(onClick = { onSaveImage(thumbnail) }) {
-                            Text("Save image")
+                    Row {
+                        if (!thumbnail.isNullOrBlank()) {
+                            TextButton(onClick = { onSaveImage(thumbnail) }) {
+                                Text("Save image")
+                            }
+                        }
+                        if (article.extract.isNotBlank()) {
+                            TextButton(onClick = onSaveHighlight) {
+                                Text("Highlight intro")
+                            }
                         }
                     }
                 }
