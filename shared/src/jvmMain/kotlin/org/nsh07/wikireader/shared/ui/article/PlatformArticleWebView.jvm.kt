@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 @Composable
 actual fun PlatformArticleWebView(
     url: String,
+    fontScale: Float,
     modifier: Modifier
 ) {
     ArticleWebViewUnavailable(modifier)

@@ -62,6 +62,7 @@ fun FeedScreen(
     languageName: String,
     onOpenArticle: (lang: String, title: String) -> Unit,
     onOpenUrl: (String) -> Unit,
+    onOpenVertical: (FeedApiResponse) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var reload by remember { mutableIntStateOf(0) }
@@ -102,6 +103,7 @@ fun FeedScreen(
             onRefresh = { reload++ },
             onOpenArticle = onOpenArticle,
             onOpenUrl = onOpenUrl,
+            onOpenVertical = onOpenVertical,
             modifier = modifier
         )
     }
@@ -115,6 +117,7 @@ private fun FeedList(
     onRefresh: () -> Unit,
     onOpenArticle: (lang: String, title: String) -> Unit,
     onOpenUrl: (String) -> Unit,
+    onOpenVertical: (FeedApiResponse) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val news = feed.news.orEmpty()
@@ -136,6 +139,7 @@ private fun FeedList(
                     )
                 }
                 TextButton(onClick = onRefresh) { Text("Refresh") }
+                TextButton(onClick = { onOpenVertical(feed) }) { Text("Swipe") }
             }
         }
 

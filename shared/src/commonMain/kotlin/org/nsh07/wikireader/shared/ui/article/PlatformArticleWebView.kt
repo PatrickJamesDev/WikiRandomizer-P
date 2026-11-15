@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 expect fun PlatformArticleWebView(
     url: String,
+    fontScale: Float,
     modifier: Modifier = Modifier
 )
 

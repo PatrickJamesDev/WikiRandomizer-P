@@ -21,4 +21,5 @@ object SettingsKeys {
     const val SEEN_ARTICLES = "wikiSeenArticles"
     const val BROWSING_HISTORY = "wikiBrowsingHistory"
     const val FOLLOWED_CURATORS = "wikiFollowedCurators"
+    const val ARTICLE_FONT_SCALE = "wikiArticleFontScale"
 }

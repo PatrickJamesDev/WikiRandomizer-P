@@ -19,6 +19,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,9 +35,11 @@ fun SettingsScreen(
     languageName: String,
     seenCount: Int,
     browsingHistory: Boolean,
+    articleFontScale: Float,
     onThemeModeChange: (String) -> Unit,
     onLanguageClick: () -> Unit,
     onBrowsingHistoryChange: (Boolean) -> Unit,
+    onArticleFontScaleChange: (Float) -> Unit,
     onClearSeen: () -> Unit,
     onAboutClick: () -> Unit
 ) {
@@ -101,6 +104,23 @@ fun SettingsScreen(
         item {
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
             SectionHeader("Reading")
+        }
+
+        item {
+            Column(modifier = Modifier.padding(horizontal = 4.dp)) {
+                Text("Article text size", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "${(articleFontScale * 100).toInt()}%",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Slider(
+                    value = articleFontScale,
+                    onValueChange = onArticleFontScaleChange,
+                    valueRange = 0.8f..1.6f,
+                    steps = 7
+                )
+            }
         }
 
         item {

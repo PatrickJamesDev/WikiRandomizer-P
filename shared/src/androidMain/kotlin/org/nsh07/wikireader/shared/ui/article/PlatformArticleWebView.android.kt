@@ -11,6 +11,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 @Composable
 actual fun PlatformArticleWebView(
     url: String,
+    fontScale: Float,
     modifier: Modifier
 ) {
     AndroidView(
@@ -22,12 +23,14 @@ actual fun PlatformArticleWebView(
                 settings.loadsImagesAutomatically = true
                 settings.useWideViewPort = true
                 settings.loadWithOverviewMode = true
+                settings.textZoom = (fontScale * 100).toInt().coerceIn(50, 250)
                 setBackgroundColor(Color.WHITE)
                 tag = url
                 loadUrl(url)
             }
         },
         update = { webView ->
+            webView.settings.textZoom = (fontScale * 100).toInt().coerceIn(50, 250)
             if (webView.tag != url) {
                 webView.tag = url
                 webView.loadUrl(url)

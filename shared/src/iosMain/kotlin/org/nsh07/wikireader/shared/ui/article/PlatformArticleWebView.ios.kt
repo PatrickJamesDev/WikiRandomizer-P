@@ -12,17 +12,20 @@ import platform.WebKit.WKWebView
 @Composable
 actual fun PlatformArticleWebView(
     url: String,
+    fontScale: Float,
     modifier: Modifier
 ) {
     UIKitView(
         factory = {
             WKWebView().apply {
                 allowsBackForwardNavigationGestures = true
+                pageZoom = fontScale.toDouble()
                 loadRequest(NSURLRequest(uRL = NSURL(string = url)))
             }
         },
         modifier = modifier,
         update = { webView ->
+            webView.pageZoom = fontScale.toDouble()
             if (webView.URL?.absoluteString != url) {
                 webView.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
             }

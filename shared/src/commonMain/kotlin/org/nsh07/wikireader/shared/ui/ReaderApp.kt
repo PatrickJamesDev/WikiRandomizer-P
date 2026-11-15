@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.wikirandomizerp.app.data.FeedApiResponse
 import com.wikirandomizerp.app.data.LanguageData
 import com.wikirandomizerp.app.data.WikiSearchResult
 import com.wikirandomizerp.app.data.WikiTopic
@@ -80,6 +81,7 @@ import org.nsh07.wikireader.shared.settings.SettingsStore
 import org.nsh07.wikireader.shared.ui.article.PlatformArticleWebView
 import org.nsh07.wikireader.shared.ui.curators.CuratorsScreen
 import org.nsh07.wikireader.shared.ui.feed.FeedScreen
+import org.nsh07.wikireader.shared.ui.feed.VerticalFeedScreen
 import org.nsh07.wikireader.shared.ui.search.WikipediaSearchScreen
 import org.nsh07.wikireader.shared.ui.settings.AboutScreen
 import org.nsh07.wikireader.shared.ui.library.LibraryScreen
@@ -147,6 +149,7 @@ fun ReaderApp(
             )
         }
         var openArticle by remember { mutableStateOf<OpenArticle?>(null) }
+        var verticalFeed by remember { mutableStateOf<FeedApiResponse?>(null) }
         var librarySearchQuery by remember { mutableStateOf("") }
         var recentSearches by remember { mutableStateOf(library.recentSearches()) }
         var wikiSearchQuery by remember { mutableStateOf("") }
@@ -485,7 +488,25 @@ fun ReaderApp(
                                 currentOpen.language,
                                 currentOpen.summary.title
                             ),
+                            fontScale = articleFontScale,
                             modifier = Modifier.fillMaxSize()
+                        )
+                    } else if (destination == ReaderDestination.FEED && verticalFeed != null) {
+                        VerticalFeedScreen(
+                            feed = verticalFeed!!,
+                            language = language,
+                            onOpenArticle = { feedLanguage, title ->
+                                if (title.isNotBlank()) {
+                                    openInReader(
+                                        feedLanguage,
+                                        ArticleSummary(
+                                            title = title.replace('_', ' '),
+                                            extract = ""
+                                        )
+                                    )
+                                }
+                            },
+                            onBack = { verticalFeed = null }
                         )
                     } else {
                         when (destination) {
@@ -504,7 +525,8 @@ fun ReaderApp(
                                         )
                                     }
                                 },
-                                onOpenUrl = { uriHandler.openUri(it) }
+                                onOpenUrl = { uriHandler.openUri(it) },
+                                onOpenVertical = { verticalFeed = it }
                             )
 
                             ReaderDestination.TOPICS -> TopicsScreen(
@@ -629,6 +651,7 @@ fun ReaderApp(
                                 languageName = languageName(language),
                                 seenCount = seenArticles.size,
                                 browsingHistory = browsingHistory,
+                                articleFontScale = articleFontScale,
                                 onThemeModeChange = { mode ->
                                     themeMode = mode
                                     settingsStore.putString(SettingsKeys.THEME, mode)
@@ -639,6 +662,13 @@ fun ReaderApp(
                                     settingsStore.putString(
                                         SettingsKeys.BROWSING_HISTORY,
                                         enabled.toString()
+                                    )
+                                },
+                                onArticleFontScaleChange = { scale ->
+                                    articleFontScale = scale
+                                    settingsStore.putString(
+                                        SettingsKeys.ARTICLE_FONT_SCALE,
+                                        scale.toString()
                                     )
                                 },
                                 onClearSeen = { seenArticles = library.clearSeen() },
