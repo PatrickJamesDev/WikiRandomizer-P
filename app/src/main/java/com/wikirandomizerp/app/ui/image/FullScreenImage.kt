@@ -229,6 +229,7 @@ fun FullScreenImage(
                                 onScaleChanged = { showTopBar = it <= 1.1f },
                                 onLongPress = longPress
                             )
+                            .transformable(state = state, canPan = { zoom.scale > 1.01f })
                     ) {
                         PageImage(
                             photo = photo,
@@ -246,7 +247,6 @@ fun FullScreenImage(
                                     translationX = zoom.offset.x
                                     translationY = zoom.offset.y
                                 }
-                                .transformable(state = state)
                                 .fillMaxSize()
                                 .padding(borderRadius.coerceAtLeast(0.dp))
                                 .clip(RoundedCornerShape(borderRadius.coerceAtLeast(0.dp)))
@@ -424,6 +424,7 @@ fun FullScreenArticleImage(
                             onScaleChanged = { showTopBar = it <= 1.1f },
                             onLongPress = longPress
                         )
+                        .transformable(state = state, canPan = { zoom.scale > 1.01f })
                 ) {
                     PageImage(
                         uri = uri,
@@ -441,7 +442,6 @@ fun FullScreenArticleImage(
                                 translationX = zoom.offset.x
                                 translationY = zoom.offset.y
                             }
-                            .transformable(state = state)
                             .padding(borderRadius.coerceAtLeast(0.dp))
                             .clip(RoundedCornerShape(borderRadius.coerceAtLeast(0.dp)))
                     )

@@ -308,6 +308,7 @@ private fun GalleryImagePage(
                 onScaleChanged = onScaleChanged,
                 onLongPress = onLongPress
             )
+            .transformable(state = transformState, canPan = { zoom.scale > 1.01f })
     ) {
         when (painterState) {
             is AsyncImagePainter.State.Success -> {
@@ -329,8 +330,6 @@ private fun GalleryImagePage(
                             translationX = zoom.offset.x
                             translationY = zoom.offset.y
                         }
-                        // canPan: at 1x a one-finger drag belongs to the pager (page turn).
-                        .transformable(state = transformState, canPan = { zoom.scale > 1.01f })
                         .background(
                             if (imageNeedsWhiteBackground(item.uri, background)) Color.White
                             else Color.Transparent
