@@ -34,7 +34,9 @@ fun parseArticleLanguages(body: String): List<ArticleLanguageLink> = runCatching
         page.jsonObject["langlinks"]?.jsonArray.orEmpty().mapNotNull { element ->
             val link = element.jsonObject
             val language = link["lang"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
-            val title = link["title"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+            val title = link["title"]?.jsonPrimitive?.contentOrNull
+                ?.takeIf { it.isNotBlank() }
+                ?: return@mapNotNull null
             ArticleLanguageLink(
                 language = language,
                 title = title,

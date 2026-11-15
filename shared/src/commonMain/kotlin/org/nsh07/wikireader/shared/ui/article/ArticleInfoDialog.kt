@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CancellationException
 import org.nsh07.wikireader.shared.reader.ArticleInfoSource
 import org.nsh07.wikireader.shared.reader.ArticleRevision
 
@@ -41,9 +42,23 @@ fun ArticleInfoDialog(
     LaunchedEffect(source, language, title, tab) {
         loading = true
         if (tab == 0) {
-            if (talk == null) talk = source.talkWikitext(language, title)
+            if (talk == null) {
+                talk = try {
+                    source.talkWikitext(language, title)
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Throwable) {
+                    ""
+                }
+            }
         } else if (revisions == null) {
-            revisions = source.revisions(language, title)
+            revisions = try {
+                source.revisions(language, title)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Throwable) {
+                emptyList()
+            }
         }
         loading = false
     }

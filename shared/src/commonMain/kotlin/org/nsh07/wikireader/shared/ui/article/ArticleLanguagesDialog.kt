@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CancellationException
 import org.nsh07.wikireader.shared.reader.ArticleLanguageLink
 import org.nsh07.wikireader.shared.reader.ArticleLanguagesSource
 
@@ -37,7 +38,13 @@ fun ArticleLanguagesDialog(
         mutableStateOf<List<ArticleLanguageLink>?>(null)
     }
     LaunchedEffect(source, language, title) {
-        links = source.languages(language, title)
+        links = try {
+            source.languages(language, title)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: Throwable) {
+            emptyList()
+        }
     }
 
     AlertDialog(
