@@ -259,7 +259,9 @@ fun SettingsScreen(
 @Composable
 fun AboutScreen(
     onOpenRepository: () -> Unit,
-    onOpenWikipedia: () -> Unit
+    onOpenWikipedia: () -> Unit,
+    onReportBug: () -> Unit,
+    onReleaseNotes: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -322,6 +324,24 @@ fun AboutScreen(
                 onClick = onOpenWikipedia
             ) {
                 Text("Visit Wikipedia")
+            }
+        }
+
+        item {
+            FilledTonalButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onReportBug
+            ) {
+                Text("Report a bug or request a feature")
+            }
+        }
+
+        item {
+            FilledTonalButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onReleaseNotes
+            ) {
+                Text("Release notes and downloads")
             }
         }
 

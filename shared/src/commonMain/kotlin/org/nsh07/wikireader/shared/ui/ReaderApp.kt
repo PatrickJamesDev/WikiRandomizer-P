@@ -1011,7 +1011,17 @@ fun ReaderApp(
                                         "https://github.com/PatrickJamesDev/WikiRandomizer-P"
                                     )
                                 },
-                                onOpenWikipedia = { uriHandler.openUri("https://www.wikipedia.org") }
+                                onOpenWikipedia = { uriHandler.openUri("https://www.wikipedia.org") },
+                                onReportBug = {
+                                    uriHandler.openUri(
+                                        "https://github.com/PatrickJamesDev/WikiRandomizer-P/issues"
+                                    )
+                                },
+                                onReleaseNotes = {
+                                    uriHandler.openUri(
+                                        "https://github.com/PatrickJamesDev/WikiRandomizer-P/releases"
+                                    )
+                                }
                             )
 
                             ReaderDestination.READER -> ReaderContent(
