@@ -35,7 +35,13 @@ actual fun PlatformArticleWebView(
     fontFamily: String,
     modifier: Modifier
 ) {
-    val currentScript = rememberUpdatedState(
+    val styleScript = remember(
+        lineSpacingPercent,
+        horizontalMarginDp,
+        justifyText,
+        sepia,
+        fontFamily
+    ) {
         readerStyleScript(
             lineSpacingPercent,
             horizontalMarginDp,
@@ -43,7 +49,8 @@ actual fun PlatformArticleWebView(
             sepia,
             fontFamily
         )
-    )
+    }
+    val currentScript = rememberUpdatedState(styleScript)
     val state = remember { ReaderWebViewState() }
     UIKitView(
         factory = {

@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
@@ -23,9 +24,16 @@ actual fun PlatformArticleWebView(
     fontFamily: String,
     modifier: Modifier
 ) {
-    val currentScript = rememberUpdatedState(
+    val styleScript = remember(
+        lineSpacingPercent,
+        horizontalMarginDp,
+        justifyText,
+        sepia,
+        fontFamily
+    ) {
         readerStyleScript(lineSpacingPercent, horizontalMarginDp, justifyText, sepia, fontFamily)
-    )
+    }
+    val currentScript = rememberUpdatedState(styleScript)
     AndroidView(
         modifier = modifier,
         factory = { context ->
