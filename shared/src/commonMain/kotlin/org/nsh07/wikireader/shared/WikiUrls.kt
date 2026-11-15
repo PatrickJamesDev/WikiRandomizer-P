@@ -34,6 +34,15 @@ object WikiUrls {
     fun whatLinksHereUrl(lang: String, title: String): String =
         "https://${host(lang)}/wiki/Special:WhatLinksHere/${encodeTitle(title)}"
 
+    fun talkWikitextUrl(lang: String, title: String): String =
+        "https://${host(lang)}/w/api.php?action=parse&page=Talk%3A${encodeTitle(title)}" +
+            "&prop=wikitext&format=json&formatversion=2"
+
+    fun revisionsUrl(lang: String, title: String, limit: Int = 20): String =
+        "https://${host(lang)}/w/api.php?action=query&prop=revisions&titles=${encodeTitle(title)}" +
+            "&rvlimit=${limit.coerceIn(1, 50)}&rvprop=user%7Ctimestamp%7Ccomment%7Csize" +
+            "&format=json&formatversion=2"
+
     fun randomSummaryUrl(lang: String): String =
         "https://${host(lang)}/api/rest_v1/page/random/summary"
 

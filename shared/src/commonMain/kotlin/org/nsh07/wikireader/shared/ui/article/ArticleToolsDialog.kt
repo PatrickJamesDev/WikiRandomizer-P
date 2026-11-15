@@ -18,6 +18,7 @@ import org.nsh07.wikireader.shared.WikiUrls
 fun ArticleToolsDialog(
     language: String,
     title: String,
+    onArticleInfo: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val uriHandler = LocalUriHandler.current
@@ -32,6 +33,9 @@ fun ArticleToolsDialog(
         title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                ToolButton("Article information") {
+                    onArticleInfo()
+                }
                 ToolButton("Talk page") {
                     open(WikiUrls.talkPageUrl(language, title))
                 }

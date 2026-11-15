@@ -102,8 +102,9 @@ several minutes. Later builds are incremental.
   vocabulary, Commons galleries and article tabs; theme, language, article text size, line
   spacing, margins, justification, sepia mode and browsing-history prefs persist through
   `NSUserDefaults` via the shared `SettingsStore`; Settings can export the shared library and
-  preferences as JSON and restore them from the clipboard. The article toolbar opens Wikipedia
-  talk, history, page-information and backlink pages in Safari and can copy the canonical link.
+  preferences as JSON and restore them from the clipboard. The article toolbar loads talk-page
+  wikitext and recent revisions in-app, opens Wikipedia talk/history/page-information/backlink
+  pages in Safari and can copy the canonical link.
 - The Android app keeps all of its existing features; `build_ios.sh` does not change the APK.
 - Remaining Android screens are migrated into `shared/src/commonMain` in phases, then both hosts
   use the same implementation.

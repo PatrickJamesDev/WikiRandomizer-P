@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.remember
+import org.nsh07.wikireader.shared.reader.AndroidArticleInfoSource
 import org.nsh07.wikireader.shared.reader.AndroidCommonsSource
 import org.nsh07.wikireader.shared.reader.AndroidCuratorSource
 import org.nsh07.wikireader.shared.reader.AndroidDictionarySource
@@ -32,6 +33,7 @@ class SharedReaderActivity : ComponentActivity() {
             val feedSource = remember { AndroidFeedSource() }
             val dictionarySource = remember { AndroidDictionarySource() }
             val commonsSource = remember { AndroidCommonsSource() }
+            val articleInfoSource = remember { AndroidArticleInfoSource() }
             val settingsStore = remember { AndroidSettingsStore(this) }
             ReaderApp(
                 source = source,
@@ -40,6 +42,7 @@ class SharedReaderActivity : ComponentActivity() {
                 feedSource = feedSource,
                 dictionarySource = dictionarySource,
                 commonsSource = commonsSource,
+                articleInfoSource = articleInfoSource,
                 settingsStore = settingsStore
             )
         }

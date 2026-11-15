@@ -78,6 +78,7 @@ import org.nsh07.wikireader.shared.library.SavedImageRepository
 import org.nsh07.wikireader.shared.library.SeenArticle
 import org.nsh07.wikireader.shared.library.VocabularyRepository
 import org.nsh07.wikireader.shared.reader.CommonsSource
+import org.nsh07.wikireader.shared.reader.ArticleInfoSource
 import org.nsh07.wikireader.shared.reader.CuratorSource
 import org.nsh07.wikireader.shared.reader.DictionarySource
 import org.nsh07.wikireader.shared.reader.FeedSource
@@ -87,6 +88,7 @@ import org.nsh07.wikireader.shared.reader.findTopicByCategory
 import org.nsh07.wikireader.shared.settings.BackupRepository
 import org.nsh07.wikireader.shared.settings.SettingsKeys
 import org.nsh07.wikireader.shared.settings.SettingsStore
+import org.nsh07.wikireader.shared.ui.article.ArticleInfoDialog
 import org.nsh07.wikireader.shared.ui.article.ArticleToolsDialog
 import org.nsh07.wikireader.shared.ui.article.PlatformArticleWebView
 import org.nsh07.wikireader.shared.ui.backup.BackupScreen
@@ -133,6 +135,7 @@ fun ReaderApp(
     feedSource: FeedSource,
     dictionarySource: DictionarySource,
     commonsSource: CommonsSource,
+    articleInfoSource: ArticleInfoSource,
     settingsStore: SettingsStore,
     modifier: Modifier = Modifier
 ) {
@@ -178,6 +181,7 @@ fun ReaderApp(
         }
         var openArticle by remember { mutableStateOf<OpenArticle?>(null) }
         var showArticleTools by remember { mutableStateOf(false) }
+        var showArticleInfo by remember { mutableStateOf(false) }
         var openTabs by remember { mutableStateOf<List<OpenArticle>>(emptyList()) }
         var verticalFeed by remember { mutableStateOf<FeedApiResponse?>(null) }
         var galleryArticle by remember { mutableStateOf<OpenArticle?>(null) }
@@ -992,7 +996,20 @@ fun ReaderApp(
             ArticleToolsDialog(
                 language = openArticle!!.language,
                 title = openArticle!!.summary.title,
+                onArticleInfo = {
+                    showArticleTools = false
+                    showArticleInfo = true
+                },
                 onDismiss = { showArticleTools = false }
+            )
+        }
+
+        if (showArticleInfo && openArticle != null) {
+            ArticleInfoDialog(
+                source = articleInfoSource,
+                language = openArticle!!.language,
+                title = openArticle!!.summary.title,
+                onDismiss = { showArticleInfo = false }
             )
         }
 
