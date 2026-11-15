@@ -1,7 +1,7 @@
 package org.nsh07.wikireader.shared.reader
 
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -19,7 +19,7 @@ fun parseINaturalistTaxonId(body: String): Long? = runCatching {
         ?.jsonObject
         ?.get("id")
         ?.jsonPrimitive
-        ?.intOrNull
+        ?.longOrNull
         ?.takeIf { it > 0 }
 }.getOrNull()
 
