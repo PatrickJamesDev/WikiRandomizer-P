@@ -168,6 +168,7 @@ fun ReaderApp(
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var requestId by remember { mutableIntStateOf(0) }
         var showLanguagePicker by remember { mutableStateOf(false) }
+        var showResetSettings by remember { mutableStateOf(false) }
         val library = remember(settingsStore) { LibraryRepository(settingsStore) }
         val curatorFollows = remember(settingsStore) { CuratorFollowStore(settingsStore) }
         val savedImageRepository = remember(settingsStore) { SavedImageRepository(settingsStore) }
@@ -946,6 +947,7 @@ fun ReaderApp(
                                 },
                                 onClearSeen = { seenArticles = library.clearSeen() },
                                 onBackupClick = { destination = ReaderDestination.BACKUP },
+                                onResetSettings = { showResetSettings = true },
                                 onAboutClick = { destination = ReaderDestination.ABOUT }
                             )
 
@@ -1095,6 +1097,54 @@ fun ReaderApp(
                     )
                 },
                 onDismiss = { showArticleLanguages = false }
+            )
+        }
+
+        if (showResetSettings) {
+            AlertDialog(
+                onDismissRequest = { showResetSettings = false },
+                title = { Text("Reset reader settings?") },
+                text = {
+                    Text(
+                        "Your saved articles, history, pictures, highlights and vocabulary stay " +
+                            "on this device. Language, theme, topic and reading preferences return " +
+                            "to their defaults."
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showResetSettings = false
+                            language = "en"
+                            themeMode = THEME_SYSTEM
+                            selectedTopic = null
+                            browsingHistory = true
+                            articleFontScale = 1f
+                            articleLineSpacing = 100
+                            articleMargin = 16
+                            articleJustify = false
+                            articleSepia = false
+                            articleFontFamily = "sans"
+                            settingsStore.putString(SettingsKeys.LANGUAGE, "en")
+                            settingsStore.putString(SettingsKeys.THEME, THEME_SYSTEM)
+                            settingsStore.putString(SettingsKeys.TOPIC, "")
+                            settingsStore.putString(SettingsKeys.BROWSING_HISTORY, "true")
+                            settingsStore.putString(SettingsKeys.ARTICLE_FONT_SCALE, "1.0")
+                            settingsStore.putString(SettingsKeys.ARTICLE_LINE_SPACING, "100")
+                            settingsStore.putString(SettingsKeys.ARTICLE_MARGIN, "16")
+                            settingsStore.putString(SettingsKeys.ARTICLE_JUSTIFY, "false")
+                            settingsStore.putString(SettingsKeys.ARTICLE_SEPIA, "false")
+                            settingsStore.putString(SettingsKeys.ARTICLE_FONT_FAMILY, "sans")
+                            article = null
+                            openArticle = null
+                            destination = ReaderDestination.READER
+                            scope.launch { loadRandom("en", null) }
+                        }
+                    ) { Text("Reset") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showResetSettings = false }) { Text("Cancel") }
+                }
             )
         }
 

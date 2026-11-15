@@ -53,6 +53,7 @@ fun SettingsScreen(
     onFontFamilyChange: (String) -> Unit,
     onClearSeen: () -> Unit,
     onBackupClick: () -> Unit,
+    onResetSettings: () -> Unit,
     onAboutClick: () -> Unit
 ) {
     LazyColumn(
@@ -218,6 +219,14 @@ fun SettingsScreen(
                 title = "Backup and restore",
                 subtitle = "Copy or paste a JSON backup of this reader",
                 onClick = onBackupClick
+            )
+        }
+
+        item {
+            SettingsRow(
+                title = "Reset reader settings",
+                subtitle = "Restore language, theme and reading defaults; keeps your library",
+                onClick = onResetSettings
             )
         }
 

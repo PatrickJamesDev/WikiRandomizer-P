@@ -105,7 +105,7 @@ Commons galleries and article tabs; adjustable article text size, line spacing, 
 justification, a sans-serif/serif typeface choice and a sepia theme; article tools with talk-page wikitext and recent revision history,
 plus language-version switching, an iNaturalist taxon lookup and links for talk pages, history,
 page information and backlinks; statistics, settings, JSON
-backup/restore and an embedded `WKWebView` article view. On Android, the same shared shell
+backup/restore, reset-to-default settings and an embedded `WKWebView` article view. On Android, the same shared shell
 is available as a developer preview: enable Developer options on About, then open **Shared Compose
 reader**. The production launcher still opens the feature-complete Android UI. On macOS with Xcode:
 
