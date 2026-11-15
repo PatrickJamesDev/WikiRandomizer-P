@@ -52,8 +52,6 @@ actual fun PlatformArticleWebView(
             val state = webView.tag as? ArticleWebViewState
             val urlChanged = state?.url != url
             webView.settings.textZoom = (fontScale * 100).toInt().coerceIn(50, 250)
-            // Updating Compose state does not need another JavaScript round trip. Apply the style
-            // only when a reading option changed; a new page receives it in onPageFinished.
             if (!urlChanged && state?.styleScript != script) {
                 webView.evaluateJavascript(script, null)
             }
