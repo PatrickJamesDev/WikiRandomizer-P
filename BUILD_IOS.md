@@ -106,7 +106,8 @@ several minutes. Later builds are incremental.
   wikitext and recent revisions in-app, opens Wikipedia talk/history/page-information/backlink
   pages in Safari, lists the article's other language versions, resolves organism articles on
   iNaturalist and can copy the canonical link. Settings can also restore language, theme, topic
-  and reading defaults without touching the saved library.
+  and reading defaults without touching the saved library. A three-step welcome guide appears
+  on first launch and can be reopened from Settings.
 - The Android app keeps all of its existing features; `build_ios.sh` does not change the APK.
 - Remaining Android screens are migrated into `shared/src/commonMain` in phases, then both hosts
   use the same implementation.

@@ -54,6 +54,7 @@ fun SettingsScreen(
     onClearSeen: () -> Unit,
     onBackupClick: () -> Unit,
     onResetSettings: () -> Unit,
+    onTutorialClick: () -> Unit,
     onAboutClick: () -> Unit
 ) {
     LazyColumn(
@@ -219,6 +220,14 @@ fun SettingsScreen(
                 title = "Backup and restore",
                 subtitle = "Copy or paste a JSON backup of this reader",
                 onClick = onBackupClick
+            )
+        }
+
+        item {
+            SettingsRow(
+                title = "Welcome guide",
+                subtitle = "A short tour of reading, saving and backup",
+                onClick = onTutorialClick
             )
         }
 

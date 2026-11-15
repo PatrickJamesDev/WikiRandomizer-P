@@ -115,6 +115,7 @@ import org.nsh07.wikireader.shared.ui.settings.THEME_DARK
 import org.nsh07.wikireader.shared.ui.settings.THEME_LIGHT
 import org.nsh07.wikireader.shared.ui.settings.THEME_SYSTEM
 import org.nsh07.wikireader.shared.ui.theme.WikiReaderTheme
+import org.nsh07.wikireader.shared.ui.tutorial.WelcomeDialog
 
 private enum class ReaderDestination {
     READER, FEED, TOPICS, SAVED, HISTORY, IMAGES, HIGHLIGHTS, VOCABULARY, SEARCH, WIKI_SEARCH,
@@ -169,6 +170,11 @@ fun ReaderApp(
         var requestId by remember { mutableIntStateOf(0) }
         var showLanguagePicker by remember { mutableStateOf(false) }
         var showResetSettings by remember { mutableStateOf(false) }
+        var showTutorial by remember {
+            mutableStateOf(
+                !settingsStore.getString(SettingsKeys.SEEN_TUTORIAL, "false").toBoolean()
+            )
+        }
         val library = remember(settingsStore) { LibraryRepository(settingsStore) }
         val curatorFollows = remember(settingsStore) { CuratorFollowStore(settingsStore) }
         val savedImageRepository = remember(settingsStore) { SavedImageRepository(settingsStore) }
@@ -948,6 +954,7 @@ fun ReaderApp(
                                 onClearSeen = { seenArticles = library.clearSeen() },
                                 onBackupClick = { destination = ReaderDestination.BACKUP },
                                 onResetSettings = { showResetSettings = true },
+                                onTutorialClick = { showTutorial = true },
                                 onAboutClick = { destination = ReaderDestination.ABOUT }
                             )
 
@@ -1097,6 +1104,15 @@ fun ReaderApp(
                     )
                 },
                 onDismiss = { showArticleLanguages = false }
+            )
+        }
+
+        if (showTutorial) {
+            WelcomeDialog(
+                onDismiss = {
+                    showTutorial = false
+                    settingsStore.putString(SettingsKeys.SEEN_TUTORIAL, "true")
+                }
             )
         }
 

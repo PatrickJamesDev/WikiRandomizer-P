@@ -59,7 +59,8 @@ class BackupRepository(private val settingsStore: SettingsStore) {
             SettingsKeys.ARTICLE_MARGIN,
             SettingsKeys.ARTICLE_JUSTIFY,
             SettingsKeys.ARTICLE_SEPIA,
-            SettingsKeys.ARTICLE_FONT_FAMILY
+            SettingsKeys.ARTICLE_FONT_FAMILY,
+            SettingsKeys.SEEN_TUTORIAL
         )
     }
 }

@@ -30,4 +30,5 @@ object SettingsKeys {
     const val ARTICLE_JUSTIFY = "wikiArticleJustify"
     const val ARTICLE_SEPIA = "wikiArticleSepia"
     const val ARTICLE_FONT_FAMILY = "wikiArticleFontFamily"
+    const val SEEN_TUTORIAL = "wikiSeenTutorial"
 }
