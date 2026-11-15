@@ -63,6 +63,7 @@ fun FeedScreen(
     onOpenArticle: (lang: String, title: String) -> Unit,
     onOpenUrl: (String) -> Unit,
     onOpenVertical: (FeedApiResponse) -> Unit,
+    onSaveImage: (String, String?, String?, String, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var reload by remember { mutableIntStateOf(0) }
@@ -104,6 +105,7 @@ fun FeedScreen(
             onOpenArticle = onOpenArticle,
             onOpenUrl = onOpenUrl,
             onOpenVertical = onOpenVertical,
+            onSaveImage = onSaveImage,
             modifier = modifier
         )
     }
@@ -118,6 +120,7 @@ private fun FeedList(
     onOpenArticle: (lang: String, title: String) -> Unit,
     onOpenUrl: (String) -> Unit,
     onOpenVertical: (FeedApiResponse) -> Unit,
+    onSaveImage: (String, String?, String?, String, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val news = feed.news.orEmpty()
@@ -144,7 +147,7 @@ private fun FeedList(
         }
 
         feed.tfa?.let { tfa ->
-            item { FeaturedArticle(tfa, language, onOpenArticle) }
+            item { FeaturedArticle(tfa, language, onOpenArticle, onSaveImage) }
         }
 
         val mostRead = feed.mostRead?.articles.orEmpty().sortedBy { it.rank ?: Int.MAX_VALUE }
@@ -157,7 +160,7 @@ private fun FeedList(
 
         feed.image?.let { image ->
             item { SectionTitle("Picture of the day") }
-            item { PictureOfTheDay(image, onOpenUrl) }
+            item { PictureOfTheDay(image, language, onOpenUrl, onSaveImage) }
         }
 
         if (news.isNotEmpty()) {
@@ -180,7 +183,8 @@ private fun FeedList(
 private fun FeaturedArticle(
     tfa: FeedApiTFA,
     language: String,
-    onOpenArticle: (String, String) -> Unit
+    onOpenArticle: (String, String) -> Unit,
+    onSaveImage: (String, String?, String?, String, String) -> Unit
 ) {
     val title = feedTitle(tfa.titles).ifBlank { return }
     Card(
@@ -227,7 +231,17 @@ private fun FeaturedArticle(
                     )
                 }
                 Spacer(Modifier.height(8.dp))
-                Text("Read article", style = MaterialTheme.typography.labelLarge)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Read article", style = MaterialTheme.typography.labelLarge)
+                    Spacer(Modifier.weight(1f))
+                    imageUrl(tfa.originalImage, tfa.thumbnail)?.let { url ->
+                        TextButton(
+                            onClick = {
+                                onSaveImage(url, tfa.thumbnail?.source, tfa.description, title, language)
+                            }
+                        ) { Text("Save image") }
+                    }
+                }
             }
         }
     }
@@ -280,7 +294,12 @@ private fun MostReadRow(
 }
 
 @Composable
-private fun PictureOfTheDay(image: FeedApiImage, onOpenUrl: (String) -> Unit) {
+private fun PictureOfTheDay(
+    image: FeedApiImage,
+    language: String,
+    onOpenUrl: (String) -> Unit,
+    onSaveImage: (String, String?, String?, String, String) -> Unit
+) {
     val pictureUrl = imageUrl(image.thumbnail, image.image)
     val filePage = image.filePage
     Card(
@@ -320,6 +339,19 @@ private fun PictureOfTheDay(image: FeedApiImage, onOpenUrl: (String) -> Unit) {
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+                pictureUrl?.let { url ->
+                    TextButton(
+                        onClick = {
+                            onSaveImage(
+                                url,
+                                image.thumbnail?.source,
+                                image.title?.removePrefix("File:"),
+                                "",
+                                language
+                            )
+                        }
+                    ) { Text("Save image") }
                 }
             }
         }

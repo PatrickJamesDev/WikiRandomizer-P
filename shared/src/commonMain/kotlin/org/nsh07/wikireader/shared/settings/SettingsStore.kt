@@ -22,4 +22,5 @@ object SettingsKeys {
     const val BROWSING_HISTORY = "wikiBrowsingHistory"
     const val FOLLOWED_CURATORS = "wikiFollowedCurators"
     const val ARTICLE_FONT_SCALE = "wikiArticleFontScale"
+    const val SAVED_IMAGES = "wikiSavedImages"
 }

@@ -70,6 +70,7 @@ import org.nsh07.wikireader.shared.WikiUrls
 import org.nsh07.wikireader.shared.library.CuratorFollowStore
 import org.nsh07.wikireader.shared.library.LibraryEntry
 import org.nsh07.wikireader.shared.library.LibraryRepository
+import org.nsh07.wikireader.shared.library.SavedImageRepository
 import org.nsh07.wikireader.shared.library.SeenArticle
 import org.nsh07.wikireader.shared.reader.CuratorSource
 import org.nsh07.wikireader.shared.reader.FeedSource
@@ -82,6 +83,7 @@ import org.nsh07.wikireader.shared.ui.article.PlatformArticleWebView
 import org.nsh07.wikireader.shared.ui.curators.CuratorsScreen
 import org.nsh07.wikireader.shared.ui.feed.FeedScreen
 import org.nsh07.wikireader.shared.ui.feed.VerticalFeedScreen
+import org.nsh07.wikireader.shared.ui.images.SavedImagesScreen
 import org.nsh07.wikireader.shared.ui.search.WikipediaSearchScreen
 import org.nsh07.wikireader.shared.ui.settings.AboutScreen
 import org.nsh07.wikireader.shared.ui.library.LibraryScreen
@@ -95,7 +97,7 @@ import org.nsh07.wikireader.shared.ui.settings.THEME_SYSTEM
 import org.nsh07.wikireader.shared.ui.theme.WikiReaderTheme
 
 private enum class ReaderDestination {
-    READER, FEED, TOPICS, SAVED, HISTORY, SEARCH, WIKI_SEARCH, CURATORS, STATS, SETTINGS, ABOUT
+    READER, FEED, TOPICS, SAVED, HISTORY, IMAGES, SEARCH, WIKI_SEARCH, CURATORS, STATS, SETTINGS, ABOUT
 }
 
 private const val RANDOM_UNSEEN_ATTEMPTS = 8
@@ -139,7 +141,9 @@ fun ReaderApp(
         var showLanguagePicker by remember { mutableStateOf(false) }
         val library = remember(settingsStore) { LibraryRepository(settingsStore) }
         val curatorFollows = remember(settingsStore) { CuratorFollowStore(settingsStore) }
+        val savedImageRepository = remember(settingsStore) { SavedImageRepository(settingsStore) }
         var savedEntries by remember { mutableStateOf(library.saved()) }
+        var savedImages by remember { mutableStateOf(savedImageRepository.images()) }
         var historyEntries by remember { mutableStateOf(library.history()) }
         var seenArticles by remember { mutableStateOf(library.seenArticles()) }
         var followedCurators by remember { mutableStateOf(curatorFollows.followed()) }
@@ -323,6 +327,16 @@ fun ReaderApp(
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
                     NavigationDrawerItem(
+                        label = { Text("Pictures") },
+                        selected = destination == ReaderDestination.IMAGES,
+                        onClick = {
+                            destination = ReaderDestination.IMAGES
+                            openArticle = null
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                    NavigationDrawerItem(
                         label = { Text("Search") },
                         selected = destination == ReaderDestination.SEARCH,
                         onClick = {
@@ -406,6 +420,7 @@ fun ReaderApp(
                                 ReaderDestination.TOPICS -> "Topics"
                                 ReaderDestination.SAVED -> "Saved"
                                 ReaderDestination.HISTORY -> "History"
+                                ReaderDestination.IMAGES -> "Pictures"
                                 ReaderDestination.SEARCH -> "Search"
                                 ReaderDestination.WIKI_SEARCH -> "Wikipedia"
                                 ReaderDestination.CURATORS -> "Curators"
@@ -526,7 +541,16 @@ fun ReaderApp(
                                     }
                                 },
                                 onOpenUrl = { uriHandler.openUri(it) },
-                                onOpenVertical = { verticalFeed = it }
+                                onOpenVertical = { verticalFeed = it },
+                                onSaveImage = { imageUrl, thumbnailUrl, description, title, lang ->
+                                    savedImages = savedImageRepository.add(
+                                        imageUrl = imageUrl,
+                                        thumbnailUrl = thumbnailUrl,
+                                        description = description,
+                                        articleTitle = title,
+                                        articleLanguage = lang
+                                    )
+                                }
                             )
 
                             ReaderDestination.TOPICS -> TopicsScreen(
@@ -566,6 +590,25 @@ fun ReaderApp(
                                     historyEntries = library.removeHistory(entry)
                                 },
                                 onClear = { historyEntries = library.clearHistory() }
+                            )
+
+                            ReaderDestination.IMAGES -> SavedImagesScreen(
+                                images = savedImages,
+                                onOpenArticle = { imageLanguage, title ->
+                                    if (title.isNotBlank()) {
+                                        openInReader(
+                                            imageLanguage,
+                                            ArticleSummary(
+                                                title = title.replace('_', ' '),
+                                                extract = ""
+                                            )
+                                        )
+                                    }
+                                },
+                                onDelete = { image ->
+                                    savedImages = savedImageRepository.remove(image)
+                                },
+                                onClear = { savedImages = savedImageRepository.clear() }
                             )
 
                             ReaderDestination.SEARCH -> LibrarySearchScreen(
@@ -693,7 +736,16 @@ fun ReaderApp(
                                 onToggleSave = { article?.let { toggleSaved(language, it) } },
                                 onRetry = { scope.launch { loadRandom(language, selectedTopic) } },
                                 topicLabel = selectedTopic?.label,
-                                onOpenArticle = { current -> openInReader(language, current) }
+                                onOpenArticle = { current -> openInReader(language, current) },
+                                onSaveImage = { imageUrl, title, lang ->
+                                    savedImages = savedImageRepository.add(
+                                        imageUrl = imageUrl,
+                                        thumbnailUrl = imageUrl,
+                                        description = title,
+                                        articleTitle = title,
+                                        articleLanguage = lang
+                                    )
+                                }
                             )
                         }
                     }
@@ -729,7 +781,8 @@ private fun ReaderContent(
     onToggleSave: () -> Unit,
     onRetry: () -> Unit,
     topicLabel: String?,
-    onOpenArticle: (ArticleSummary) -> Unit
+    onOpenArticle: (ArticleSummary) -> Unit,
+    onSaveImage: (String, String, String) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -739,7 +792,8 @@ private fun ReaderContent(
                 isSaved = isSaved,
                 onToggleSave = onToggleSave,
                 topicLabel = topicLabel,
-                onOpenArticle = { onOpenArticle(article) }
+                onOpenArticle = { onOpenArticle(article) },
+                onSaveImage = { imageUrl -> onSaveImage(imageUrl, article.title, language) }
             )
 
             isLoading -> LoadingState()
@@ -801,7 +855,8 @@ private fun ArticleContent(
     isSaved: Boolean,
     onToggleSave: () -> Unit,
     topicLabel: String?,
-    onOpenArticle: () -> Unit
+    onOpenArticle: () -> Unit,
+    onSaveImage: (String) -> Unit
 ) {
     val readingMinutes = WikiText.readingMinutes(article.extract)
     LazyColumn(
@@ -916,6 +971,11 @@ private fun ArticleContent(
                             onClick = onOpenArticle
                         ) {
                             Text("Read article")
+                        }
+                    }
+                    if (!thumbnail.isNullOrBlank()) {
+                        TextButton(onClick = { onSaveImage(thumbnail) }) {
+                            Text("Save image")
                         }
                     }
                 }
