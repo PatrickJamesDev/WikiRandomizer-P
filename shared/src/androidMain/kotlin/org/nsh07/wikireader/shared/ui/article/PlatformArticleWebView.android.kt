@@ -9,6 +9,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 
+private data class ArticleWebViewState(val url: String, val styleScript: String)
+
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 actual fun PlatformArticleWebView(
@@ -41,17 +43,22 @@ actual fun PlatformArticleWebView(
                         view?.evaluateJavascript(currentScript.value, null)
                     }
                 }
-                tag = url
+                tag = ArticleWebViewState(url, currentScript.value)
                 loadUrl(url)
             }
         },
         update = { webView ->
+            val script = currentScript.value
+            val state = webView.tag as? ArticleWebViewState
+            val urlChanged = state?.url != url
             webView.settings.textZoom = (fontScale * 100).toInt().coerceIn(50, 250)
-            webView.evaluateJavascript(currentScript.value, null)
-            if (webView.tag != url) {
-                webView.tag = url
-                webView.loadUrl(url)
+            // Updating Compose state does not need another JavaScript round trip. Apply the style
+            // only when a reading option changed; a new page receives it in onPageFinished.
+            if (!urlChanged && state?.styleScript != script) {
+                webView.evaluateJavascript(script, null)
             }
+            webView.tag = ArticleWebViewState(url, script)
+            if (urlChanged) webView.loadUrl(url)
         },
         onRelease = { webView -> webView.destroy() }
     )

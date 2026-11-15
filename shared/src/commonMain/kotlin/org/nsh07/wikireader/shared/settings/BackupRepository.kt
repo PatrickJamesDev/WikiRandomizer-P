@@ -23,9 +23,8 @@ class BackupRepository(private val settingsStore: SettingsStore) {
     }.toString()
 
     /** Returns the number of restored keys, or null when [text] is not a shared backup. */
-    fun import(text: String): Int? {
-        val root = runCatching { Json.parseToJsonElement(text).jsonObject }.getOrNull()
-            ?: return null
+    fun import(text: String): Int? = runCatching {
+        val root = Json.parseToJsonElement(text).jsonObject
         if (root["format"]?.jsonPrimitive?.content != FORMAT) return null
         val data = root["data"]?.jsonObject ?: return null
         var restored = 0
@@ -35,8 +34,8 @@ class BackupRepository(private val settingsStore: SettingsStore) {
                 restored++
             }
         }
-        return restored
-    }
+        restored
+    }.getOrNull()
 
     private companion object {
         const val FORMAT = "wikireader-shared-backup"

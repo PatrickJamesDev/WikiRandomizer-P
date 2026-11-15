@@ -66,28 +66,35 @@ fun LibraryScreen(
     var languageFilter by remember { mutableStateOf<String?>(null) }
     var sort by remember { mutableStateOf(LibrarySort.RECENT) }
 
-    val folderNames = entries.mapNotNull { entry ->
-        entry.folder?.trim()?.takeIf { it.isNotEmpty() }
-    }.distinctBy { it.lowercase() }.sortedBy { it.lowercase() }
-    val languages = entries.map { it.language }.distinct()
-        .sortedBy { languageName(it).lowercase() }
-    val hasFolderless = entries.any { it.folder.isNullOrBlank() }
-    val visibleEntries = entries
-        .filter { entry ->
-            val folderOk = when (folderFilter) {
-                null -> true
-                NO_FOLDER_FILTER -> entry.folder.isNullOrBlank()
-                else -> entry.folder.equals(folderFilter, ignoreCase = true)
+    val folderNames = remember(entries) {
+        entries.mapNotNull { entry ->
+            entry.folder?.trim()?.takeIf { it.isNotEmpty() }
+        }.distinctBy { it.lowercase() }.sortedBy { it.lowercase() }
+    }
+    val languages = remember(entries) {
+        entries.map { it.language }.distinct().sortedBy { languageName(it).lowercase() }
+    }
+    val hasFolderless = remember(entries) {
+        entries.any { it.folder.isNullOrBlank() }
+    }
+    val visibleEntries = remember(entries, folderFilter, languageFilter, sort) {
+        entries
+            .filter { entry ->
+                val folderOk = when (folderFilter) {
+                    null -> true
+                    NO_FOLDER_FILTER -> entry.folder.isNullOrBlank()
+                    else -> entry.folder.equals(folderFilter, ignoreCase = true)
+                }
+                folderOk && (languageFilter == null || entry.language == languageFilter)
             }
-            folderOk && (languageFilter == null || entry.language == languageFilter)
-        }
-        .let { filtered ->
-            if (sort == LibrarySort.TITLE) {
-                filtered.sortedBy { it.article.title.lowercase() }
-            } else {
-                filtered
+            .let { filtered ->
+                if (sort == LibrarySort.TITLE) {
+                    filtered.sortedBy { it.article.title.lowercase() }
+                } else {
+                    filtered
+                }
             }
-        }
+    }
 
     LaunchedEffect(folderNames, hasFolderless) {
         val selected = folderFilter ?: return@LaunchedEffect

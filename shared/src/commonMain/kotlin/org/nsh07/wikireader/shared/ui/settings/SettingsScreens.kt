@@ -24,6 +24,10 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,6 +61,15 @@ fun SettingsScreen(
     onTutorialClick: () -> Unit,
     onAboutClick: () -> Unit
 ) {
+    var fontScaleSlider by remember(articleFontScale) {
+        mutableFloatStateOf(articleFontScale)
+    }
+    var lineSpacingSlider by remember(articleLineSpacing) {
+        mutableFloatStateOf(articleLineSpacing.toFloat())
+    }
+    var marginSlider by remember(articleMargin) {
+        mutableFloatStateOf(articleMargin.toFloat())
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
@@ -124,13 +137,14 @@ fun SettingsScreen(
             Column(modifier = Modifier.padding(horizontal = 4.dp)) {
                 Text("Article text size", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "${(articleFontScale * 100).toInt()}%",
+                    "${(fontScaleSlider * 100).toInt()}%",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Slider(
-                    value = articleFontScale,
-                    onValueChange = onArticleFontScaleChange,
+                    value = fontScaleSlider,
+                    onValueChange = { fontScaleSlider = it },
+                    onValueChangeFinished = { onArticleFontScaleChange(fontScaleSlider) },
                     valueRange = 0.8f..1.6f,
                     steps = 7
                 )
@@ -140,12 +154,13 @@ fun SettingsScreen(
         item {
             Column(modifier = Modifier.padding(horizontal = 4.dp)) {
                 Text(
-                    "Line spacing ${articleLineSpacing}%",
+                    "Line spacing ${lineSpacingSlider.toInt()}%",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Slider(
-                    value = articleLineSpacing.toFloat(),
-                    onValueChange = { onLineSpacingChange(it.toInt()) },
+                    value = lineSpacingSlider,
+                    onValueChange = { lineSpacingSlider = it },
+                    onValueChangeFinished = { onLineSpacingChange(lineSpacingSlider.toInt()) },
                     valueRange = 100f..200f,
                     steps = 7
                 )
@@ -155,12 +170,13 @@ fun SettingsScreen(
         item {
             Column(modifier = Modifier.padding(horizontal = 4.dp)) {
                 Text(
-                    "Reading margin ${articleMargin}dp",
+                    "Reading margin ${marginSlider.toInt()}dp",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Slider(
-                    value = articleMargin.toFloat(),
-                    onValueChange = { onMarginChange(it.toInt()) },
+                    value = marginSlider,
+                    onValueChange = { marginSlider = it },
+                    onValueChangeFinished = { onMarginChange(marginSlider.toInt()) },
                     valueRange = 0f..48f,
                     steps = 7
                 )

@@ -18,6 +18,12 @@ class BackupRepositoryTest {
         assertEquals("de", target.getString(SettingsKeys.LANGUAGE, "en"))
         assertEquals("[]", target.getString(SettingsKeys.SAVED_ARTICLES, ""))
         assertNull(BackupRepository(target).import("{\"other\":true}"))
+        assertNull(BackupRepository(target).import("not json"))
+        assertNull(
+            BackupRepository(target).import(
+                """{"format":{"unexpected":true},"data":{}}"""
+            )
+        )
     }
 
     private class MemorySettingsStore : SettingsStore {

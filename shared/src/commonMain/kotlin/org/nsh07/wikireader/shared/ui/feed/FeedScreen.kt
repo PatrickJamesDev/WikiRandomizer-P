@@ -150,7 +150,9 @@ private fun FeedList(
             item { FeaturedArticle(tfa, language, onOpenArticle, onSaveImage) }
         }
 
-        val mostRead = feed.mostRead?.articles.orEmpty().sortedBy { it.rank ?: Int.MAX_VALUE }
+        val mostRead = remember(feed) {
+            feed.mostRead?.articles.orEmpty().sortedBy { it.rank ?: Int.MAX_VALUE }
+        }
         if (mostRead.isNotEmpty()) {
             item { SectionTitle("Most read") }
             items(mostRead, key = { it.titles?.canonical ?: it.titles?.normalized ?: it.hashCode().toString() }) {
