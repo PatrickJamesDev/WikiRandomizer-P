@@ -48,15 +48,18 @@ kotlin {
     }
 
     sourceSets {
-        commonMain.dependencies {
-            implementation(libs.kotlinx.serialization.json)
-            implementation(libs.kotlinx.coroutines.core)
-            // Shared Compose UI lives in commonMain so Android and iOS render the same screens.
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.ui)
-            implementation(libs.coil3.compose)
+        commonMain {
+            kotlin.exclude("**/com/wikirandomizerp/app/data/misc.kt")
+            dependencies {
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.coroutines.core)
+                // Shared Compose UI lives in commonMain so Android and iOS render the same screens.
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.material3)
+                implementation(compose.ui)
+                implementation(libs.coil3.compose)
+            }
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
