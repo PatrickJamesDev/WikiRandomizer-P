@@ -101,9 +101,9 @@ The app has a Kotlin Multiplatform core and shared Compose UI (`shared`) consume
 app and by a small SwiftUI iOS host. iOS currently runs the shared reader shell, topic selection, Saved, History,
 saved-article folders and notes, seen-article memory, library search with recent queries, Wikipedia search, community curators,
 the daily featured feed with a swipe-card view, saved pictures, highlights, vocabulary,
-Commons galleries and article tabs; adjustable article text size, statistics, settings and an
-embedded `WKWebView` article view with adjustable text size, line spacing, margins, justification
-and a sepia theme. On Android, the same shared shell
+Commons galleries and article tabs; adjustable article text size, line spacing, margins,
+justification and a sepia theme; statistics, settings, JSON backup/restore and an embedded
+`WKWebView` article view. On Android, the same shared shell
 is available as a developer preview: enable Developer options on About, then open **Shared Compose
 reader**. The production launcher still opens the feature-complete Android UI. On macOS with Xcode:
 

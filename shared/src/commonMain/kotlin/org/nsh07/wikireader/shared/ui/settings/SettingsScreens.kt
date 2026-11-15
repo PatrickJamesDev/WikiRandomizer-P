@@ -49,6 +49,7 @@ fun SettingsScreen(
     onJustifyChange: (Boolean) -> Unit,
     onSepiaChange: (Boolean) -> Unit,
     onClearSeen: () -> Unit,
+    onBackupClick: () -> Unit,
     onAboutClick: () -> Unit
 ) {
     LazyColumn(
@@ -188,6 +189,14 @@ fun SettingsScreen(
                     "$seenCount articles will be offered again"
                 },
                 onClick = onClearSeen
+            )
+        }
+
+        item {
+            SettingsRow(
+                title = "Backup and restore",
+                subtitle = "Copy or paste a JSON backup of this reader",
+                onClick = onBackupClick
             )
         }
 

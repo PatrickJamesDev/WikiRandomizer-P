@@ -101,7 +101,8 @@ several minutes. Later builds are incremental.
   news and on-this-day, plus a swipe-card feed, saved pictures, highlights, a Wiktionary-backed
   vocabulary, Commons galleries and article tabs; theme, language, article text size, line
   spacing, margins, justification, sepia mode and browsing-history prefs persist through
-  `NSUserDefaults` via the shared `SettingsStore`.
+  `NSUserDefaults` via the shared `SettingsStore`; Settings can export the shared library and
+  preferences as JSON and restore them from the clipboard.
 - The Android app keeps all of its existing features; `build_ios.sh` does not change the APK.
 - Remaining Android screens are migrated into `shared/src/commonMain` in phases, then both hosts
   use the same implementation.

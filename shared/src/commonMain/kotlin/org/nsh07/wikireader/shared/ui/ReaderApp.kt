@@ -84,9 +84,11 @@ import org.nsh07.wikireader.shared.reader.FeedSource
 import org.nsh07.wikireader.shared.reader.RandomArticleSource
 import org.nsh07.wikireader.shared.reader.WikipediaSearchSource
 import org.nsh07.wikireader.shared.reader.findTopicByCategory
+import org.nsh07.wikireader.shared.settings.BackupRepository
 import org.nsh07.wikireader.shared.settings.SettingsKeys
 import org.nsh07.wikireader.shared.settings.SettingsStore
 import org.nsh07.wikireader.shared.ui.article.PlatformArticleWebView
+import org.nsh07.wikireader.shared.ui.backup.BackupScreen
 import org.nsh07.wikireader.shared.ui.commons.CommonsGalleryScreen
 import org.nsh07.wikireader.shared.ui.curators.CuratorsScreen
 import org.nsh07.wikireader.shared.ui.feed.FeedScreen
@@ -108,7 +110,7 @@ import org.nsh07.wikireader.shared.ui.theme.WikiReaderTheme
 
 private enum class ReaderDestination {
     READER, FEED, TOPICS, SAVED, HISTORY, IMAGES, HIGHLIGHTS, VOCABULARY, SEARCH, WIKI_SEARCH,
-    CURATORS, GALLERY, STATS, SETTINGS, ABOUT
+    CURATORS, GALLERY, STATS, SETTINGS, BACKUP, ABOUT
 }
 
 private const val RANDOM_UNSEEN_ATTEMPTS = 8
@@ -160,6 +162,7 @@ fun ReaderApp(
         val savedImageRepository = remember(settingsStore) { SavedImageRepository(settingsStore) }
         val highlightRepository = remember(settingsStore) { HighlightRepository(settingsStore) }
         val vocabularyRepository = remember(settingsStore) { VocabularyRepository(settingsStore) }
+        val backupRepository = remember(settingsStore) { BackupRepository(settingsStore) }
         var savedEntries by remember { mutableStateOf(library.saved()) }
         var savedImages by remember { mutableStateOf(savedImageRepository.images()) }
         var highlights by remember { mutableStateOf(highlightRepository.highlights()) }
@@ -483,6 +486,7 @@ fun ReaderApp(
                                 ReaderDestination.GALLERY -> "Gallery"
                                 ReaderDestination.STATS -> "Stats"
                                 ReaderDestination.SETTINGS -> "Settings"
+                                ReaderDestination.BACKUP -> "Backup"
                                 ReaderDestination.ABOUT -> "About"
                             }
                             Column {
@@ -884,7 +888,51 @@ fun ReaderApp(
                                     )
                                 },
                                 onClearSeen = { seenArticles = library.clearSeen() },
+                                onBackupClick = { destination = ReaderDestination.BACKUP },
                                 onAboutClick = { destination = ReaderDestination.ABOUT }
+                            )
+
+                            ReaderDestination.BACKUP -> BackupScreen(
+                                repository = backupRepository,
+                                onBack = { destination = ReaderDestination.SETTINGS },
+                                onRestored = {
+                                    language = settingsStore.getString(SettingsKeys.LANGUAGE, "en")
+                                    themeMode = settingsStore.getString(
+                                        SettingsKeys.THEME,
+                                        THEME_SYSTEM
+                                    )
+                                    selectedTopic = settingsStore
+                                        .getString(SettingsKeys.TOPIC, "")
+                                        .takeIf { it.isNotBlank() }
+                                        ?.let { findTopicByCategory(it) }
+                                    browsingHistory = settingsStore
+                                        .getString(SettingsKeys.BROWSING_HISTORY, "true")
+                                        .toBoolean()
+                                    articleFontScale = settingsStore
+                                        .getString(SettingsKeys.ARTICLE_FONT_SCALE, "1.0")
+                                        .toFloatOrNull()
+                                        ?.coerceIn(0.8f, 1.6f) ?: 1f
+                                    articleLineSpacing = settingsStore
+                                        .getString(SettingsKeys.ARTICLE_LINE_SPACING, "100")
+                                        .toIntOrNull()?.coerceIn(100, 200) ?: 100
+                                    articleMargin = settingsStore
+                                        .getString(SettingsKeys.ARTICLE_MARGIN, "16")
+                                        .toIntOrNull()?.coerceIn(0, 48) ?: 16
+                                    articleJustify = settingsStore
+                                        .getString(SettingsKeys.ARTICLE_JUSTIFY, "false")
+                                        .toBoolean()
+                                    articleSepia = settingsStore
+                                        .getString(SettingsKeys.ARTICLE_SEPIA, "false")
+                                        .toBoolean()
+                                    savedEntries = library.saved()
+                                    historyEntries = library.history()
+                                    recentSearches = library.recentSearches()
+                                    seenArticles = library.seenArticles()
+                                    savedImages = savedImageRepository.images()
+                                    highlights = highlightRepository.highlights()
+                                    vocabulary = vocabularyRepository.words()
+                                    followedCurators = curatorFollows.followed()
+                                }
                             )
 
                             ReaderDestination.ABOUT -> AboutScreen(
