@@ -27,6 +27,7 @@ expect fun PlatformArticleWebView(
     horizontalMarginDp: Int,
     justifyText: Boolean,
     sepia: Boolean,
+    fontFamily: String,
     modifier: Modifier = Modifier
 )
 
@@ -35,11 +36,17 @@ fun readerStyleScript(
     lineSpacingPercent: Int,
     horizontalMarginDp: Int,
     justifyText: Boolean,
-    sepia: Boolean
+    sepia: Boolean,
+    fontFamily: String
 ): String {
     val lineHeight = (lineSpacingPercent.coerceIn(100, 200) / 100.0).toString()
     val margin = horizontalMarginDp.coerceIn(0, 64)
     val align = if (justifyText) "justify" else "start"
+    val family = if (fontFamily == "serif") {
+        "Georgia,'Times New Roman',serif"
+    } else {
+        "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
+    }
     val colors = if (sepia) {
         "html,body{background:#F4ECD8 !important;color:#5B4636 !important;}" +
             "a{color:#7A4E16 !important;}"
@@ -49,7 +56,8 @@ fun readerStyleScript(
     return "(function(){var id='wr-reader-style';var s=document.getElementById(id);" +
         "if(!s){s=document.createElement('style');s.id=id;document.head.appendChild(s);}" +
         "s.textContent='body{padding-left:${margin}px !important;padding-right:${margin}px !important;" +
-        "line-height:${lineHeight} !important;text-align:${align} !important;}' + " +
+        "line-height:${lineHeight} !important;text-align:${align} !important;" +
+        "font-family:${family} !important;}' + " +
         "'${colors}';})();"
 }
 

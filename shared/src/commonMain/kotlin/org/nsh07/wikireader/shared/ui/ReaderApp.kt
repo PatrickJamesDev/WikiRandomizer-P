@@ -179,6 +179,37 @@ fun ReaderApp(
                 settingsStore.getString(SettingsKeys.BROWSING_HISTORY, "true").toBoolean()
             )
         }
+        var articleFontScale by remember {
+            mutableStateOf(
+                settingsStore.getString(SettingsKeys.ARTICLE_FONT_SCALE, "1.0")
+                    .toFloatOrNull()?.coerceIn(0.8f, 1.6f) ?: 1f
+            )
+        }
+        var articleLineSpacing by remember {
+            mutableStateOf(
+                settingsStore.getString(SettingsKeys.ARTICLE_LINE_SPACING, "100")
+                    .toIntOrNull()?.coerceIn(100, 200) ?: 100
+            )
+        }
+        var articleMargin by remember {
+            mutableStateOf(
+                settingsStore.getString(SettingsKeys.ARTICLE_MARGIN, "16")
+                    .toIntOrNull()?.coerceIn(0, 48) ?: 16
+            )
+        }
+        var articleJustify by remember {
+            mutableStateOf(
+                settingsStore.getString(SettingsKeys.ARTICLE_JUSTIFY, "false").toBoolean()
+            )
+        }
+        var articleSepia by remember {
+            mutableStateOf(
+                settingsStore.getString(SettingsKeys.ARTICLE_SEPIA, "false").toBoolean()
+            )
+        }
+        var articleFontFamily by remember {
+            mutableStateOf(settingsStore.getString(SettingsKeys.ARTICLE_FONT_FAMILY, "sans"))
+        }
         var openArticle by remember { mutableStateOf<OpenArticle?>(null) }
         var showArticleTools by remember { mutableStateOf(false) }
         var showArticleInfo by remember { mutableStateOf(false) }
@@ -605,6 +636,7 @@ fun ReaderApp(
                                 horizontalMarginDp = articleMargin,
                                 justifyText = articleJustify,
                                 sepia = articleSepia,
+                                fontFamily = articleFontFamily,
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -849,6 +881,7 @@ fun ReaderApp(
                                 articleMargin = articleMargin,
                                 articleJustify = articleJustify,
                                 articleSepia = articleSepia,
+                                articleFontFamily = articleFontFamily,
                                 onThemeModeChange = { mode ->
                                     themeMode = mode
                                     settingsStore.putString(SettingsKeys.THEME, mode)
@@ -896,6 +929,13 @@ fun ReaderApp(
                                         enabled.toString()
                                     )
                                 },
+                                onFontFamilyChange = { family ->
+                                    articleFontFamily = family
+                                    settingsStore.putString(
+                                        SettingsKeys.ARTICLE_FONT_FAMILY,
+                                        family
+                                    )
+                                },
                                 onClearSeen = { seenArticles = library.clearSeen() },
                                 onBackupClick = { destination = ReaderDestination.BACKUP },
                                 onAboutClick = { destination = ReaderDestination.ABOUT }
@@ -933,6 +973,8 @@ fun ReaderApp(
                                     articleSepia = settingsStore
                                         .getString(SettingsKeys.ARTICLE_SEPIA, "false")
                                         .toBoolean()
+                                    articleFontFamily = settingsStore
+                                        .getString(SettingsKeys.ARTICLE_FONT_FAMILY, "sans")
                                     savedEntries = library.saved()
                                     historyEntries = library.history()
                                     recentSearches = library.recentSearches()

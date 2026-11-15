@@ -11,6 +11,7 @@ actual fun PlatformArticleWebView(
     horizontalMarginDp: Int,
     justifyText: Boolean,
     sepia: Boolean,
+    fontFamily: String,
     modifier: Modifier
 ) {
     ArticleWebViewUnavailable(modifier)

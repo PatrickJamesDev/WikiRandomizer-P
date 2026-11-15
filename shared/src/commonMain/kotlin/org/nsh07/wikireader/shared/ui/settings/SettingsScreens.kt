@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -40,6 +41,7 @@ fun SettingsScreen(
     articleMargin: Int,
     articleJustify: Boolean,
     articleSepia: Boolean,
+    articleFontFamily: String,
     onThemeModeChange: (String) -> Unit,
     onLanguageClick: () -> Unit,
     onBrowsingHistoryChange: (Boolean) -> Unit,
@@ -48,6 +50,7 @@ fun SettingsScreen(
     onMarginChange: (Int) -> Unit,
     onJustifyChange: (Boolean) -> Unit,
     onSepiaChange: (Boolean) -> Unit,
+    onFontFamilyChange: (String) -> Unit,
     onClearSeen: () -> Unit,
     onBackupClick: () -> Unit,
     onAboutClick: () -> Unit
@@ -169,6 +172,24 @@ fun SettingsScreen(
                 checked = articleJustify,
                 onCheckedChange = onJustifyChange
             )
+        }
+
+        item {
+            Column(modifier = Modifier.padding(horizontal = 4.dp)) {
+                Text("Article typeface", style = MaterialTheme.typography.titleMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = articleFontFamily != "serif",
+                        onClick = { onFontFamilyChange("sans") },
+                        label = { Text("Sans serif") }
+                    )
+                    FilterChip(
+                        selected = articleFontFamily == "serif",
+                        onClick = { onFontFamilyChange("serif") },
+                        label = { Text("Serif") }
+                    )
+                }
+            }
         }
 
         item {

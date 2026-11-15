@@ -100,7 +100,7 @@ several minutes. Later builds are incremental.
   be followed; Discover shows the daily featured article, most-read pages, picture of the day,
   news and on-this-day, plus a swipe-card feed, saved pictures, highlights, a Wiktionary-backed
   vocabulary, Commons galleries and article tabs; theme, language, article text size, line
-  spacing, margins, justification, sepia mode and browsing-history prefs persist through
+  spacing, margins, justification, typeface, sepia mode and browsing-history prefs persist through
   `NSUserDefaults` via the shared `SettingsStore`; Settings can export the shared library and
   preferences as JSON and restore them from the clipboard. The article toolbar loads talk-page
   wikitext and recent revisions in-app, opens Wikipedia talk/history/page-information/backlink

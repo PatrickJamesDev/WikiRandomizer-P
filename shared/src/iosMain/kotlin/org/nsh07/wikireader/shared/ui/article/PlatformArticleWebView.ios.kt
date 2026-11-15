@@ -28,13 +28,15 @@ actual fun PlatformArticleWebView(
     horizontalMarginDp: Int,
     justifyText: Boolean,
     sepia: Boolean,
+    fontFamily: String,
     modifier: Modifier
 ) {
     val styleScript = readerStyleScript(
         lineSpacingPercent,
         horizontalMarginDp,
         justifyText,
-        sepia
+        sepia,
+        fontFamily
     )
     UIKitView(
         factory = {

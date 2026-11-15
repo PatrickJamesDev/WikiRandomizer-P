@@ -58,7 +58,8 @@ class BackupRepository(private val settingsStore: SettingsStore) {
             SettingsKeys.ARTICLE_LINE_SPACING,
             SettingsKeys.ARTICLE_MARGIN,
             SettingsKeys.ARTICLE_JUSTIFY,
-            SettingsKeys.ARTICLE_SEPIA
+            SettingsKeys.ARTICLE_SEPIA,
+            SettingsKeys.ARTICLE_FONT_FAMILY
         )
     }
 }

@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 
@@ -17,8 +18,12 @@ actual fun PlatformArticleWebView(
     horizontalMarginDp: Int,
     justifyText: Boolean,
     sepia: Boolean,
+    fontFamily: String,
     modifier: Modifier
 ) {
+    val currentScript = rememberUpdatedState(
+        readerStyleScript(lineSpacingPercent, horizontalMarginDp, justifyText, sepia, fontFamily)
+    )
     AndroidView(
         modifier = modifier,
         factory = { context ->
@@ -33,15 +38,7 @@ actual fun PlatformArticleWebView(
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
-                        view?.evaluateJavascript(
-                            readerStyleScript(
-                                lineSpacingPercent,
-                                horizontalMarginDp,
-                                justifyText,
-                                sepia
-                            ),
-                            null
-                        )
+                        view?.evaluateJavascript(currentScript.value, null)
                     }
                 }
                 tag = url
@@ -50,10 +47,7 @@ actual fun PlatformArticleWebView(
         },
         update = { webView ->
             webView.settings.textZoom = (fontScale * 100).toInt().coerceIn(50, 250)
-            webView.evaluateJavascript(
-                readerStyleScript(lineSpacingPercent, horizontalMarginDp, justifyText, sepia),
-                null
-            )
+            webView.evaluateJavascript(currentScript.value, null)
             if (webView.tag != url) {
                 webView.tag = url
                 webView.loadUrl(url)
