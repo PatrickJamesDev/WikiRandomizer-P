@@ -36,10 +36,18 @@ fun SettingsScreen(
     seenCount: Int,
     browsingHistory: Boolean,
     articleFontScale: Float,
+    articleLineSpacing: Int,
+    articleMargin: Int,
+    articleJustify: Boolean,
+    articleSepia: Boolean,
     onThemeModeChange: (String) -> Unit,
     onLanguageClick: () -> Unit,
     onBrowsingHistoryChange: (Boolean) -> Unit,
     onArticleFontScaleChange: (Float) -> Unit,
+    onLineSpacingChange: (Int) -> Unit,
+    onMarginChange: (Int) -> Unit,
+    onJustifyChange: (Boolean) -> Unit,
+    onSepiaChange: (Boolean) -> Unit,
     onClearSeen: () -> Unit,
     onAboutClick: () -> Unit
 ) {
@@ -121,6 +129,54 @@ fun SettingsScreen(
                     steps = 7
                 )
             }
+        }
+
+        item {
+            Column(modifier = Modifier.padding(horizontal = 4.dp)) {
+                Text(
+                    "Line spacing ${articleLineSpacing}%",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Slider(
+                    value = articleLineSpacing.toFloat(),
+                    onValueChange = { onLineSpacingChange(it.toInt()) },
+                    valueRange = 100f..200f,
+                    steps = 7
+                )
+            }
+        }
+
+        item {
+            Column(modifier = Modifier.padding(horizontal = 4.dp)) {
+                Text(
+                    "Reading margin ${articleMargin}dp",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Slider(
+                    value = articleMargin.toFloat(),
+                    onValueChange = { onMarginChange(it.toInt()) },
+                    valueRange = 0f..48f,
+                    steps = 7
+                )
+            }
+        }
+
+        item {
+            SettingsToggleRow(
+                title = "Justify article text",
+                subtitle = "Align paragraphs to both margins",
+                checked = articleJustify,
+                onCheckedChange = onJustifyChange
+            )
+        }
+
+        item {
+            SettingsToggleRow(
+                title = "Sepia reading theme",
+                subtitle = "Warm paper background and soft ink",
+                checked = articleSepia,
+                onCheckedChange = onSepiaChange
+            )
         }
 
         item {

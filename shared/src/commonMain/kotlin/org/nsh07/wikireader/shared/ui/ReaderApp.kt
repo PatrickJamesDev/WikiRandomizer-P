@@ -588,6 +588,10 @@ fun ReaderApp(
                                     currentOpen.summary.title
                                 ),
                                 fontScale = articleFontScale,
+                                lineSpacingPercent = articleLineSpacing,
+                                horizontalMarginDp = articleMargin,
+                                justifyText = articleJustify,
+                                sepia = articleSepia,
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -828,6 +832,10 @@ fun ReaderApp(
                                 seenCount = seenArticles.size,
                                 browsingHistory = browsingHistory,
                                 articleFontScale = articleFontScale,
+                                articleLineSpacing = articleLineSpacing,
+                                articleMargin = articleMargin,
+                                articleJustify = articleJustify,
+                                articleSepia = articleSepia,
                                 onThemeModeChange = { mode ->
                                     themeMode = mode
                                     settingsStore.putString(SettingsKeys.THEME, mode)
@@ -845,6 +853,34 @@ fun ReaderApp(
                                     settingsStore.putString(
                                         SettingsKeys.ARTICLE_FONT_SCALE,
                                         scale.toString()
+                                    )
+                                },
+                                onLineSpacingChange = { spacing ->
+                                    articleLineSpacing = spacing
+                                    settingsStore.putString(
+                                        SettingsKeys.ARTICLE_LINE_SPACING,
+                                        spacing.toString()
+                                    )
+                                },
+                                onMarginChange = { margin ->
+                                    articleMargin = margin
+                                    settingsStore.putString(
+                                        SettingsKeys.ARTICLE_MARGIN,
+                                        margin.toString()
+                                    )
+                                },
+                                onJustifyChange = { enabled ->
+                                    articleJustify = enabled
+                                    settingsStore.putString(
+                                        SettingsKeys.ARTICLE_JUSTIFY,
+                                        enabled.toString()
+                                    )
+                                },
+                                onSepiaChange = { enabled ->
+                                    articleSepia = enabled
+                                    settingsStore.putString(
+                                        SettingsKeys.ARTICLE_SEPIA,
+                                        enabled.toString()
                                     )
                                 },
                                 onClearSeen = { seenArticles = library.clearSeen() },

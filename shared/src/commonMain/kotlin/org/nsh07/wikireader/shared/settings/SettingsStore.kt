@@ -25,4 +25,8 @@ object SettingsKeys {
     const val SAVED_IMAGES = "wikiSavedImages"
     const val SAVED_HIGHLIGHTS = "wikiSavedHighlights"
     const val VOCABULARY = "wikiVocabulary"
+    const val ARTICLE_LINE_SPACING = "wikiArticleLineSpacing"
+    const val ARTICLE_MARGIN = "wikiArticleMargin"
+    const val ARTICLE_JUSTIFY = "wikiArticleJustify"
+    const val ARTICLE_SEPIA = "wikiArticleSepia"
 }

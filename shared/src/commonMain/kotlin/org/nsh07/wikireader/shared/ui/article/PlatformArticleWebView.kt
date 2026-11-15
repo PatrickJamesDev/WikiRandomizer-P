@@ -23,8 +23,35 @@ import androidx.compose.ui.unit.dp
 expect fun PlatformArticleWebView(
     url: String,
     fontScale: Float,
+    lineSpacingPercent: Int,
+    horizontalMarginDp: Int,
+    justifyText: Boolean,
+    sepia: Boolean,
     modifier: Modifier = Modifier
 )
+
+/** CSS injected after each article load. Keeps page-style options identical on Android and iOS. */
+fun readerStyleScript(
+    lineSpacingPercent: Int,
+    horizontalMarginDp: Int,
+    justifyText: Boolean,
+    sepia: Boolean
+): String {
+    val lineHeight = (lineSpacingPercent.coerceIn(100, 200) / 100.0).toString()
+    val margin = horizontalMarginDp.coerceIn(0, 64)
+    val align = if (justifyText) "justify" else "start"
+    val colors = if (sepia) {
+        "html,body{background:#F4ECD8 !important;color:#5B4636 !important;}" +
+            "a{color:#7A4E16 !important;}"
+    } else {
+        ""
+    }
+    return "(function(){var id='wr-reader-style';var s=document.getElementById(id);" +
+        "if(!s){s=document.createElement('style');s.id=id;document.head.appendChild(s);}" +
+        "s.textContent='body{padding-left:${margin}px !important;padding-right:${margin}px !important;" +
+        "line-height:${lineHeight} !important;text-align:${align} !important;}' + " +
+        "'${colors}';})();"
+}
 
 @Composable
 internal fun ArticleWebViewUnavailable(modifier: Modifier) {
