@@ -28,6 +28,8 @@ class AndroidCuratorSource(
             CuratorLoad(json.decodeFromString<CuratorFeed>(text))
         } catch (cancellation: CancellationException) {
             throw cancellation
+        } catch (_: Throwable) {
+            fallbackCuratorLoad()
         } finally {
             connection.disconnect()
         }

@@ -10,22 +10,29 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import org.nsh07.wikireader.shared.reader.CuratorLinks
 import org.nsh07.wikireader.shared.reader.CuratorLoad
 import org.nsh07.wikireader.shared.reader.CuratorSource
+import org.nsh07.wikireader.shared.reader.fallbackCuratorLoad
 
 internal class KtorCuratorSource(
     private val client: HttpClient = defaultClient()
 ) : CuratorSource {
 
-    override suspend fun load(): CuratorLoad =
+    override suspend fun load(): CuratorLoad = try {
         CuratorLoad(
             client.get(CuratorLinks.FEED_URL) {
                 header(HttpHeaders.Accept, "application/json")
                 header(HttpHeaders.UserAgent, USER_AGENT)
             }.body<CuratorFeed>()
         )
+    } catch (cancellation: CancellationException) {
+        throw cancellation
+    } catch (_: Throwable) {
+        fallbackCuratorLoad()
+    }
 
     private companion object {
         const val USER_AGENT =

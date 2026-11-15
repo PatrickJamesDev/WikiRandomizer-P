@@ -96,8 +96,8 @@ several minutes. Later builds are incremental.
   category articles; Saved articles (including folders and personal notes), opened-article history
   and the seen-article list use the shared `LibraryRepository`; random picks skip already-seen titles and Settings can forget them;
   library search filters both lists and keeps recent queries; the Wikipedia screen runs full-text
-  search through the shared search-source contract; community curators load from GitHub and can
-  be followed; Discover shows the daily featured article, most-read pages, picture of the day,
+  search through the shared search-source contract; community curators load from GitHub, fall
+  back to the bundled list offline and can be followed; Discover shows the daily featured article, most-read pages, picture of the day,
   news and on-this-day, plus a swipe-card feed, saved pictures, highlights, a Wiktionary-backed
   vocabulary, Commons galleries and article tabs; theme, language, article text size, line
   spacing, margins, justification, typeface, sepia mode and browsing-history prefs persist through
