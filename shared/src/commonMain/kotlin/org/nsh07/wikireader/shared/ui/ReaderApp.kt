@@ -80,6 +80,7 @@ import org.nsh07.wikireader.shared.library.SeenArticle
 import org.nsh07.wikireader.shared.library.VocabularyRepository
 import org.nsh07.wikireader.shared.reader.CommonsSource
 import org.nsh07.wikireader.shared.reader.ArticleInfoSource
+import org.nsh07.wikireader.shared.reader.ArticleLanguagesSource
 import org.nsh07.wikireader.shared.reader.CuratorSource
 import org.nsh07.wikireader.shared.reader.DictionarySource
 import org.nsh07.wikireader.shared.reader.FeedSource
@@ -90,6 +91,7 @@ import org.nsh07.wikireader.shared.settings.BackupRepository
 import org.nsh07.wikireader.shared.settings.SettingsKeys
 import org.nsh07.wikireader.shared.settings.SettingsStore
 import org.nsh07.wikireader.shared.ui.article.ArticleInfoDialog
+import org.nsh07.wikireader.shared.ui.article.ArticleLanguagesDialog
 import org.nsh07.wikireader.shared.ui.article.ArticleToolsDialog
 import org.nsh07.wikireader.shared.ui.article.PlatformArticleWebView
 import org.nsh07.wikireader.shared.ui.backup.BackupScreen
@@ -137,6 +139,7 @@ fun ReaderApp(
     dictionarySource: DictionarySource,
     commonsSource: CommonsSource,
     articleInfoSource: ArticleInfoSource,
+    articleLanguagesSource: ArticleLanguagesSource,
     settingsStore: SettingsStore,
     modifier: Modifier = Modifier
 ) {
@@ -214,6 +217,7 @@ fun ReaderApp(
         var openArticle by remember { mutableStateOf<OpenArticle?>(null) }
         var showArticleTools by remember { mutableStateOf(false) }
         var showArticleInfo by remember { mutableStateOf(false) }
+        var showArticleLanguages by remember { mutableStateOf(false) }
         var openTabs by remember { mutableStateOf<List<OpenArticle>>(emptyList()) }
         var verticalFeed by remember { mutableStateOf<FeedApiResponse?>(null) }
         var galleryArticle by remember { mutableStateOf<OpenArticle?>(null) }
@@ -1045,6 +1049,10 @@ fun ReaderApp(
                     showArticleTools = false
                     showArticleInfo = true
                 },
+                onLanguages = {
+                    showArticleTools = false
+                    showArticleLanguages = true
+                },
                 onDismiss = { showArticleTools = false }
             )
         }
@@ -1055,6 +1063,22 @@ fun ReaderApp(
                 language = openArticle!!.language,
                 title = openArticle!!.summary.title,
                 onDismiss = { showArticleInfo = false }
+            )
+        }
+
+        if (showArticleLanguages && openArticle != null) {
+            ArticleLanguagesDialog(
+                source = articleLanguagesSource,
+                language = openArticle!!.language,
+                title = openArticle!!.summary.title,
+                onOpen = { link ->
+                    showArticleLanguages = false
+                    openInReader(
+                        link.language,
+                        ArticleSummary(title = link.title, extract = "")
+                    )
+                },
+                onDismiss = { showArticleLanguages = false }
             )
         }
 

@@ -19,6 +19,7 @@ fun ArticleToolsDialog(
     language: String,
     title: String,
     onArticleInfo: () -> Unit,
+    onLanguages: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val uriHandler = LocalUriHandler.current
@@ -35,6 +36,9 @@ fun ArticleToolsDialog(
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 ToolButton("Article information") {
                     onArticleInfo()
+                }
+                ToolButton("Article languages") {
+                    onLanguages()
                 }
                 ToolButton("Talk page") {
                     open(WikiUrls.talkPageUrl(language, title))

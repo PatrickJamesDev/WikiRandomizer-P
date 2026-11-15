@@ -43,6 +43,10 @@ object WikiUrls {
             "&rvlimit=${limit.coerceIn(1, 50)}&rvprop=user%7Ctimestamp%7Ccomment%7Csize" +
             "&format=json&formatversion=2"
 
+    fun languageLinksUrl(lang: String, title: String): String =
+        "https://${host(lang)}/w/api.php?action=query&prop=langlinks&titles=${encodeTitle(title)}" +
+            "&lllimit=500&llprop=autonym%7Clangname&format=json&formatversion=2"
+
     fun randomSummaryUrl(lang: String): String =
         "https://${host(lang)}/api/rest_v1/page/random/summary"
 

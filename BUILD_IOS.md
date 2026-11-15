@@ -104,7 +104,7 @@ several minutes. Later builds are incremental.
   `NSUserDefaults` via the shared `SettingsStore`; Settings can export the shared library and
   preferences as JSON and restore them from the clipboard. The article toolbar loads talk-page
   wikitext and recent revisions in-app, opens Wikipedia talk/history/page-information/backlink
-  pages in Safari and can copy the canonical link.
+  pages in Safari, lists the article's other language versions and can copy the canonical link.
 - The Android app keeps all of its existing features; `build_ios.sh` does not change the APK.
 - Remaining Android screens are migrated into `shared/src/commonMain` in phases, then both hosts
   use the same implementation.

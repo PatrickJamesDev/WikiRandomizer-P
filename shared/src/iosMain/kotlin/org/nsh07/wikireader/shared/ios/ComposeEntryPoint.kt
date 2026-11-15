@@ -33,6 +33,7 @@ internal fun ComposeReaderRoot() {
     val dictionarySource = remember { KtorDictionarySource() }
     val commonsSource = remember { KtorCommonsSource() }
     val articleInfoSource = remember { KtorArticleInfoSource() }
+    val articleLanguagesSource = remember { KtorArticleLanguagesSource() }
     val settingsStore = remember { IosSettingsStore() }
     ReaderApp(
         source = source,
@@ -42,6 +43,7 @@ internal fun ComposeReaderRoot() {
         dictionarySource = dictionarySource,
         commonsSource = commonsSource,
         articleInfoSource = articleInfoSource,
+        articleLanguagesSource = articleLanguagesSource,
         settingsStore = settingsStore
     )
 }
