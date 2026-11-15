@@ -28,6 +28,10 @@ object WikiUrls {
     fun summaryUrl(lang: String, title: String): String =
         "https://${host(lang)}/api/rest_v1/page/summary/${encodeTitle(title)}"
 
+    /** Wiktionary's REST definition endpoint; the shared dictionary falls back to English. */
+    fun wiktionaryDefinitionUrl(lang: String, word: String): String =
+        "https://${cleanLang(lang)}.wiktionary.org/api/rest_v1/page/definition/${encodeTitle(word)}"
+
     fun searchUrl(lang: String, query: String): String =
         "https://${host(lang)}/w/index.php?search=${encodeQuery(query)}"
 

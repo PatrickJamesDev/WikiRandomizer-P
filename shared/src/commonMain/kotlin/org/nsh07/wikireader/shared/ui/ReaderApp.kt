@@ -76,7 +76,9 @@ import org.nsh07.wikireader.shared.library.LibraryEntry
 import org.nsh07.wikireader.shared.library.LibraryRepository
 import org.nsh07.wikireader.shared.library.SavedImageRepository
 import org.nsh07.wikireader.shared.library.SeenArticle
+import org.nsh07.wikireader.shared.library.VocabularyRepository
 import org.nsh07.wikireader.shared.reader.CuratorSource
+import org.nsh07.wikireader.shared.reader.DictionarySource
 import org.nsh07.wikireader.shared.reader.FeedSource
 import org.nsh07.wikireader.shared.reader.RandomArticleSource
 import org.nsh07.wikireader.shared.reader.WikipediaSearchSource
@@ -90,6 +92,7 @@ import org.nsh07.wikireader.shared.ui.feed.VerticalFeedScreen
 import org.nsh07.wikireader.shared.ui.highlights.HighlightsScreen
 import org.nsh07.wikireader.shared.ui.images.SavedImagesScreen
 import org.nsh07.wikireader.shared.ui.search.WikipediaSearchScreen
+import org.nsh07.wikireader.shared.ui.vocabulary.VocabularyScreen
 import org.nsh07.wikireader.shared.ui.settings.AboutScreen
 import org.nsh07.wikireader.shared.ui.library.LibraryScreen
 import org.nsh07.wikireader.shared.ui.library.LibrarySearchScreen
@@ -102,8 +105,8 @@ import org.nsh07.wikireader.shared.ui.settings.THEME_SYSTEM
 import org.nsh07.wikireader.shared.ui.theme.WikiReaderTheme
 
 private enum class ReaderDestination {
-    READER, FEED, TOPICS, SAVED, HISTORY, IMAGES, HIGHLIGHTS, SEARCH, WIKI_SEARCH, CURATORS,
-    STATS, SETTINGS, ABOUT
+    READER, FEED, TOPICS, SAVED, HISTORY, IMAGES, HIGHLIGHTS, VOCABULARY, SEARCH, WIKI_SEARCH,
+    CURATORS, STATS, SETTINGS, ABOUT
 }
 
 private const val RANDOM_UNSEEN_ATTEMPTS = 8
@@ -123,6 +126,7 @@ fun ReaderApp(
     searchSource: WikipediaSearchSource,
     curatorSource: CuratorSource,
     feedSource: FeedSource,
+    dictionarySource: DictionarySource,
     settingsStore: SettingsStore,
     modifier: Modifier = Modifier
 ) {
@@ -152,9 +156,11 @@ fun ReaderApp(
         val curatorFollows = remember(settingsStore) { CuratorFollowStore(settingsStore) }
         val savedImageRepository = remember(settingsStore) { SavedImageRepository(settingsStore) }
         val highlightRepository = remember(settingsStore) { HighlightRepository(settingsStore) }
+        val vocabularyRepository = remember(settingsStore) { VocabularyRepository(settingsStore) }
         var savedEntries by remember { mutableStateOf(library.saved()) }
         var savedImages by remember { mutableStateOf(savedImageRepository.images()) }
         var highlights by remember { mutableStateOf(highlightRepository.highlights()) }
+        var vocabulary by remember { mutableStateOf(vocabularyRepository.words()) }
         var historyEntries by remember { mutableStateOf(library.history()) }
         var seenArticles by remember { mutableStateOf(library.seenArticles()) }
         var followedCurators by remember { mutableStateOf(curatorFollows.followed()) }
@@ -370,6 +376,16 @@ fun ReaderApp(
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
                     NavigationDrawerItem(
+                        label = { Text("Vocabulary") },
+                        selected = destination == ReaderDestination.VOCABULARY,
+                        onClick = {
+                            destination = ReaderDestination.VOCABULARY
+                            openArticle = null
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                    NavigationDrawerItem(
                         label = { Text("Search") },
                         selected = destination == ReaderDestination.SEARCH,
                         onClick = {
@@ -455,6 +471,7 @@ fun ReaderApp(
                                 ReaderDestination.HISTORY -> "History"
                                 ReaderDestination.IMAGES -> "Pictures"
                                 ReaderDestination.HIGHLIGHTS -> "Highlights"
+                                ReaderDestination.VOCABULARY -> "Vocabulary"
                                 ReaderDestination.SEARCH -> "Search"
                                 ReaderDestination.WIKI_SEARCH -> "Wikipedia"
                                 ReaderDestination.CURATORS -> "Curators"
@@ -672,6 +689,35 @@ fun ReaderApp(
                                     highlights = highlightRepository.remove(highlight)
                                 },
                                 onClear = { highlights = highlightRepository.clear() }
+                            )
+
+                            ReaderDestination.VOCABULARY -> VocabularyScreen(
+                                words = vocabulary,
+                                language = language,
+                                dictionarySource = dictionarySource,
+                                onAdd = { word, definition ->
+                                    vocabulary = vocabularyRepository.add(
+                                        word = word,
+                                        language = language,
+                                        definition = definition,
+                                        articleTitle = openArticle?.summary?.title
+                                    )
+                                },
+                                onOpenArticle = { wordLanguage, title ->
+                                    if (title.isNotBlank()) {
+                                        openInReader(
+                                            wordLanguage,
+                                            ArticleSummary(
+                                                title = title.replace('_', ' '),
+                                                extract = ""
+                                            )
+                                        )
+                                    }
+                                },
+                                onDelete = { entry ->
+                                    vocabulary = vocabularyRepository.remove(entry)
+                                },
+                                onClear = { vocabulary = vocabularyRepository.clear() }
                             )
 
                             ReaderDestination.SEARCH -> LibrarySearchScreen(

@@ -24,4 +24,5 @@ object SettingsKeys {
     const val ARTICLE_FONT_SCALE = "wikiArticleFontScale"
     const val SAVED_IMAGES = "wikiSavedImages"
     const val SAVED_HIGHLIGHTS = "wikiSavedHighlights"
+    const val VOCABULARY = "wikiVocabulary"
 }
