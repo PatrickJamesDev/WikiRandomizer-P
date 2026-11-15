@@ -161,6 +161,7 @@ private const val PREFETCH_WARM_FULL_RES = 12      // full-screen renditions for
 private const val PREFETCH_WARM_FULL_RES_NEAR = 6  // full-screen renditions for the second
 private const val PREFETCH_WARM_FULL_RES_FAR = 2   // full-screen renditions for the third/fourth
 private const val IMAGE_PREFETCH_GAP_MS = 40L      // gentle spacing between image requests
+private const val INITIAL_IMAGES_WAIT = 10
 
 // Keep the text and body pictures of this many most-recently-read articles; older ones are
 // evicted from the caches (saved articles, offline downloads and open tabs are exempt).
@@ -935,16 +936,39 @@ class HomeScreenViewModel(
         if (!preferencesState.value.dataSaver) warmImages(lang, page, content)
     }
 
+    private suspend fun awaitInitialImages(
+        lang: String,
+        page: WikiApiPage?,
+        content: String,
+        html: Boolean
+    ) {
+        if (preferencesState.value.dataSaver) return
+        val urls = imageUrlsFor(lang, page, content, html).take(INITIAL_IMAGES_WAIT)
+        if (urls.isEmpty()) return
+        val start = System.nanoTime()
+        try {
+            ImagePrefetcher.warmAndWait(appContext, urls)
+            DebugLog.d(
+                "Prefetch",
+                "initial ${urls.size} pictures ready in ${(System.nanoTime() - start) / 1_000_000} ms"
+            )
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (e: Throwable) {
+            DebugLog.w("Prefetch", "could not prepare initial pictures: ${e.message}")
+        }
+    }
+
     /** All picture addresses in [content] (HTML <img> tags or wikitext [[File:]] blocks). */
     private fun imageUrlsFor(
         lang: String,
-        page: WikiApiPage,
+        page: WikiApiPage?,
         content: String,
         html: Boolean
     ): List<String> {
         val urls = LinkedHashSet<String>()
-        ImagePrefetcher.standardThumbnailUrl(page.thumbnail?.source)?.let(urls::add)
-        page.photo?.source?.let(urls::add)
+        ImagePrefetcher.standardThumbnailUrl(page?.thumbnail?.source)?.let(urls::add)
+        page?.photo?.source?.let(urls::add)
         try {
             if (html) {
                 // The rendered article requests FilePath URLs built from the [[File:...]] names
@@ -3450,6 +3474,8 @@ class HomeScreenViewModel(
                     } ?: LazyListState()
                     val loadedTitle = pageInfo?.title ?: "Error"
                     val savedHighlights = savedHighlightsFor(loadedTitle, setLang)
+                    awaitInitialImages(setLang, pageInfo, rawWikitext, htmlMode)
+                    coroutineContext.ensureActive()
                     if (!replaceBackstackEntry) backStack.add(
                         HomeSubscreen.Article(
                             title = loadedTitle,
@@ -4001,6 +4027,8 @@ class HomeScreenViewModel(
                 parsedExtract.add(section0)
                 currentSection = 1
 
+                awaitInitialImages(savedArticle.lang, apiResponse, savedArticle.pageContent, html = false)
+                coroutineContext.ensureActive()
                 backStack.add(
                     HomeSubscreen.Article(
                         title = apiResponse?.title ?: "Error",

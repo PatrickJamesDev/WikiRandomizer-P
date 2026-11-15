@@ -326,7 +326,6 @@ fun SettingsScreen(
     val (showDebugLog, setShowDebugLog) = remember { mutableStateOf(false) }
     val (showBugReport, setShowBugReport) = remember { mutableStateOf(false) }
     val (showResetSettingsDialog, setShowResetSettingsDialog) = remember { mutableStateOf(false) }
-    var helpSetting by remember { mutableStateOf<SettingsSwitchItem?>(null) }
     val (showColorSchemeDialog, setShowColorSchemeDialog) = remember { mutableStateOf(false) }
     val (showFontDialog, setShowFontDialog) = remember { mutableStateOf(false) }
     val (showLanguageSheet, setShowLanguageSheet) = remember { mutableStateOf(false) }
@@ -624,21 +623,6 @@ fun SettingsScreen(
                 lastSyncAt = localSyncStore.lastSyncAt
             }
         )
-    }
-    helpSetting?.let { item ->
-        val helpText = item.help
-        if (helpText != null) {
-            AlertDialog(
-                onDismissRequest = { helpSetting = null },
-                title = { Text(stringResource(item.label)) },
-                text = { Text(stringResource(helpText)) },
-                confirmButton = {
-                    TextButton(onClick = { helpSetting = null }) {
-                        Text(stringResource(string.close))
-                    }
-                }
-            )
-        }
     }
     if (showDebugLog) DebugLogDialog(onDismiss = { setShowDebugLog(false) })
     if (showBugReport) BugReportDialog(
@@ -1687,20 +1671,6 @@ fun SettingsScreen(
                                 text = stringResource(item.label),
                                 modifier = Modifier.weight(1f)
                             )
-                            val help = item.help
-                            if (help != null) {
-                                IconButton(
-                                    onClick = { helpSetting = item },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.outline_info),
-                                        contentDescription = stringResource(string.information),
-                                        tint = colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
                         }
                     },
                     supportingContent = { Text(stringResource(item.description)) },
@@ -1747,13 +1717,6 @@ fun SettingsScreen(
             if (settingsCategory == SettingsCategory.ABOUT) {
             item {
                 ClickableListItem(
-                    leadingContent = {
-                        Icon(
-                            painterResource(R.drawable.outline_info),
-                            tint = colorScheme.primary,
-                            contentDescription = null
-                        )
-                    },
                     headlineContent = { Text(stringResource(string.settingReplayTutorial)) },
                     supportingContent = { Text(stringResource(string.settingReplayTutorialDesc)) },
                     colors = listItemColors,
@@ -1764,9 +1727,6 @@ fun SettingsScreen(
             item { Spacer(Modifier.height(12.dp)) }
             item {
                 ListItem(
-                    leadingContent = {
-                        Icon(painterResource(R.drawable.outline_info), contentDescription = null)
-                    },
                     headlineContent = { Text(stringResource(string.version)) },
                     supportingContent = { Text(BuildConfig.VERSION_NAME) },
                     colors = listItemColors,
@@ -2064,21 +2024,6 @@ fun SettingsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Spacer(
-                                Modifier
-                                    .clip(MaterialShapes.Cookie12Sided.toShape())
-                                    .background(colorScheme.secondaryContainer)
-                                    .padding(8.dp)
-                                    .size(24.dp)
-                            )
-                            Icon(
-                                painterResource(R.drawable.filled_info),
-                                tint = colorScheme.onSecondaryContainer,
-                                contentDescription = stringResource(string.information),
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
                         Text(
                             stringResource(string.setAsDefault),
                             style = typography.headlineSmall
@@ -2314,7 +2259,7 @@ fun SettingsScreen(
                         SettingsSearchEntry(
                             context.getString(string.settingReplayTutorial),
                             context.getString(string.settingReplayTutorialDesc),
-                            "tour help onboarding", R.drawable.outline_info
+                            "tour help onboarding", R.drawable.menu_open
                         ) { onReplayTutorial() }
                     )
                     add(
@@ -2356,7 +2301,7 @@ fun SettingsScreen(
                         SettingsSearchEntry(
                             context.getString(string.setAsDefault),
                             context.getString(string.setAsDefaultDesc),
-                            "links default browser", R.drawable.filled_info
+                            "links default browser", R.drawable.open_in_browser
                         ) { context.startActivity(appInfoIntent) }
                     )
                     add(
@@ -2484,7 +2429,7 @@ private enum class SettingsCategory(
         6
     ),
     ABOUT(
-        R.drawable.outline_info,
+        R.drawable.outline_settings,
         string.settingsAbout,
         string.settingsAboutDesc,
         5

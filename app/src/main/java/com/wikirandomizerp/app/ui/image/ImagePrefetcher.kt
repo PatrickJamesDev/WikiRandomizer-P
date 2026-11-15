@@ -6,7 +6,11 @@ import coil3.SingletonImageLoader
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.size.Size
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import com.wikirandomizerp.app.data.CacheConfig
@@ -162,6 +166,32 @@ object ImagePrefetcher {
      * pictures are stored at the 960 px step, and the full-screen 1920 px renditions are stored
      * too (up to [CacheConfig.MAX_HIGH_RES_IMAGES]) so opening the viewer never waits.
      */
+    suspend fun warmAndWait(context: Context, urls: Collection<String>) =
+        withContext(Dispatchers.IO) {
+            val distinct = urls.mapNotNull { standardThumbnailUrl(it) }.distinct()
+            if (distinct.isEmpty()) return@withContext
+            val loader = SingletonImageLoader.get(context)
+            coroutineScope {
+                distinct.map { url ->
+                    async {
+                        try {
+                            loader.execute(
+                                ImageRequest.Builder(context)
+                                    .data(url)
+                                    .diskCacheKey(ImageCacheKeys.body(url))
+                                    .memoryCachePolicy(CachePolicy.DISABLED)
+                                    .size(Size(96, 96))
+                                    .build()
+                            )
+                        } catch (cancellation: CancellationException) {
+                            throw cancellation
+                        } catch (_: Throwable) {
+                        }
+                    }
+                }.awaitAll()
+            }
+        }
+
     suspend fun warm(
         context: Context,
         urls: Collection<String>,
