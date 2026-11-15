@@ -99,8 +99,8 @@ several minutes. Later builds are incremental.
   search through the shared search-source contract; community curators load from GitHub and can
   be followed; Discover shows the daily featured article, most-read pages, picture of the day,
   news and on-this-day, plus a swipe-card feed, saved pictures, highlights, a Wiktionary-backed
-  vocabulary and article tabs; theme, language, article text size and browsing-history prefs
-  persist through `NSUserDefaults` via the shared `SettingsStore`.
+  vocabulary, Commons galleries and article tabs; theme, language, article text size and
+  browsing-history prefs persist through `NSUserDefaults` via the shared `SettingsStore`.
 - The Android app keeps all of its existing features; `build_ios.sh` does not change the APK.
 - Remaining Android screens are migrated into `shared/src/commonMain` in phases, then both hosts
   use the same implementation.

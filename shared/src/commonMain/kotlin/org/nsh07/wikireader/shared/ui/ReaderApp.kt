@@ -77,6 +77,7 @@ import org.nsh07.wikireader.shared.library.LibraryRepository
 import org.nsh07.wikireader.shared.library.SavedImageRepository
 import org.nsh07.wikireader.shared.library.SeenArticle
 import org.nsh07.wikireader.shared.library.VocabularyRepository
+import org.nsh07.wikireader.shared.reader.CommonsSource
 import org.nsh07.wikireader.shared.reader.CuratorSource
 import org.nsh07.wikireader.shared.reader.DictionarySource
 import org.nsh07.wikireader.shared.reader.FeedSource
@@ -86,6 +87,7 @@ import org.nsh07.wikireader.shared.reader.findTopicByCategory
 import org.nsh07.wikireader.shared.settings.SettingsKeys
 import org.nsh07.wikireader.shared.settings.SettingsStore
 import org.nsh07.wikireader.shared.ui.article.PlatformArticleWebView
+import org.nsh07.wikireader.shared.ui.commons.CommonsGalleryScreen
 import org.nsh07.wikireader.shared.ui.curators.CuratorsScreen
 import org.nsh07.wikireader.shared.ui.feed.FeedScreen
 import org.nsh07.wikireader.shared.ui.feed.VerticalFeedScreen
@@ -106,7 +108,7 @@ import org.nsh07.wikireader.shared.ui.theme.WikiReaderTheme
 
 private enum class ReaderDestination {
     READER, FEED, TOPICS, SAVED, HISTORY, IMAGES, HIGHLIGHTS, VOCABULARY, SEARCH, WIKI_SEARCH,
-    CURATORS, STATS, SETTINGS, ABOUT
+    CURATORS, GALLERY, STATS, SETTINGS, ABOUT
 }
 
 private const val RANDOM_UNSEEN_ATTEMPTS = 8
@@ -127,6 +129,7 @@ fun ReaderApp(
     curatorSource: CuratorSource,
     feedSource: FeedSource,
     dictionarySource: DictionarySource,
+    commonsSource: CommonsSource,
     settingsStore: SettingsStore,
     modifier: Modifier = Modifier
 ) {
@@ -172,6 +175,7 @@ fun ReaderApp(
         var openArticle by remember { mutableStateOf<OpenArticle?>(null) }
         var openTabs by remember { mutableStateOf<List<OpenArticle>>(emptyList()) }
         var verticalFeed by remember { mutableStateOf<FeedApiResponse?>(null) }
+        var galleryArticle by remember { mutableStateOf<OpenArticle?>(null) }
         var librarySearchQuery by remember { mutableStateOf("") }
         var recentSearches by remember { mutableStateOf(library.recentSearches()) }
         var wikiSearchQuery by remember { mutableStateOf("") }
@@ -476,6 +480,7 @@ fun ReaderApp(
                                 ReaderDestination.WIKI_SEARCH -> "Wikipedia"
                                 ReaderDestination.CURATORS -> "Curators"
                                 ReaderDestination.FEED -> "Discover"
+                                ReaderDestination.GALLERY -> "Gallery"
                                 ReaderDestination.STATS -> "Stats"
                                 ReaderDestination.SETTINGS -> "Settings"
                                 ReaderDestination.ABOUT -> "About"
@@ -517,6 +522,14 @@ fun ReaderApp(
                                 }
                                 TextButton(
                                     onClick = {
+                                        galleryArticle = currentOpen
+                                        destination = ReaderDestination.GALLERY
+                                    }
+                                ) {
+                                    Text("Gallery")
+                                }
+                                TextButton(
+                                    onClick = {
                                         uriHandler.openUri(
                                             WikiUrls.articleUrl(
                                                 currentOpen.language,
@@ -548,7 +561,18 @@ fun ReaderApp(
                         .padding(contentPadding)
                 ) {
                     val currentOpen = openArticle
-                    if (currentOpen != null) {
+                    if (destination == ReaderDestination.GALLERY && galleryArticle != null) {
+                        CommonsGalleryScreen(
+                            source = commonsSource,
+                            language = galleryArticle!!.language,
+                            title = galleryArticle!!.summary.title,
+                            onOpenUrl = { uriHandler.openUri(it) },
+                            onBack = {
+                                galleryArticle = null
+                                destination = ReaderDestination.READER
+                            }
+                        )
+                    } else if (currentOpen != null) {
                         Column(modifier = Modifier.fillMaxSize()) {
                             if (openTabs.size > 1) {
                                 ArticleTabStrip(
@@ -863,6 +887,10 @@ fun ReaderApp(
                                         thumbnail = thumbnail,
                                         description = description
                                     )
+                                },
+                                onOpenGallery = { current ->
+                                    galleryArticle = OpenArticle(language, current)
+                                    destination = ReaderDestination.GALLERY
                                 }
                             )
                         }
@@ -951,7 +979,8 @@ private fun ReaderContent(
     topicLabel: String?,
     onOpenArticle: (ArticleSummary) -> Unit,
     onSaveImage: (String, String, String) -> Unit,
-    onSaveHighlight: (String, String, String, String?, String?) -> Unit
+    onSaveHighlight: (String, String, String, String?, String?) -> Unit,
+    onOpenGallery: (ArticleSummary) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -971,7 +1000,8 @@ private fun ReaderContent(
                         article.thumbnail?.source,
                         article.summaryDescription
                     )
-                }
+                },
+                onOpenGallery = { onOpenGallery(article) }
             )
 
             isLoading -> LoadingState()
@@ -1035,7 +1065,8 @@ private fun ArticleContent(
     topicLabel: String?,
     onOpenArticle: () -> Unit,
     onSaveImage: (String) -> Unit,
-    onSaveHighlight: () -> Unit
+    onSaveHighlight: () -> Unit,
+    onOpenGallery: () -> Unit
 ) {
     val readingMinutes = WikiText.readingMinutes(article.extract)
     LazyColumn(
@@ -1163,6 +1194,7 @@ private fun ArticleContent(
                                 Text("Highlight intro")
                             }
                         }
+                        TextButton(onClick = onOpenGallery) { Text("Gallery") }
                     }
                 }
             }

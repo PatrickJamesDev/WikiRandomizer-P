@@ -47,6 +47,11 @@ object WikiUrls {
     fun feedUrl(lang: String, datePath: String): String =
         "https://${host(lang)}/api/rest_v1/feed/featured/${datePath.trim('/')}"
 
+    fun commonsImagesUrl(lang: String, title: String): String =
+        "https://${host(lang)}/w/api.php?action=query&format=json&formatversion=2" +
+            "&generator=images&gimlimit=50&redirects=1" +
+            "&titles=${encodeTitle(title)}&prop=imageinfo&iiprop=url&iiurlwidth=600"
+
     fun categoryMembersUrl(lang: String, category: String, limit: Int = 50): String =
         "https://${host(lang)}/w/api.php?action=query&list=categorymembers" +
             "&cmtitle=${encodeQuery("Category:$category")}" +
