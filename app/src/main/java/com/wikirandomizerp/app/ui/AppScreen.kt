@@ -230,6 +230,7 @@ fun AppScreen(
     }
     val donationBilling = application?.container?.donationBilling
     val localSyncStore = application?.container?.localSyncStore
+    val driveSyncStore = application?.container?.driveSyncStore
     val syncAuth = if (localSyncStore != null) {
         localSyncStore.authState.collectAsStateWithLifecycle(
             initialValue = localSyncStore.currentAuth
@@ -473,6 +474,17 @@ fun AppScreen(
         store.applyAutoSyncSchedule()
         if (store.autoSync && store.hasCloudAccess() && syncAuth is SyncAuthState.SignedIn) {
             runCatching { store.syncNowIfAllowed() }
+        }
+    }
+
+    // Google Drive uses the same opt-in model. Background retries are handled by WorkManager, so a
+    // failed foreground attempt must stay silent and never interrupt reading.
+    LaunchedEffect(driveSyncStore) {
+        val store = driveSyncStore ?: return@LaunchedEffect
+        if (!store.configured) return@LaunchedEffect
+        store.applyAutoSyncSchedule()
+        if (store.autoSync && store.connected) {
+            runCatching { store.syncIfAllowed() }
         }
     }
 

@@ -64,6 +64,10 @@ import com.wikirandomizerp.app.data.ALL_TOPICS
 import com.wikirandomizerp.app.data.AppDatabaseRepository
 import com.wikirandomizerp.app.data.ArticleCache
 import com.wikirandomizerp.app.ui.image.ImagePrefetcher
+import com.wikirandomizerp.app.ui.homeScreen.INaturalistImages
+import com.wikirandomizerp.app.ui.homeScreen.INaturalistObservations
+import com.wikirandomizerp.app.ui.homeScreen.INaturalistTaxa
+import com.wikirandomizerp.app.ui.homeScreen.isLikelyOrganismArticle
 import com.wikirandomizerp.app.data.ArticleRow
 import com.wikirandomizerp.app.data.CacheConfig
 import com.wikirandomizerp.app.data.DebugLog
@@ -153,15 +157,17 @@ private const val TOPIC_RANDOM_TIMEOUT_MS = 8_000L // hard ceiling on the whole 
 private const val MAX_BACKSTACK_ENTRIES = 8        // bounds memory when chaining random articles
 private const val MAX_CANDIDATE_FETCH_ATTEMPTS = 3 // retries if a chosen candidate's fetch fails
 private const val MAX_RECENTLY_CLOSED = 10         // closed tabs that can still be brought back
-private const val PREFETCH_TARGET = 12             // random articles kept ready in the background
-private const val PREFETCH_ALL_IMAGES = 5          // articles whose every thumbnail is warmed
-private const val PREFETCH_PARTIAL_IMAGES = 8      // next articles that get a partial image set
-private const val PREFETCH_WARM_IMAGES = 8         // body pictures warmed for a partial page
-private const val PREFETCH_WARM_FULL_RES = 12      // full-screen renditions for the next article
-private const val PREFETCH_WARM_FULL_RES_NEAR = 6  // full-screen renditions for the second
-private const val PREFETCH_WARM_FULL_RES_FAR = 2   // full-screen renditions for the third/fourth
+private const val PREFETCH_TARGET = 16             // random articles kept ready in the background
+private const val PREFETCH_ALL_IMAGES = 6          // articles whose every thumbnail is warmed
+private const val PREFETCH_PARTIAL_IMAGES = 10     // next articles that get a partial image set
+private const val PREFETCH_WARM_IMAGES = 10        // body pictures warmed for a partial page
+private const val PREFETCH_WARM_FULL_RES = 16      // full-screen renditions for the next article
+private const val PREFETCH_WARM_FULL_RES_NEAR = 8  // full-screen renditions for the second
+private const val PREFETCH_WARM_FULL_RES_FAR = 4   // full-screen renditions for the third/fourth
 private const val IMAGE_PREFETCH_GAP_MS = 40L      // gentle spacing between image requests
 private const val INITIAL_IMAGES_WAIT = 10
+private const val PREFETCH_INAT_ARTICLES = 5        // queued species articles with photos prepared
+private const val PREFETCH_INAT_WAIT = 4           // iNaturalist thumbnails awaited during prefetch
 
 // Keep the text and body pictures of this many most-recently-read articles; older ones are
 // evicted from the caches (saved articles, offline downloads and open tabs are exempt).
@@ -340,6 +346,7 @@ class HomeScreenViewModel(
     private var imagePrefetchJob: Job? = null
     private val warmedThumbnails = ConcurrentHashMap.newKeySet<String>()
     private val warmedFullRes = ConcurrentHashMap.newKeySet<String>()
+    private val warmedINaturalist = ConcurrentHashMap.newKeySet<String>()
     @Volatile private var libraryVersion = 0
 
     /** One article currently on screen; finished when the user leaves it (opt-in personalization). */
@@ -378,6 +385,7 @@ class HomeScreenViewModel(
         imagePrefetchJob = null
         warmedThumbnails.clear()
         warmedFullRes.clear()
+        warmedINaturalist.clear()
         persistPrefetchQueue()
         // Topic/settings changes must begin refilling immediately, otherwise the next Random tap
         // has nothing prepared and falls back to a loading screen.
@@ -947,10 +955,16 @@ class HomeScreenViewModel(
         if (urls.isEmpty()) return
         val start = System.nanoTime()
         try {
-            ImagePrefetcher.warmAndWait(appContext, urls)
+            // Never hold the article behind a slow image connection. The separate background
+            // warm job keeps downloading after this short deadline expires.
+            val finished = withTimeoutOrNull(1_500) {
+                ImagePrefetcher.warmAndWait(appContext, urls)
+                true
+            } ?: false
             DebugLog.d(
                 "Prefetch",
-                "initial ${urls.size} pictures ready in ${(System.nanoTime() - start) / 1_000_000} ms"
+                "initial ${urls.size} pictures ${if (finished) "ready" else "still warming"} in " +
+                        "${(System.nanoTime() - start) / 1_000_000} ms"
             )
         } catch (cancellation: CancellationException) {
             throw cancellation
@@ -1258,8 +1272,9 @@ class HomeScreenViewModel(
     }
 
     /**
-     * Warms queued article pictures in reading order. The next five articles get every thumbnail,
-     * while full-screen renditions fall off with distance from the front of the queue.
+     * Warms queued article pictures in reading order. The next six articles get every thumbnail,
+     * while full-screen renditions fall off with distance from the front of the queue. Species
+     * articles in that window also get their iNaturalist gallery photos prepared.
      */
     private fun ensureQueuedImageWarm() {
         val prefs = preferencesState.value
@@ -1271,8 +1286,9 @@ class HomeScreenViewModel(
                     coroutineContext.ensureActive()
                     val currentPrefs = preferencesState.value
                     if (currentPrefs.dataSaver || !currentPrefs.preloadArticles) return@launch
-                    if (warmedThumbnails.size > 5_000) warmedThumbnails.clear()
-                    if (warmedFullRes.size > 1_500) warmedFullRes.clear()
+                    if (warmedThumbnails.size > 8_000) warmedThumbnails.clear()
+                    if (warmedFullRes.size > 3_000) warmedFullRes.clear()
+                    if (warmedINaturalist.size > 5_000) warmedINaturalist.clear()
                     val snapshot = synchronized(prefetchLock) { prefetchQueue.toList() }
                     if (snapshot.isEmpty()) return@launch
                     val lang = currentPrefs.lang
@@ -1316,6 +1332,23 @@ class HomeScreenViewModel(
                                 gapMs = IMAGE_PREFETCH_GAP_MS
                             )
                             warmedAny = true
+                        }
+                        if (currentPrefs.inaturalistGallery && index < PREFETCH_INAT_ARTICLES &&
+                            isLikelyOrganismArticle(article.content, article.page.description)
+                        ) {
+                            val taxonId = INaturalistTaxa.resolveId(article.page.title)
+                            if (taxonId != null) {
+                                val observations = INaturalistObservations.fetch(taxonId)
+                                val fresh = INaturalistImages.preload(
+                                    context = appContext,
+                                    observations = observations,
+                                    waitFor = if (index == 0) PREFETCH_INAT_WAIT else 0,
+                                    fullRes = if (index == 0) PREFETCH_WARM_FULL_RES
+                                    else PREFETCH_WARM_FULL_RES_NEAR,
+                                    done = warmedINaturalist
+                                )
+                                if (fresh > 0) warmedAny = true
+                            }
                         }
                     }
                     if (!warmedAny) return@launch

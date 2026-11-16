@@ -842,6 +842,71 @@ class TopicIndex private constructor(context: Context, val lang: String) :
 
     // ── reading ───────────────────────────────────────────────────────────────
 
+    /** Compact reading rows used by cloud sync; one per article. */
+    fun readingEntries(): List<ReadingEntry> {
+        val out = ArrayList<ReadingEntry>()
+        readableDatabase.rawQuery(
+            "SELECT title, topic, seconds, progress, read_at FROM reading " +
+                    "ORDER BY read_at DESC LIMIT 5000",
+            null
+        ).use { c ->
+            while (c.moveToNext()) {
+                out.add(
+                    ReadingEntry(
+                        title = c.getString(0),
+                        topic = c.getString(1),
+                        seconds = c.getDouble(2),
+                        progress = c.getDouble(3),
+                        readAt = c.getLong(4)
+                    )
+                )
+            }
+        }
+        return out
+    }
+
+    /**
+     * Merges reading rows from another device into this language's index. Time and depth only
+     * move forward, so re-syncing the same snapshot cannot shrink progress.
+     */
+    fun mergeReadingEntries(entries: Collection<ReadingEntry>) {
+        if (entries.isEmpty()) return
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            val existing = HashMap<String, Triple<Double, Double, Long>>()
+            db.rawQuery(
+                "SELECT title, seconds, progress, read_at FROM reading",
+                null
+            ).use { c ->
+                while (c.moveToNext()) {
+                    existing[c.getString(0)] = Triple(
+                        c.getDouble(1),
+                        c.getDouble(2),
+                        c.getLong(3)
+                    )
+                }
+            }
+            for (entry in entries) {
+                if (entry.title.isBlank()) continue
+                val topic = entry.topic.takeIf { it.isNotBlank() } ?: continue
+                val old = existing[entry.title]
+                val seconds = maxOf(entry.seconds, old?.first ?: 0.0)
+                val progress = maxOf(entry.progress, old?.second ?: 0.0)
+                val readAt = maxOf(entry.readAt, old?.third ?: 0L)
+                db.execSQL(
+                    "INSERT OR REPLACE INTO reading(title, topic, seconds, progress, read_at) " +
+                            "VALUES(?, ?, ?, ?, ?)",
+                    arrayOf<Any?>(entry.title, topic, seconds, progress, readAt)
+                )
+                existing[entry.title] = Triple(seconds, progress, readAt)
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
     fun topicStats(): List<TopicStat> {
         val t0 = System.nanoTime()
         val out = ArrayList<TopicStat>()
@@ -966,6 +1031,15 @@ class TopicIndex private constructor(context: Context, val lang: String) :
             instances.getOrPut(lang) { TopicIndex(context.applicationContext, lang) }
     }
 }
+
+/** One article's reading time and furthest scroll depth. */
+data class ReadingEntry(
+    val title: String,
+    val topic: String,
+    val seconds: Double,
+    val progress: Double,
+    val readAt: Long
+)
 
 /** Thrown when every article matching the user's topics and filters has already been shown. */
 class LibraryExhaustedException(

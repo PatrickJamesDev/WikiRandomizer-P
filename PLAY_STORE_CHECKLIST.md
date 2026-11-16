@@ -45,6 +45,11 @@ Version name/code: `BuildConfig.VERSION_NAME` / `versionCode` in `app/build.grad
       processed by Google as a service provider; Google Play Billing handles payments. There are no
       ads, analytics or tracking SDKs. If your build has no Firebase properties, declare no account
       data collected and keep the cloud UI disabled.
+- [ ] **Data safety (Google Drive):** if you ship with `GOOGLE_DRIVE_CLIENT_ID`, also declare the
+      optional Google Drive sync data: app settings, reading history, reading progress, highlights
+      and vocabulary. It is stored in the user's own hidden Drive app-data folder, encrypted in
+      transit, used only for app functionality, and deletable through **Settings → Google Drive sync
+      → Delete Drive copy**. No article text, images or offline files are uploaded.
 - [ ] **Ads:** "No ads".
 - [ ] **Content rating:** complete the questionnaire. The app shows user-selected Wikipedia
       content and may link to external sites; answer accordingly.

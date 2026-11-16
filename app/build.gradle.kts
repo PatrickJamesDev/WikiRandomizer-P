@@ -33,6 +33,10 @@ android {
         buildConfigField("String", "FIREBASE_APPLICATION_ID", "\"${config("FIREBASE_APPLICATION_ID")}\"")
         buildConfigField("String", "FIREBASE_API_KEY", "\"${config("FIREBASE_API_KEY")}\"")
         buildConfigField("String", "FIREBASE_AUTH_DOMAIN", "\"${config("FIREBASE_AUTH_DOMAIN")}\"")
+        // Android OAuth client ID for Google Drive app-data sync. The client must be registered
+        // in Google Cloud for this package and signing SHA-1; Play services resolves it from the
+        // installed signature, so the value is only used to gate the optional feature.
+        buildConfigField("String", "GOOGLE_DRIVE_CLIENT_ID", "\"${config("GOOGLE_DRIVE_CLIENT_ID")}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -155,6 +159,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation(libs.play.services.auth)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

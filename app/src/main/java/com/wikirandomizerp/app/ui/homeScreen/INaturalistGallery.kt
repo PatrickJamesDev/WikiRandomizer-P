@@ -39,13 +39,23 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
+import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import coil3.size.Size
 import com.wikirandomizerp.app.R
+import com.wikirandomizerp.app.data.CacheConfig
+import com.wikirandomizerp.app.ui.image.ImageCacheKeys
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -356,12 +366,67 @@ object INaturalistObservations {
 }
 
 /**
+ * Warms the exact gallery images used by the strip and the in-app viewer. The thumbnails are
+ * queued first, then the first few are awaited, so a gallery can appear with its visible row
+ * already decoded. [done] prevents the background queue from re-requesting the same photos.
+ */
+object INaturalistImages {
+    suspend fun preload(
+        context: Context,
+        observations: List<INatObservation>,
+        waitFor: Int = Int.MAX_VALUE,
+        fullRes: Int = CacheConfig.MAX_HIGH_RES_IMAGES,
+        done: MutableSet<String>? = null
+    ): Int = withContext(Dispatchers.IO) {
+        if (observations.isEmpty()) return@withContext 0
+        val loader = SingletonImageLoader.get(context)
+        val thumbs = observations.map { it.thumbUrl }.distinct()
+            .filter { done == null || done.add(it) }
+        val large = observations.take(fullRes).map { it.largeUrl }.distinct()
+            .filter { done == null || done.add(it) }
+        if (thumbs.isEmpty() && large.isEmpty()) return@withContext 0
+
+        fun request(url: String) = ImageRequest.Builder(context)
+            .data(url)
+            .diskCacheKey(ImageCacheKeys.body(url))
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .size(Size(96, 96))
+            .build()
+
+        // Fire everything into Coil's queue first. Waiting for the first row then cannot cancel
+        // the remaining requests when the caller applies a display deadline.
+        thumbs.forEach { loader.enqueue(request(it)) }
+        large.forEach { loader.enqueue(request(it)) }
+
+        val wait = thumbs.take(waitFor)
+        if (wait.isNotEmpty()) {
+            coroutineScope {
+                wait.map { url ->
+                    async {
+                        try {
+                            loader.execute(request(url))
+                        } catch (cancellation: CancellationException) {
+                            throw cancellation
+                        } catch (_: Throwable) {
+                        }
+                    }
+                }.awaitAll()
+            }
+        }
+        // Keep the queue gentle when a whole article queue is prepared in one pass.
+        if (thumbs.size > wait.size) delay(30)
+        thumbs.size + large.size
+    }
+}
+
+/**
  * Loads the iNaturalist photo gallery of the species the article [title] is about, in the
  * background. Returns null while loading, when the species is not found, or when it has no
  * openly licensed photos, so the page simply shows no gallery in those cases.
  */
 @Composable
 fun rememberINaturalistGallery(title: String, enabled: Boolean): INatGallery? {
+    val context = LocalContext.current
     var gallery by remember(title) { mutableStateOf<INatGallery?>(null) }
     LaunchedEffect(title, enabled) {
         if (enabled && gallery == null && title.isNotBlank()) {
@@ -369,7 +434,18 @@ fun rememberINaturalistGallery(title: String, enabled: Boolean): INatGallery? {
                 val id = INaturalistTaxa.resolveId(title)
                 if (id != null) {
                     val observations = INaturalistObservations.fetch(id)
-                    if (observations.isNotEmpty()) gallery = INatGallery(id, observations)
+                    if (observations.isNotEmpty()) {
+                        // The strip sits below the article, so waiting for its photo row is not on
+                        // the critical path. Cap the wait so a slow network cannot hide it forever.
+                        withTimeoutOrNull(6_000) {
+                            INaturalistImages.preload(
+                                context = context,
+                                observations = observations,
+                                waitFor = observations.size
+                            )
+                        }
+                        gallery = INatGallery(id, observations)
+                    }
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -464,6 +540,7 @@ private fun INatThumb(obs: INatObservation, onClick: () -> Unit) {
         AsyncImage(
             model = ImageRequest.Builder(context)
                 .data(obs.thumbUrl)
+                .diskCacheKey(ImageCacheKeys.body(obs.thumbUrl))
                 .crossfade(true)
                 .build(),
             contentDescription = stringResource(R.string.inat_observed_by, obs.observer),
@@ -489,6 +566,7 @@ private fun INatObservationDialog(
                 AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(obs.largeUrl)
+                        .diskCacheKey(ImageCacheKeys.body(obs.largeUrl))
                         .crossfade(true)
                         .build(),
                     contentDescription = stringResource(R.string.inat_observed_by, obs.observer),

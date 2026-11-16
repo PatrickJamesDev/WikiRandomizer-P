@@ -294,7 +294,10 @@ fun SettingsScreen(
         SyncAuthState.NotConfigured
     }
     val cloudAccess = localSyncStore?.hasCloudAccess() == true
+    val driveSyncStore = app?.container?.driveSyncStore
+    val driveConfigured = driveSyncStore?.configured == true
     var showCloudSyncDialog by remember { mutableStateOf(false) }
+    var showDriveSyncDialog by remember { mutableStateOf(false) }
     var autoSync by remember { mutableStateOf(localSyncStore?.autoSync ?: false) }
     var lastSyncAt by remember { mutableStateOf(localSyncStore?.lastSyncAt) }
     var syncing by remember { mutableStateOf(false) }
@@ -622,6 +625,12 @@ fun SettingsScreen(
                 autoSync = localSyncStore.autoSync
                 lastSyncAt = localSyncStore.lastSyncAt
             }
+        )
+    }
+    if (showDriveSyncDialog && driveSyncStore != null) {
+        DriveSyncDialog(
+            store = driveSyncStore,
+            onDismiss = { showDriveSyncDialog = false }
         )
     }
     if (showDebugLog) DebugLogDialog(onDismiss = { setShowDebugLog(false) })
@@ -1179,9 +1188,32 @@ fun SettingsScreen(
                     },
                     colors = listItemColors,
                     modifier = Modifier
-                        .clip(bottomListItemShape)
+                        .clip(if (driveConfigured) middleListItemShape else bottomListItemShape)
                         .clickable { onBackup() }
                 )
+            }
+            if (driveConfigured && driveSyncStore != null) {
+                item {
+                    val driveSupporting = if (driveSyncStore.connected) {
+                        context.getString(string.settingDriveConnected)
+                    } else {
+                        context.getString(string.settingDriveNotConnected)
+                    }
+                    ListItem(
+                        leadingContent = {
+                            Icon(painterResource(R.drawable.cloud), contentDescription = null)
+                        },
+                        headlineContent = { Text(stringResource(string.settingDriveSync)) },
+                        supportingContent = { Text(driveSupporting) },
+                        trailingContent = {
+                            Icon(painterResource(R.drawable.arrow_forward), contentDescription = null)
+                        },
+                        colors = listItemColors,
+                        modifier = Modifier
+                            .clip(bottomListItemShape)
+                            .clickable { showDriveSyncDialog = true }
+                    )
+                }
             }
             // Firebase sync is a developer preview. It stays completely out of the normal UI.
             if (developerEnabled) {
@@ -2297,6 +2329,16 @@ fun SettingsScreen(
                             "backup backups restore export import data storage", R.drawable.download_done
                         ) { onBackup() }
                     )
+                    if (driveConfigured) {
+                        add(
+                            SettingsSearchEntry(
+                                context.getString(string.settingDriveSync),
+                                context.getString(string.settingDriveSyncDesc),
+                                "drive google cloud sync account settings history progress highlights vocabulary",
+                                R.drawable.cloud
+                            ) { showDriveSyncDialog = true }
+                        )
+                    }
                     add(
                         SettingsSearchEntry(
                             context.getString(string.setAsDefault),

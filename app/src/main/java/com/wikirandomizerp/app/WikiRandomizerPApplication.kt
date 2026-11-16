@@ -131,7 +131,7 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
             // can be cleared by the system at any time). Article pictures therefore survive app
             // restarts and reopen instantly; the retention policy removes old body images
             // explicitly, and pinned History/Saved thumbnails are never touched.
-            // Both on-device caches share the same 400 MB budget by default.
+            // Each on-device cache gets the same 600 MB budget by default.
             .diskCache(
                 coil3.disk.DiskCache.Builder()
                     .directory(java.io.File(filesDir, "image_cache").toOkioPath())

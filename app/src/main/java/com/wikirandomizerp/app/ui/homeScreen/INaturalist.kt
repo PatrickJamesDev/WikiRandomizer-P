@@ -79,6 +79,21 @@ object INaturalistTaxa {
     }
 }
 
+/** Cheap organism check for the prefetch queue, before an article has been parsed. */
+fun isLikelyOrganismArticle(content: String, description: String?): Boolean {
+    val desc = description?.trim()?.lowercase()
+    if (desc != null && organismDescriptions.any { desc.startsWith(it) || desc.contains(" $it") }) {
+        return true
+    }
+    val sample = content.take(250_000)
+    if (taxoboxTemplates.any { sample.contains(it, ignoreCase = true) }) return true
+    if (sample.contains("infobox biota", ignoreCase = true) ||
+        sample.contains("infobox-biota", ignoreCase = true)
+    ) return true
+    return sample.contains(HTML_INFOBOX_MARKER, ignoreCase = true) &&
+        sample.contains("\u001Ftaxobox", ignoreCase = true)
+}
+
 /**
  * True when [extract] contains a taxobox (the REST HTML path and any remaining wikitext one) or
  * [description] reads like a taxonomic short description ("Species of flowering plant").
