@@ -165,7 +165,9 @@ private const val PREFETCH_WARM_FULL_RES = 4      // full-screen renditions for 
 private const val PREFETCH_WARM_FULL_RES_NEAR = 2  // full-screen renditions for the second
 private const val PREFETCH_WARM_FULL_RES_FAR = 1   // full-screen renditions for the third/fourth
 private const val IMAGE_PREFETCH_GAP_MS = 40L      // gentle spacing between image requests
-private const val INITIAL_IMAGES_WAIT = 1
+private const val FOREGROUND_WAIT_MS = 12_000L     // background work waits for an opening article
+private const val FOREGROUND_POLL_MS = 150L
+private const val BACKGROUND_SETTLE_MS = 1_000L   // let the visible page use the link first
 private const val PREFETCH_INAT_ARTICLES = 5        // queued species articles with photos prepared
 private const val PREFETCH_INAT_WAIT = 4           // iNaturalist thumbnails awaited during prefetch
 
@@ -364,6 +366,17 @@ class HomeScreenViewModel(
     val dictionaryLookup: StateFlow<DictionaryLookup?> = _dictionaryLookup.asStateFlow()
 
     private fun queuedCount(): Int = synchronized(prefetchLock) { prefetchQueue.size }
+
+    /**
+     * Background work must never compete with the article the reader is waiting for. This waits
+     * for a foreground load to finish, then gives its first pictures a short head start.
+     */
+    private suspend fun awaitForegroundWindow() {
+        withTimeoutOrNull(FOREGROUND_WAIT_MS) {
+            while (homeScreenState.value.isLoading) delay(FOREGROUND_POLL_MS)
+        }
+        delay(BACKGROUND_SETTLE_MS)
+    }
 
     /**
      * Anything that could change which article should come next changes this key. Only settings
@@ -629,7 +642,8 @@ class HomeScreenViewModel(
                 ?: tabs.maxByOrNull { it.lastUsedAt }?.id
             publishTabs(tabs, active)
             DebugLog.i("Tabs", "restored ${tabs.size} tab(s) from the previous session")
-            prefetchTabs()
+            // Tab covers and missing text are prepared only after the restored article is on
+            // screen. Starting here used to race the article load on startup.
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -817,6 +831,7 @@ class HomeScreenViewModel(
         if (tabs.isEmpty()) return
         tabsPrefetchJob?.cancel()
         tabsPrefetchJob = viewModelScope.launch(Dispatchers.IO + errorHandler) {
+            awaitForegroundWindow()
             val kind = if (preferencesState.value.renderMode == "html") "html" else "wikitext"
             val current = (backStack.lastOrNull() as? HomeSubscreen.Article)?.let {
                 it.title to it.currentLang
@@ -942,37 +957,6 @@ class HomeScreenViewModel(
         // Start warming the article's pictures immediately: no waiting for a scroll or for the
         // progressive renderer to reach the first image.
         if (!preferencesState.value.dataSaver) warmImages(lang, page, content)
-    }
-
-    private suspend fun awaitInitialImages(
-        lang: String,
-        page: WikiApiPage?,
-        content: String,
-        html: Boolean
-    ) {
-        if (preferencesState.value.dataSaver) return
-        // Only the article's main picture has to be ready before the article is shown. Everything
-        // else starts loading right after (cacheArticle -> warmImages), first picture first.
-        val urls = imageUrlsFor(lang, page, content, html).take(INITIAL_IMAGES_WAIT)
-        if (urls.isEmpty()) return
-        val start = System.nanoTime()
-        try {
-            // Never hold the article behind a slow image connection. The separate background
-            // warm job keeps downloading after this short deadline expires.
-            val finished = withTimeoutOrNull(1_200) {
-                ImagePrefetcher.warmAndWait(appContext, urls)
-                true
-            } ?: false
-            DebugLog.d(
-                "Prefetch",
-                "initial ${urls.size} pictures ${if (finished) "ready" else "still warming"} in " +
-                        "${(System.nanoTime() - start) / 1_000_000} ms"
-            )
-        } catch (cancellation: CancellationException) {
-            throw cancellation
-        } catch (e: Throwable) {
-            DebugLog.w("Prefetch", "could not prepare initial pictures: ${e.message}")
-        }
     }
 
     /** All picture addresses in [content] (HTML <img> tags or wikitext [[File:]] blocks). */
@@ -1209,6 +1193,7 @@ class HomeScreenViewModel(
         if (prefetchJob?.isActive == true) return // a refill is already running
         prefetchJob = viewModelScope.launch(Dispatchers.IO + errorHandler) {
             try {
+                awaitForegroundWindow()
                 var failures = 0
                 var attempts = 0
                 // Duplicates are cheap (one title lookup) and should not exhaust the refill, so
@@ -1286,6 +1271,7 @@ class HomeScreenViewModel(
         if (imagePrefetchJob?.isActive == true) return
         imagePrefetchJob = viewModelScope.launch(Dispatchers.IO + errorHandler) {
             try {
+                awaitForegroundWindow()
                 while (true) {
                     coroutineContext.ensureActive()
                     val currentPrefs = preferencesState.value
@@ -2639,10 +2625,17 @@ class HomeScreenViewModel(
             loadFeed()
         }
 
-        viewModelScope.launch(Dispatchers.IO + errorHandler) {
-            if (last != null && last.second == currentLang) {
+        if (last != null && last.second == currentLang) {
+            // Fill in the feed underneath the restored article only after that article is fully
+            // open. The feed used to download in parallel with the page the reader was waiting for.
+            viewModelScope.launch(Dispatchers.IO + errorHandler) {
+                loaderJob?.join()
+                awaitForegroundWindow()
                 loadFeed(silent = true)
             }
+        }
+
+        viewModelScope.launch(Dispatchers.IO + errorHandler) {
             migrateTopicSelection()
             try {
                 // Bound the permanent seen list: oldest entries may be offered again eventually.
@@ -3297,6 +3290,14 @@ class HomeScreenViewModel(
     ) {
         val previousLoad = loaderJob
         previousLoad?.cancel()
+        // The article being opened owns the connection. Background refills, tab warming and
+        // queued-picture downloads are restarted once it is visible.
+        prefetchJob?.cancel()
+        prefetchJob = null
+        tabsPrefetchJob?.cancel()
+        tabsPrefetchJob = null
+        imagePrefetchJob?.cancel()
+        imagePrefetchJob = null
         loaderJob = viewModelScope.launch(Dispatchers.IO + errorHandler) {
             // Loads share global parser state (reference lists): never run two at once. Waiting for
             // the cancelled load to actually stop fixes crashes/garbled articles from rapid taps.
@@ -3582,7 +3583,6 @@ class HomeScreenViewModel(
                     } ?: LazyListState()
                     val loadedTitle = pageInfo?.title ?: "Error"
                     val savedHighlights = savedHighlightsFor(loadedTitle, setLang)
-                    awaitInitialImages(setLang, pageInfo, rawWikitext, htmlMode)
                     coroutineContext.ensureActive()
                     if (!replaceBackstackEntry) backStack.add(
                         HomeSubscreen.Article(
@@ -3625,6 +3625,7 @@ class HomeScreenViewModel(
                     // has been parsed. In HTML mode parsing is the slow part, so this overlap is what
                     // makes the *next* random tap as fast as a wikitext tap.
                     schedulePrefetch()
+                    ensureQueuedImageWarm()
 
                     // Hopping through many random articles used to keep every parsed article
                     // alive in the back stack; drop the oldest ones (never the feed at 0).
@@ -3889,6 +3890,15 @@ class HomeScreenViewModel(
         // rest of the stack alone.
         val previousLoad = if (silent) null else loaderJob
         previousLoad?.cancel()
+        if (!silent) {
+            // The feed is now the foreground content; stop background article/tab/image work.
+            prefetchJob?.cancel()
+            prefetchJob = null
+            tabsPrefetchJob?.cancel()
+            tabsPrefetchJob = null
+            imagePrefetchJob?.cancel()
+            imagePrefetchJob = null
+        }
         val feedLoad = viewModelScope.launch(Dispatchers.IO + errorHandler) {
             // Loads share global parser state (reference lists): never run two at once. Waiting for
             // the cancelled load to actually stop fixes crashes/garbled articles from rapid taps.
@@ -3958,8 +3968,14 @@ class HomeScreenViewModel(
                     backStack[0] = feed
                     if (!silent && backStack.size > 1) backStack.removeRange(1, backStack.size)
 
-                    if (!silent) _homeScreenState.update { currentState ->
-                        currentState.copy(isLoading = false)
+                    if (!silent) {
+                        _homeScreenState.update { currentState ->
+                            currentState.copy(isLoading = false)
+                        }
+                        // Tabs and the next random article are background work too: only start
+                        // them once the feed the reader is looking at has settled.
+                        prefetchTabs()
+                        schedulePrefetch()
                     }
                 } catch (e: CancellationException) {
                     // Replaced by another load (link tap, random): keep the current screen.
@@ -4135,7 +4151,6 @@ class HomeScreenViewModel(
                 parsedExtract.add(section0)
                 currentSection = 1
 
-                awaitInitialImages(savedArticle.lang, apiResponse, savedArticle.pageContent, html = false)
                 coroutineContext.ensureActive()
                 backStack.add(
                     HomeSubscreen.Article(
