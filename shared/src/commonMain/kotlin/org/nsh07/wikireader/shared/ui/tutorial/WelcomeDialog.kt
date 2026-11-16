@@ -30,7 +30,7 @@ private val pages = listOf(
     TutorialPage(
         "Keep what matters",
         "Save articles, pictures and highlights, look up words in Wiktionary, and back up the " +
-            "whole reader as JSON from Settings. The library stays on this device."
+            "whole reader as JSON from Settings. The library is stored by the app."
     )
 )
 

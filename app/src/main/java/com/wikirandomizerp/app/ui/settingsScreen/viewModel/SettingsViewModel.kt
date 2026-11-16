@@ -79,11 +79,16 @@ class SettingsViewModel(
         val lineSpacing = int("line-spacing", 100).coerceIn(80, 200)
         val readingMargin = int("reading-margin", 16).coerceIn(4, 48)
         val justifyText = boolean("justify-text", false)
-        val sepiaTheme = boolean("sepia-theme", false)
-        val linkPreviews = boolean("link-previews", false)
+        val legacySepia = boolean("sepia-theme", false)
+        val readingTheme = strings["reading-theme"]
+            ?: (if (legacySepia) "sepia" else "default").also {
+                appPreferencesRepository.saveStringPreference("reading-theme", it)
+                strings["reading-theme"] = it
+            }
         val talkPages = boolean("talk-pages", false)
         val dailyNotification = boolean("daily-notification", false)
         val homeWidget = boolean("home-widget", false)
+        val offlineTopUpTarget = int("offline-top-up-target", 0).coerceIn(0, 200)
         val blackTheme = boolean("black-theme", false)
         val dataSaver = boolean("data-saver", false)
         val feedEnabled = boolean("feed-enabled", true)
@@ -91,6 +96,14 @@ class SettingsViewModel(
         // 1.0 beta changed two defaults: sections now open by default (so cladograms and
         // long sections are visible immediately) and personalization is on by default.
         // Apply that once to existing installs; after this marker the user's own choice wins.
+        if (booleans["defaults-premium-1"] != true) {
+            // Link previews became a normal (on-by-default) feature in this release.
+            appPreferencesRepository.saveBooleanPreference("link-previews", true)
+            booleans["link-previews"] = true
+            appPreferencesRepository.saveBooleanPreference("defaults-premium-1", true)
+            booleans["defaults-premium-1"] = true
+        }
+        val linkPreviews = boolean("link-previews", true)
         if (booleans["defaults-1.0-beta"] != true) {
             appPreferencesRepository.saveBooleanPreference("expanded-sections", true)
             appPreferencesRepository.saveBooleanPreference("personalization-enabled", true)
@@ -168,11 +181,12 @@ class SettingsViewModel(
                 lineSpacing = lineSpacing,
                 readingMargin = readingMargin,
                 justifyText = justifyText,
-                sepiaTheme = sepiaTheme,
+                readingTheme = readingTheme,
                 linkPreviews = linkPreviews,
                 talkPages = talkPages,
                 dailyNotification = dailyNotification,
                 homeWidget = homeWidget,
+                offlineTopUpTarget = offlineTopUpTarget,
                 fontStyle = fontStyle,
                 imageBackground = imageBackground,
                 immersiveMode = immersiveMode,
@@ -199,6 +213,12 @@ class SettingsViewModel(
                 dailyNotification,
                 lang
             )
+            if (offlineTopUpTarget > 0) {
+                com.wikirandomizerp.app.data.offline.OfflineTopUpScheduler.update(
+                    appContext,
+                    offlineTopUpTarget
+                )
+            }
         }
 
         try {
@@ -289,9 +309,23 @@ class SettingsViewModel(
                 preferencesStateMutableFlow.update { it.copy(justifyText = action.value) }
             }
 
+            is SettingsAction.SaveReadingTheme -> viewModelScope.launch(safeCoroutineHandler) {
+                appPreferencesRepository.saveStringPreference("reading-theme", action.value)
+                preferencesStateMutableFlow.update { it.copy(readingTheme = action.value) }
+            }
+
             is SettingsAction.SaveSepiaTheme -> viewModelScope.launch(safeCoroutineHandler) {
+                val theme = if (action.value) "sepia" else "default"
                 appPreferencesRepository.saveBooleanPreference("sepia-theme", action.value)
-                preferencesStateMutableFlow.update { it.copy(sepiaTheme = action.value) }
+                appPreferencesRepository.saveStringPreference("reading-theme", theme)
+                preferencesStateMutableFlow.update { it.copy(readingTheme = theme) }
+            }
+
+            is SettingsAction.SaveOfflineTopUpTarget -> viewModelScope.launch(safeCoroutineHandler) {
+                val value = action.value.coerceIn(0, 200)
+                appPreferencesRepository.saveIntPreference("offline-top-up-target", value)
+                preferencesStateMutableFlow.update { it.copy(offlineTopUpTarget = value) }
+                com.wikirandomizerp.app.data.offline.OfflineTopUpScheduler.update(appContext, value)
             }
 
             is SettingsAction.SaveLinkPreviews -> viewModelScope.launch(safeCoroutineHandler) {

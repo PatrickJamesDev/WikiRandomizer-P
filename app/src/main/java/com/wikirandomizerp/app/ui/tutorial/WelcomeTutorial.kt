@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -136,11 +135,7 @@ fun WelcomeTutorial(
                 .padding(20.dp)
                 .widthIn(max = 460.dp)
                 .fillMaxWidth()
-                // A stable minimum height keeps the footer (dots + Back/Skip/Next) in exactly the
-                // same place on every page; without it the card wrapped to each page's text and the
-                // buttons jumped around. The body gets the leftover space and scrolls if a page is
-                // taller, so no extra screen space is reserved beyond this compact card.
-                .heightIn(min = 440.dp, max = 520.dp)
+                .height(420.dp)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

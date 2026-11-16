@@ -546,7 +546,8 @@ fun AppScreen(
         homeBackStackEntry = backStack.last(),
         windowSizeClass = windowSizeClass,
         backStackEntry = navBackStackEntry,
-        historyEnabled = preferencesState.browsingHistory,
+        historyEnabled = preferencesState.browsingHistory &&
+            (preferencesState.supporterMode || donationState.supporter || donationState.subscription),
         isImageView = backStack.last() is HomeSubscreen.Image,
         onVerticalFeedClick = {
             navController.navigate(VerticalFeedRoute) { launchSingleTop = true }
@@ -788,6 +789,11 @@ fun AppScreen(
                         deepLinkHandled = deepLinkHandled,
                         onAction = onHomeAction,
                         onSettingsAction = settingsAction,
+                        onOpenDonation = {
+                            donationBilling?.clearMessage()
+                            donationBilling?.refresh()
+                            showDonationDialog = true
+                        },
                         onNavigateToRandomTopics = openRandomTopics,
                         setShowArticleLanguageSheet = setShowArticleLanguageSheet,
                         insets = insets,

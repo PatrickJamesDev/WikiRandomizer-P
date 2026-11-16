@@ -34,8 +34,11 @@ fun rememberReadingFontFamily(fontStyle: String): FontFamily {
             "ibm_plex" -> FontFamily(Font(R.font.ibm_plex_serif))
             "open_sans" -> variableFamily(R.font.open_sans)
             "custom" -> runCatching {
-                val file = File(File(context.filesDir, "fonts"), "custom.ttf")
-                require(file.isFile && file.length() > 0)
+                val dir = File(context.filesDir, "fonts")
+                val file = dir.listFiles { f ->
+                    f.isFile && f.name.startsWith("custom.") && f.length() > 0
+                }?.maxByOrNull { it.lastModified() }
+                requireNotNull(file)
                 FontFamily(Typeface.createFromFile(file))
             }.getOrDefault(FontFamily.Serif)
             else -> FontFamily.Serif

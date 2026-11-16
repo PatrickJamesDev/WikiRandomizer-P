@@ -26,15 +26,21 @@ data class PreferencesState(
     val lineSpacing: Int = 100,
     val readingMargin: Int = 16,
     val justifyText: Boolean = false,
-    val sepiaTheme: Boolean = false,
-    /** Long-press a link for a Wikipedia page preview instead of opening a tab (developer preview). */
-    val linkPreviews: Boolean = false,
+    /** Reading theme id ("default", "sepia", "solarized_light", ...). */
+    val readingTheme: String = "default",
+    /** Long-press a link for a Wikipedia page preview instead of opening a tab. On by default. */
+    val linkPreviews: Boolean = true,
     /** Talk pages and revision history in the article tools (developer preview). */
     val talkPages: Boolean = false,
     /** Optional daily "article of the day" notification (developer preview, off by default). */
     val dailyNotification: Boolean = false,
-    /** Optional home-screen widget (developer preview, off by default). */
+    /** Optional home-screen widget (premium, off by default). */
     val homeWidget: Boolean = false,
+    /**
+     * Premium: keep this many articles downloaded for offline reading. Whenever a connection is
+     * available the app downloads more until the target is reached again.
+     */
+    val offlineTopUpTarget: Int = 0,
     /** When true, article discovery uses popularity-ranked results instead of a random walk. */
     val popularArticlesOnly: Boolean = false,
     /** When true, articles shorter than 5 000 bytes of wikitext are filtered out. */

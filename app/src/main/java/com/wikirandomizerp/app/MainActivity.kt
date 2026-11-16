@@ -89,17 +89,22 @@ class MainActivity : ComponentActivity() {
                         { title, lang -> viewModel.getCommonsCategoryGallery(title, lang) }
                     loader
                 }
+                val readingTheme = com.wikirandomizerp.app.ui.theme.ReadingTheme
+                    .fromId(preferencesState.readingTheme)
                 val readingOptions = remember(
                     preferencesState.lineSpacing,
                     preferencesState.readingMargin,
                     preferencesState.justifyText,
-                    preferencesState.sepiaTheme
+                    readingTheme
                 ) {
                     ReadingOptions(
                         lineSpacingPercent = preferencesState.lineSpacing,
                         horizontalMarginDp = preferencesState.readingMargin,
                         justifyText = preferencesState.justifyText,
-                        sepia = preferencesState.sepiaTheme
+                        sepia = readingTheme == com.wikirandomizerp.app.ui.theme.ReadingTheme.SEPIA,
+                        backgroundColor = readingTheme.background,
+                        inkColor = readingTheme.ink,
+                        linkColor = readingTheme.link
                     )
                 }
                 CompositionLocalProvider(

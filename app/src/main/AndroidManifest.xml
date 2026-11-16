@@ -11,6 +11,9 @@
     <!-- Lets the app detect the iNaturalist app (package visibility on Android 11+). -->
     <queries>
         <package android:name="org.inaturalist.android" />
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
     </queries>
     <application
         android:name=".WikiRandomizerPApplication"

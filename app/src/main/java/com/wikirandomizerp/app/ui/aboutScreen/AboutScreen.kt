@@ -3,7 +3,9 @@ package com.wikirandomizerp.app.ui.aboutScreen
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -49,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import com.wikirandomizerp.app.BuildConfig
@@ -116,26 +119,39 @@ fun AboutScreen(
                         .clip(topListItemShape)
                         .fillMaxWidth()
                         .background(listItemColors.containerColor)
-                        .pointerInput(Unit) {
-                            detectTapGestures {
-                                val now = System.currentTimeMillis()
-                                tapTimes.add(now)
-                                tapTimes.removeAll { now - it > 5_000L }
-                                if (tapTimes.size >= 10) {
-                                    tapTimes.clear()
-                                    DeveloperMode.setEnabled(context, true)
-                                    developerEnabled = true
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            context.getString(R.string.debugModeEnabled)
-                                        )
-                                    }
-                                }
-                            }
-                        }
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(painterResource(R.drawable.ic_launcher_custom_monochrome), null)
+                        Box(
+                            modifier = Modifier
+                                .padding(end = 12.dp)
+                                .size(72.dp)
+                                .pointerInput(Unit) {
+                                    detectTapGestures {
+                                        val now = System.currentTimeMillis()
+                                        tapTimes.add(now)
+                                        tapTimes.removeAll { now - it > 10_000L }
+                                        if (tapTimes.size >= 20) {
+                                            tapTimes.clear()
+                                            DeveloperMode.setEnabled(context, true)
+                                            developerEnabled = true
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar(
+                                                    context.getString(R.string.debugModeEnabled)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                        ) {
+                            Image(
+                                painter = painterResource(R.drawable.splash_logo),
+                                contentDescription = null,
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(topListItemShape)
+                            )
+                        }
                         Text(
                             if (versionLabel == null) AnnotatedString(stringResource(R.string.app_name))
                             else buildAnnotatedString {

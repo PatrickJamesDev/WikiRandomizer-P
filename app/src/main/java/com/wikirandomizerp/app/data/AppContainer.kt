@@ -10,6 +10,7 @@ import okhttp3.Dispatcher
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import com.wikirandomizerp.app.BuildConfig
+import com.wikirandomizerp.app.data.billing.BillingManager
 import com.wikirandomizerp.app.data.billing.DonationBilling
 import com.wikirandomizerp.app.data.sync.DriveSyncStore
 import com.wikirandomizerp.app.data.sync.LocalSyncStore
@@ -32,6 +33,7 @@ interface AppContainer {
     val updateChecker: UpdateChecker
     val backupManager: BackupManager
     val donationBilling: DonationBilling
+    val billingManager: BillingManager
     val localSyncStore: LocalSyncStore
     val driveSyncStore: DriveSyncStore
     val userAgentString: String
@@ -182,5 +184,9 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val donationBilling: DonationBilling by lazy {
         DonationBilling(context.applicationContext)
+    }
+
+    override val billingManager: BillingManager by lazy {
+        BillingManager(donationBilling)
     }
 }

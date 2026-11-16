@@ -118,9 +118,13 @@ fun ExpandableSection(
     val reading = LocalReadingOptions.current
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = if (reading.sepia) SepiaBackground
+            containerColor = if (reading.backgroundColor != androidx.compose.ui.graphics.Color.Unspecified)
+                reading.backgroundColor
+            else if (reading.sepia) SepiaBackground
             else MaterialTheme.colorScheme.background,
-            contentColor = if (reading.sepia) SepiaInk
+            contentColor = if (reading.inkColor != androidx.compose.ui.graphics.Color.Unspecified)
+                reading.inkColor
+            else if (reading.sepia) SepiaInk
             else MaterialTheme.colorScheme.onBackground
         ),
         shape = cardShape,
@@ -151,7 +155,10 @@ fun ExpandableSection(
                 fontFamily = fontFamily,
                 fontSize = (28 * (fontSize / 16.0)).toInt().sp,
                 lineHeight = (36 * (fontSize / 16.0)).toInt().sp,
-                color = if (reading.sepia) SepiaInk else androidx.compose.ui.graphics.Color.Unspecified,
+                color = if (reading.inkColor != androidx.compose.ui.graphics.Color.Unspecified)
+                    reading.inkColor
+                else if (reading.sepia) SepiaInk
+                else androidx.compose.ui.graphics.Color.Unspecified,
                 modifier = Modifier
                     .weight(1f)
                     .padding(top = 16.dp, bottom = 16.dp, end = 16.dp)

@@ -514,8 +514,14 @@ fun PageContent(
                             .widthIn(max = readingWidth)
                             .fillMaxSize()
                             .background(
-                                if (LocalReadingOptions.current.sepia) SepiaBackground
-                                else Color.Transparent
+                                run {
+                                    val reading = LocalReadingOptions.current
+                                    when {
+                                        reading.backgroundColor != Color.Unspecified -> reading.backgroundColor
+                                        reading.sepia -> SepiaBackground
+                                        else -> Color.Transparent
+                                    }
+                                }
                             )
                             .then(
                                 if (preferencesState.swipeGestures) Modifier.pointerInput(Unit) {
@@ -560,6 +566,8 @@ fun PageContent(
                                 text = content.title,
                                 style = MaterialTheme.typography.displaySmallEmphasized,
                                 fontFamily = fontFamily,
+                                color = if (LocalReadingOptions.current.inkColor != Color.Unspecified)
+                                    LocalReadingOptions.current.inkColor else Color.Unspecified,
                                 modifier = Modifier
                                     .sharedBounds(
                                         sharedContentState = rememberSharedContentState(
@@ -575,7 +583,9 @@ fun PageContent(
                                 Text(
                                     text = photoDesc,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = colorScheme.onSurfaceVariant,
+                                    color = if (LocalReadingOptions.current.inkColor != Color.Unspecified)
+                                        LocalReadingOptions.current.inkColor
+                                    else colorScheme.onSurfaceVariant,
                                     fontFamily = fontFamily,
                                     modifier = Modifier
                                         .sharedBounds(

@@ -134,6 +134,7 @@ import com.wikirandomizerp.app.ui.theme.WRShapeDefaults.middleListItemShape
 import com.wikirandomizerp.app.ui.theme.WRShapeDefaults.topListItemShape
 import com.wikirandomizerp.app.ui.theme.WikiRandomizerPTheme
 import com.wikirandomizerp.app.ui.theme.readingFontLabels
+import com.wikirandomizerp.app.ui.common.PremiumBadge
 import java.io.File
 import kotlin.math.round
 
@@ -279,7 +280,6 @@ fun SettingsScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val snackBarHostState = remember { SnackbarHostState() }
     var developerEnabled by remember { mutableStateOf(DeveloperMode.isEnabled(context)) }
-    val versionTapTimes = remember { mutableListOf<Long>() }
     val availableUpdate by UpdateState.available.collectAsState()
     val checkingUpdate by UpdateState.checking.collectAsState()
     var showUpdateDialog by remember { mutableStateOf(false) }
@@ -310,10 +310,32 @@ fun SettingsScreen(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
+        if (!preferencesState.supporterMode) {
+            onOpenDonation()
+            return@rememberLauncherForActivityResult
+        }
         val imported = runCatching {
+            val mime = context.contentResolver.getType(uri).orEmpty().lowercase()
+            val displayName = runCatching {
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val index = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (index >= 0) cursor.getString(index) else null
+                    } else null
+                }
+            }.getOrNull()
+            val fromName = displayName?.substringAfterLast('.', "")?.lowercase()
+                ?.takeIf { it == "ttf" || it == "otf" || it == "ttc" }
+            val ext = fromName ?: when {
+                mime.contains("otf") || mime.contains("opentype") -> "otf"
+                mime.contains("ttc") || mime.contains("collection") -> "ttc"
+                else -> "ttf"
+            }
             context.contentResolver.openInputStream(uri)?.use { input ->
                 val dir = File(context.filesDir, "fonts").apply { mkdirs() }
-                File(dir, "custom.ttf").outputStream().use { output -> input.copyTo(output) }
+                dir.listFiles { f -> f.isFile && f.name.startsWith("custom.") }
+                    ?.forEach { it.delete() }
+                File(dir, "custom.$ext").outputStream().use { output -> input.copyTo(output) }
             } ?: error("could not open the selected font")
         }.isSuccess
         if (imported) {
@@ -331,6 +353,7 @@ fun SettingsScreen(
     val (showResetSettingsDialog, setShowResetSettingsDialog) = remember { mutableStateOf(false) }
     val (showColorSchemeDialog, setShowColorSchemeDialog) = remember { mutableStateOf(false) }
     val (showFontDialog, setShowFontDialog) = remember { mutableStateOf(false) }
+    val (showReadingThemeDialog, setShowReadingThemeDialog) = remember { mutableStateOf(false) }
     val (showLanguageSheet, setShowLanguageSheet) = remember { mutableStateOf(false) }
     val (showAppLocaleSheet, setShowAppLocaleSheet) = remember { mutableStateOf(false) }
     var settingsSearchQuery by rememberSaveable { mutableStateOf("") }
@@ -469,7 +492,8 @@ fun SettingsScreen(
                 R.drawable.manage_history,
                 string.history,
                 string.historyDesc,
-                SettingsAction::SaveHistory
+                SettingsAction::SaveHistory,
+                premium = true
             ),
             SettingsSwitchItem(
                 preferencesState.searchHistory,
@@ -597,6 +621,17 @@ fun SettingsScreen(
             setShowThemeDialog = setShowThemeDialog,
             setTheme = { onAction(SettingsAction.SaveTheme(it)) }
         )
+    if (showReadingThemeDialog) {
+        val currentReadingTheme = com.wikirandomizerp.app.ui.theme.ReadingTheme
+            .fromId(preferencesState.readingTheme)
+        ReadingThemeDialog(
+            selectedThemeId = currentReadingTheme.id,
+            isPremium = preferencesState.supporterMode,
+            onSelect = { onAction(SettingsAction.SaveReadingTheme(it.id)) },
+            onOpenDonation = onOpenDonation,
+            onDismiss = { setShowReadingThemeDialog(false) }
+        )
+    }
     if (showFontDialog)
         FontPickerDialog(
             fontStyleMap = fontStyleMap,
@@ -605,10 +640,27 @@ fun SettingsScreen(
                 onAction(SettingsAction.SaveFontStyle(it))
                 setShowFontDialog(false)
             },
+            isPremium = preferencesState.supporterMode,
             onImport = {
                 setShowFontDialog(false)
-                fontImportLauncher.launch(arrayOf("*/*"))
+                if (preferencesState.supporterMode) {
+                    fontImportLauncher.launch(
+                        arrayOf(
+                            "font/ttf",
+                            "font/otf",
+                            "font/ttc",
+                            "application/x-font-ttf",
+                            "application/x-font-otf",
+                            "application/x-font-ttc",
+                            "application/font-sfnt",
+                            "application/octet-stream"
+                        )
+                    )
+                } else {
+                    onOpenDonation()
+                }
             },
+            onOpenDonation = onOpenDonation,
             onDismiss = { setShowFontDialog(false) }
         )
     if (showColorSchemeDialog)
@@ -802,6 +854,32 @@ fun SettingsScreen(
                 ) { setShowThemeDialog(true) }
             }
             item {
+                val readingTheme = com.wikirandomizerp.app.ui.theme.ReadingTheme
+                    .fromId(preferencesState.readingTheme)
+                ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.palette), contentDescription = null)
+                    },
+                    headlineContent = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(stringResource(string.settingReadingTheme))
+                            if (readingTheme.premium) PremiumBadge()
+                        }
+                    },
+                    supportingContent = { Text(stringResource(readingTheme.labelRes)) },
+                    trailingContent = {
+                        Icon(painterResource(R.drawable.arrow_forward), contentDescription = null)
+                    },
+                    colors = listItemColors,
+                    modifier = Modifier
+                        .clip(middleListItemShape)
+                        .clickable { setShowReadingThemeDialog(true) }
+                )
+            }
+            item {
                 ListItem(
                     leadingContent = {
                         Icon(painterResource(switchItems[0].icon), contentDescription = null)
@@ -967,180 +1045,187 @@ fun SettingsScreen(
                         .clip(bottomListItemShape)
                 )
             }
-            if (developerEnabled) {
-                item {
-                    ListItem(
-                        leadingContent = {
-                            Icon(painterResource(R.drawable.format_size), contentDescription = null)
-                        },
-                        headlineContent = { Text(stringResource(string.settingLineSpacing)) },
-                        supportingContent = {
-                            Column {
-                                Text(stringResource(string.settingLineSpacingDesc))
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.padding(top = 8.dp)
+            val premiumUser = preferencesState.supporterMode
+            item {
+                ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.format_size), contentDescription = null)
+                    },
+                    headlineContent = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(stringResource(string.settingLineSpacing))
+                            PremiumBadge()
+                        }
+                    },
+                    supportingContent = {
+                        Column {
+                            Text(stringResource(string.settingLineSpacingDesc))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.padding(top = 8.dp)
+                            ) {
+                                IconButton(
+                                    enabled = premiumUser && preferencesState.lineSpacing > 80,
+                                    onClick = {
+                                        onAction(
+                                            SettingsAction.SaveLineSpacing(
+                                                (preferencesState.lineSpacing - 10).coerceAtLeast(80)
+                                            )
+                                        )
+                                    }
                                 ) {
-                                    IconButton(
-                                        enabled = preferencesState.lineSpacing > 80,
-                                        onClick = {
-                                            onAction(
-                                                SettingsAction.SaveLineSpacing(
-                                                    (preferencesState.lineSpacing - 10).coerceAtLeast(80)
-                                                )
-                                            )
-                                        }
-                                    ) {
-                                        Icon(
-                                            painterResource(R.drawable.remove),
-                                            contentDescription = null
-                                        )
-                                    }
-                                    Text(
-                                        text = stringResource(
-                                            string.settingLineSpacingValue,
-                                            preferencesState.lineSpacing
-                                        ),
-                                        style = typography.titleMedium,
-                                        modifier = Modifier.weight(1f)
+                                    Icon(
+                                        painterResource(R.drawable.remove),
+                                        contentDescription = null
                                     )
-                                    IconButton(
-                                        enabled = preferencesState.lineSpacing < 200,
-                                        onClick = {
-                                            onAction(
-                                                SettingsAction.SaveLineSpacing(
-                                                    (preferencesState.lineSpacing + 10).coerceAtMost(200)
-                                                )
+                                }
+                                Text(
+                                    text = stringResource(
+                                        string.settingLineSpacingValue,
+                                        preferencesState.lineSpacing
+                                    ),
+                                    style = typography.titleMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(
+                                    enabled = premiumUser && preferencesState.lineSpacing < 200,
+                                    onClick = {
+                                        onAction(
+                                            SettingsAction.SaveLineSpacing(
+                                                (preferencesState.lineSpacing + 10).coerceAtMost(200)
                                             )
-                                        }
-                                    ) {
-                                        Icon(
-                                            painterResource(R.drawable.add),
-                                            contentDescription = null
                                         )
                                     }
+                                ) {
+                                    Icon(
+                                        painterResource(R.drawable.add),
+                                        contentDescription = null
+                                    )
                                 }
                             }
-                        },
-                        colors = listItemColors
-                    )
-                }
-                item {
-                    ListItem(
-                        leadingContent = {
-                            Icon(painterResource(R.drawable.format_size), contentDescription = null)
-                        },
-                        headlineContent = { Text(stringResource(string.settingReadingMargin)) },
-                        supportingContent = {
-                            Column {
-                                Text(stringResource(string.settingReadingMarginDesc))
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.padding(top = 8.dp)
+                        }
+                    },
+                    colors = listItemColors,
+                    modifier = Modifier.clickable(enabled = !premiumUser) { onOpenDonation() }
+                )
+            }
+            item {
+                ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.format_size), contentDescription = null)
+                    },
+                    headlineContent = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(stringResource(string.settingReadingMargin))
+                            PremiumBadge()
+                        }
+                    },
+                    supportingContent = {
+                        Column {
+                            Text(stringResource(string.settingReadingMarginDesc))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.padding(top = 8.dp)
+                            ) {
+                                IconButton(
+                                    enabled = premiumUser && preferencesState.readingMargin > 4,
+                                    onClick = {
+                                        onAction(
+                                            SettingsAction.SaveReadingMargin(
+                                                (preferencesState.readingMargin - 4).coerceAtLeast(4)
+                                            )
+                                        )
+                                    }
                                 ) {
-                                    IconButton(
-                                        enabled = preferencesState.readingMargin > 4,
-                                        onClick = {
-                                            onAction(
-                                                SettingsAction.SaveReadingMargin(
-                                                    (preferencesState.readingMargin - 4).coerceAtLeast(4)
-                                                )
-                                            )
-                                        }
-                                    ) {
-                                        Icon(
-                                            painterResource(R.drawable.remove),
-                                            contentDescription = null
-                                        )
-                                    }
-                                    Text(
-                                        text = stringResource(
-                                            string.settingReadingMarginValue,
-                                            preferencesState.readingMargin
-                                        ),
-                                        style = typography.titleMedium,
-                                        modifier = Modifier.weight(1f)
+                                    Icon(
+                                        painterResource(R.drawable.remove),
+                                        contentDescription = null
                                     )
-                                    IconButton(
-                                        enabled = preferencesState.readingMargin < 48,
-                                        onClick = {
-                                            onAction(
-                                                SettingsAction.SaveReadingMargin(
-                                                    (preferencesState.readingMargin + 4).coerceAtMost(48)
-                                                )
+                                }
+                                Text(
+                                    text = stringResource(
+                                        string.settingReadingMarginValue,
+                                        preferencesState.readingMargin
+                                    ),
+                                    style = typography.titleMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(
+                                    enabled = premiumUser && preferencesState.readingMargin < 48,
+                                    onClick = {
+                                        onAction(
+                                            SettingsAction.SaveReadingMargin(
+                                                (preferencesState.readingMargin + 4).coerceAtMost(48)
                                             )
-                                        }
-                                    ) {
-                                        Icon(
-                                            painterResource(R.drawable.add),
-                                            contentDescription = null
                                         )
                                     }
+                                ) {
+                                    Icon(
+                                        painterResource(R.drawable.add),
+                                        contentDescription = null
+                                    )
                                 }
                             }
-                        },
-                        colors = listItemColors
-                    )
-                }
-                item {
-                    ListItem(
-                        leadingContent = {
-                            Icon(painterResource(R.drawable.format_size), contentDescription = null)
-                        },
-                        headlineContent = { Text(stringResource(string.settingJustifyText)) },
-                        supportingContent = { Text(stringResource(string.settingJustifyTextDesc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = preferencesState.justifyText,
-                                onCheckedChange = {
-                                    onAction(SettingsAction.SaveJustifyText(it))
-                                },
-                                colors = switchColors
-                            )
-                        },
-                        colors = listItemColors
-                    )
-                }
-                item {
-                    ListItem(
-                        leadingContent = {
-                            Icon(painterResource(R.drawable.format_size), contentDescription = null)
-                        },
-                        headlineContent = { Text(stringResource(string.settingSepiaTheme)) },
-                        supportingContent = { Text(stringResource(string.settingSepiaThemeDesc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = preferencesState.sepiaTheme,
-                                onCheckedChange = {
-                                    onAction(SettingsAction.SaveSepiaTheme(it))
-                                },
-                                colors = switchColors
-                            )
-                        },
-                        colors = listItemColors
-                    )
-                }
-                item {
-                    ListItem(
-                        leadingContent = {
-                            Icon(painterResource(R.drawable.format_size), contentDescription = null)
-                        },
-                        headlineContent = { Text(stringResource(string.settingLinkPreviews)) },
-                        supportingContent = { Text(stringResource(string.settingLinkPreviewsDesc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = preferencesState.linkPreviews,
-                                onCheckedChange = {
-                                    onAction(SettingsAction.SaveLinkPreviews(it))
-                                },
-                                colors = switchColors
-                            )
-                        },
-                        colors = listItemColors
-                    )
-                }
+                        }
+                    },
+                    colors = listItemColors,
+                    modifier = Modifier.clickable(enabled = !premiumUser) { onOpenDonation() }
+                )
+            }
+            item {
+                ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.format_size), contentDescription = null)
+                    },
+                    headlineContent = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(stringResource(string.settingJustifyText))
+                            PremiumBadge()
+                        }
+                    },
+                    supportingContent = { Text(stringResource(string.settingJustifyTextDesc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = preferencesState.justifyText,
+                            onCheckedChange = {
+                                if (premiumUser) onAction(SettingsAction.SaveJustifyText(it))
+                                else onOpenDonation()
+                            },
+                            colors = switchColors
+                        )
+                    },
+                    colors = listItemColors
+                )
+            }
+            item {
+                ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.format_size), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(string.settingLinkPreviews)) },
+                    supportingContent = { Text(stringResource(string.settingLinkPreviewsDesc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = preferencesState.linkPreviews,
+                            onCheckedChange = {
+                                onAction(SettingsAction.SaveLinkPreviews(it))
+                            },
+                            colors = switchColors
+                        )
+                    },
+                    colors = listItemColors
+                )
             }
             }
             if (settingsCategory == SettingsCategory.DATA) {
@@ -1216,6 +1301,68 @@ fun SettingsScreen(
                 }
             }
             // Firebase sync is a developer preview. It stays completely out of the normal UI.
+            item {
+                val premiumUser = preferencesState.supporterMode
+                var topUpTarget by remember(preferencesState.offlineTopUpTarget) {
+                    mutableFloatStateOf(preferencesState.offlineTopUpTarget.toFloat())
+                }
+                ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.download_done), contentDescription = null)
+                    },
+                    headlineContent = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(stringResource(string.settingOfflineTopUp))
+                            PremiumBadge()
+                        }
+                    },
+                    supportingContent = {
+                        Column {
+                            Text(stringResource(string.settingOfflineTopUpDesc))
+                            Text(
+                                if (topUpTarget <= 0f)
+                                    stringResource(string.settingOfflineTopUpOff)
+                                else stringResource(
+                                    string.settingOfflineTopUpValue,
+                                    topUpTarget.toInt()
+                                ),
+                                style = typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Slider(
+                                enabled = premiumUser,
+                                value = topUpTarget,
+                                onValueChange = { topUpTarget = it.roundToInt().toFloat() },
+                                onValueChangeFinished = {
+                                    if (premiumUser) {
+                                        onAction(
+                                            SettingsAction.SaveOfflineTopUpTarget(topUpTarget.toInt())
+                                        )
+                                    } else {
+                                        onOpenDonation()
+                                    }
+                                },
+                                valueRange = 0f..200f,
+                                steps = 39
+                            )
+                            if (!premiumUser) {
+                                Text(
+                                    stringResource(string.premiumUnlockHint),
+                                    style = typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    },
+                    colors = listItemColors,
+                    modifier = Modifier
+                        .clip(cardShape)
+                        .clickable(enabled = !premiumUser) { onOpenDonation() }
+                )
+            }
             if (developerEnabled) {
             item { Spacer(Modifier.height(12.dp)) }
             item {
@@ -1442,39 +1589,57 @@ fun SettingsScreen(
                     modifier = Modifier.clip(cardShape)
                 )
             }
-            if (developerEnabled) {
-                item {
-                    ListItem(
-                        leadingContent = {
-                            Icon(painterResource(R.drawable.person), contentDescription = null)
-                        },
-                        headlineContent = { Text(stringResource(string.settingTalkPages)) },
-                        supportingContent = { Text(stringResource(string.settingTalkPagesDesc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = preferencesState.talkPages,
-                                onCheckedChange = {
-                                    onAction(SettingsAction.SaveTalkPages(it))
-                                },
-                                colors = switchColors
-                            )
-                        },
-                        colors = listItemColors
-                    )
-                }
-                item {
-                    ListItem(
-                        leadingContent = {
-                            Icon(painterResource(R.drawable.leaf), contentDescription = null)
-                        },
-                        headlineContent = { Text(stringResource(string.settingDailyNotification)) },
-                        supportingContent = {
-                            Text(stringResource(string.settingDailyNotificationDesc))
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = preferencesState.dailyNotification,
-                                onCheckedChange = { enabled ->
+            val premiumUser = preferencesState.supporterMode
+            item {
+                ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.person), contentDescription = null)
+                    },
+                    headlineContent = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(stringResource(string.settingTalkPages))
+                            PremiumBadge()
+                        }
+                    },
+                    supportingContent = { Text(stringResource(string.settingTalkPagesDesc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = preferencesState.talkPages,
+                            onCheckedChange = {
+                                if (premiumUser) onAction(SettingsAction.SaveTalkPages(it))
+                                else onOpenDonation()
+                            },
+                            colors = switchColors
+                        )
+                    },
+                    colors = listItemColors
+                )
+            }
+            item {
+                ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.leaf), contentDescription = null)
+                    },
+                    headlineContent = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(stringResource(string.settingDailyNotification))
+                            PremiumBadge()
+                        }
+                    },
+                    supportingContent = {
+                        Text(stringResource(string.settingDailyNotificationDesc))
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = preferencesState.dailyNotification,
+                            onCheckedChange = { enabled ->
+                                if (premiumUser) {
                                     if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                                         ContextCompat.checkSelfPermission(
                                             context,
@@ -1486,32 +1651,43 @@ fun SettingsScreen(
                                         )
                                     }
                                     onAction(SettingsAction.SaveDailyNotification(enabled))
-                                },
-                                colors = switchColors
-                            )
-                        },
-                        colors = listItemColors
-                    )
-                }
-                item {
-                    ListItem(
-                        leadingContent = {
-                            Icon(painterResource(R.drawable.history), contentDescription = null)
-                        },
-                        headlineContent = { Text(stringResource(string.settingHomeWidget)) },
-                        supportingContent = { Text(stringResource(string.settingHomeWidgetDesc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = preferencesState.homeWidget,
-                                onCheckedChange = {
-                                    onAction(SettingsAction.SaveHomeWidget(it))
-                                },
-                                colors = switchColors
-                            )
-                        },
-                        colors = listItemColors
-                    )
-                }
+                                } else {
+                                    onOpenDonation()
+                                }
+                            },
+                            colors = switchColors
+                        )
+                    },
+                    colors = listItemColors
+                )
+            }
+            item {
+                ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.widget_button), contentDescription = null)
+                    },
+                    headlineContent = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(stringResource(string.settingHomeWidget))
+                            PremiumBadge()
+                        }
+                    },
+                    supportingContent = { Text(stringResource(string.settingHomeWidgetDesc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = preferencesState.homeWidget,
+                            onCheckedChange = {
+                                if (premiumUser) onAction(SettingsAction.SaveHomeWidget(it))
+                                else onOpenDonation()
+                            },
+                            colors = switchColors
+                        )
+                    },
+                    colors = listItemColors
+                )
             }
             }
             item { Spacer(Modifier.height(12.dp)) }
@@ -1698,18 +1874,25 @@ fun SettingsScreen(
                         Icon(painterResource(item.icon), contentDescription = null)
                     },
                     headlineContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
                             Text(
                                 text = stringResource(item.label),
                                 modifier = Modifier.weight(1f)
                             )
+                            if (item.premium) PremiumBadge()
                         }
                     },
                     supportingContent = { Text(stringResource(item.description)) },
                     trailingContent = {
                         Switch(
                             checked = item.checked && item.enabled,
-                            onCheckedChange = { onAction(item.actionConstructor(it)) },
+                            onCheckedChange = {
+                                if (item.premium && !preferencesState.supporterMode) onOpenDonation()
+                                else onAction(item.actionConstructor(it))
+                            },
                             thumbContent = {
                                 if (item.checked && item.enabled) {
                                     Icon(
@@ -1762,24 +1945,7 @@ fun SettingsScreen(
                     headlineContent = { Text(stringResource(string.version)) },
                     supportingContent = { Text(BuildConfig.VERSION_NAME) },
                     colors = listItemColors,
-                    modifier = Modifier
-                        .clip(topListItemShape)
-                        .clickable {
-                            val now = System.currentTimeMillis()
-                            versionTapTimes.add(now)
-                            versionTapTimes.removeAll { now - it > 10_000L }
-                            if (versionTapTimes.size >= 10) {
-                                versionTapTimes.clear()
-                                DeveloperMode.setEnabled(context, true)
-                                developerEnabled = true
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                coroutineScope.launch {
-                                    snackBarHostState.showSnackbar(
-                                        context.getString(string.debugModeEnabled)
-                                    )
-                                }
-                            }
-                        }
+                    modifier = Modifier.clip(topListItemShape)
                 )
             }
             item {
@@ -2403,7 +2569,9 @@ private fun FontPickerDialog(
     fontStyleMap: Map<String, String>,
     selected: String,
     onSelect: (String) -> Unit,
+    isPremium: Boolean,
     onImport: () -> Unit,
+    onOpenDonation: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -2427,10 +2595,34 @@ private fun FontPickerDialog(
                             .clickable { onSelect(key) }
                     )
                 }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(string.fontImportFormats),
+                    style = typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant
+                )
+                if (!isPremium) {
+                    Spacer(Modifier.height(6.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        PremiumBadge()
+                        Text(
+                            text = stringResource(string.premiumUnlockHint),
+                            style = typography.bodySmall,
+                            color = colorScheme.primary
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = onImport) { Text(stringResource(string.fontImport)) }
+            TextButton(onClick = if (isPremium) onImport else onOpenDonation) {
+                if (!isPremium) PremiumBadge()
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(string.fontImport))
+            }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(string.cancel)) }
@@ -2657,5 +2849,7 @@ data class SettingsSwitchItem(
     val description: Int,
     val actionConstructor: (Boolean) -> SettingsAction,
     val enabled: Boolean = true,
-    val help: Int? = null
+    val help: Int? = null,
+    /** Paid feature: shows a Premium pill and asks for a donation until unlocked. */
+    val premium: Boolean = false
 )

@@ -11,7 +11,11 @@ data class ReadingOptions(
     val lineSpacingPercent: Int = 100,
     val horizontalMarginDp: Int = 16,
     val justifyText: Boolean = false,
-    val sepia: Boolean = false
+    val sepia: Boolean = false,
+    /** Reading-theme colours. Unspecified keeps the app's normal Material colours. */
+    val backgroundColor: Color = Color.Unspecified,
+    val inkColor: Color = Color.Unspecified,
+    val linkColor: Color = Color.Unspecified
 )
 
 val LocalReadingOptions = compositionLocalOf { ReadingOptions() }

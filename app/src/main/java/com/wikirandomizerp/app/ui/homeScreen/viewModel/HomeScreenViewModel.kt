@@ -2237,6 +2237,18 @@ class HomeScreenViewModel(
             }
         }
 
+        viewModelScope.launch(errorHandler) {
+            var lastWikivoyage = preferencesState.value.wikivoyageEnabled
+            preferencesState.map { it.wikivoyageEnabled }.distinctUntilChanged().collect { enabled ->
+                if (enabled != lastWikivoyage) {
+                    lastWikivoyage = enabled
+                    HostGate.project = if (enabled) "wikivoyage" else "wikipedia"
+                    DebugLog.i("Source", "Wikivoyage enabled=$enabled: reloading feed")
+                    loadFeed()
+                }
+            }
+        }
+
         // What the app was doing, appended to every crash report.
         DebugLog.stateProvider = {
             val top = backStack.lastOrNull()
@@ -3511,7 +3523,10 @@ class HomeScreenViewModel(
 
                     if (pageInfo != null)
                         viewModelScope.launch(Dispatchers.IO + errorHandler) {
-                            if (preferencesState.value.browsingHistory && !fromRestore && !fromHistory) {
+                            if (preferencesState.value.browsingHistory &&
+                                (preferencesState.value.supporterMode || donationSupporterProvider()) &&
+                                !fromRestore && !fromHistory
+                            ) {
                                 val historyTopic = try {
                                     topicIndexProvider(setLang).topicsForTitle(pageInfo.title).firstOrNull()
                                 } catch (e: Exception) { null }

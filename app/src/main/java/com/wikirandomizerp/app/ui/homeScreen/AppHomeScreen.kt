@@ -6,6 +6,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
 import android.content.ClipData
 import android.content.Intent
+import android.widget.Toast
 import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -100,6 +101,7 @@ import com.wikirandomizerp.app.ui.image.FullScreenGallery
 import com.wikirandomizerp.app.ui.image.FullScreenImage
 import com.wikirandomizerp.app.ui.settingsScreen.LanguageBottomSheet
 import com.wikirandomizerp.app.ui.settingsScreen.viewModel.PreferencesState
+import com.wikirandomizerp.app.ui.tts.rememberTtsController
 import com.wikirandomizerp.app.ui.settingsScreen.viewModel.SettingsAction
 import com.wikirandomizerp.app.ui.shimmer.AnimatedShimmer
 import com.wikirandomizerp.app.ui.shimmer.FeedLoader
@@ -142,6 +144,7 @@ fun AppHomeScreen(
     setShowArticleLanguageSheet: (Boolean) -> Unit,
     onAction: (HomeAction) -> Unit,
     onSettingsAction: (SettingsAction) -> Unit,
+    onOpenDonation: () -> Unit = {},
     onNavigateToRandomTopics: () -> Unit = {},
     insets: PaddingValues,
     windowSizeClass: WindowSizeClass,
@@ -158,12 +161,35 @@ fun AppHomeScreen(
 
     // Use lightweight stable keys instead of the full Article data class (which contains
     // List<List<AnnotatedString>> and forces a deep equality walk on every remember check).
-    val lastArticleTitle = (backStack.lastOrNull() as? HomeSubscreen.Article)?.title ?: ""
-    val lastArticleLang = (backStack.lastOrNull() as? HomeSubscreen.Article)?.currentLang ?: preferencesState.lang
+    val lastArticle = backStack.lastOrNull() as? HomeSubscreen.Article
+    val lastArticleUid = lastArticle?.uid
+    val lastArticleTitle = lastArticle?.title ?: ""
+    val lastArticleLang = lastArticle?.currentLang ?: preferencesState.lang
+    val lastArticleText = remember(lastArticleUid) {
+        lastArticle?.let { article ->
+            buildString {
+                appendLine(article.title)
+                appendLine()
+                article.extract.forEach { paragraph ->
+                    val text = paragraph.joinToString(" ") { it.text }
+                    if (text.isNotBlank()) {
+                        appendLine(text)
+                        appendLine()
+                    }
+                }
+            }
+        }.orEmpty()
+    }
+    val tts = rememberTtsController()
+    LaunchedEffect(lastArticleUid) { tts.stop() }
     var showSaveDialog by remember { mutableStateOf(false) }
+    var showReaderAppearance by remember { mutableStateOf(false) }
     val hasArticleScreen = backStack.lastOrNull() is HomeSubscreen.Article
     LaunchedEffect(hasArticleScreen) {
-        if (!hasArticleScreen) showSaveDialog = false
+        if (!hasArticleScreen) {
+            showSaveDialog = false
+            showReaderAppearance = false
+        }
     }
     // Never let the save dialog drift onto a different article opened behind it.
     LaunchedEffect(lastArticleTitle, lastArticleLang) {
@@ -620,6 +646,71 @@ fun AppHomeScreen(
                     positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
                         TooltipAnchorPosition.Above
                     ),
+                    tooltip = { PlainTooltip { Text(stringResource(R.string.readerAppearance)) } },
+                    state = rememberTooltipState()
+                ) {
+                    IconButton(
+                        enabled = hasArticle,
+                        onClick = { showReaderAppearance = true }
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.format_size),
+                            contentDescription = stringResource(R.string.readerAppearance)
+                        )
+                    }
+                }
+
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                        TooltipAnchorPosition.Above
+                    ),
+                    tooltip = {
+                        PlainTooltip {
+                            Text(
+                                stringResource(
+                                    if (tts.isSpeaking) R.string.ttsStop else R.string.ttsReadAloud
+                                )
+                            )
+                        }
+                    },
+                    state = rememberTooltipState()
+                ) {
+                    IconButton(
+                        enabled = hasArticle,
+                        onClick = {
+                            when {
+                                !preferencesState.supporterMode -> onOpenDonation()
+                                tts.isSpeaking -> tts.stop()
+                                lastArticleText.isBlank() -> Toast.makeText(
+                                    context,
+                                    context.getString(R.string.ttsNoText),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                else -> tts.speak(lastArticleText, lastArticleLang) {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.ttsUnavailable),
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            painterResource(
+                                if (tts.isSpeaking) R.drawable.stop else R.drawable.play_arrow
+                            ),
+                            contentDescription = stringResource(
+                                if (tts.isSpeaking) R.string.ttsStop else R.string.ttsReadAloud
+                            )
+                        )
+                    }
+                }
+
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                        TooltipAnchorPosition.Above
+                    ),
                     tooltip = { PlainTooltip { Text(stringResource(R.string.sharePage)) } },
                     state = rememberTooltipState()
                 ) {
@@ -812,6 +903,14 @@ fun AppHomeScreen(
         }
     }
 
+    if (showReaderAppearance) {
+        ReaderAppearanceSheet(
+            preferencesState = preferencesState,
+            onAction = onSettingsAction,
+            onOpenDonation = onOpenDonation,
+            onDismiss = { showReaderAppearance = false }
+        )
+    }
     if (showSaveDialog) {
         val article = backStack.lastOrNull() as? HomeSubscreen.Article
         if (article != null) {

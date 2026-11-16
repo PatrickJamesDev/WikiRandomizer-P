@@ -213,7 +213,10 @@ fun ParsedBodyText(
                 // converted to a plain StringAnnotation here, and one gesture handles both a tap
                 // (navigate) and a long press (open in a background tab). Reference links keep
                 // their LinkAnnotation.Url and are still handled by Text itself.
-                val linkColor = MaterialTheme.colorScheme.primary
+                val linkColor =
+                    if (reading.linkColor != androidx.compose.ui.graphics.Color.Unspecified)
+                        reading.linkColor
+                    else MaterialTheme.colorScheme.primary
                 val missingLinkColor = MaterialTheme.colorScheme.error
                 val highlightColor = MaterialTheme.colorScheme.tertiaryContainer
                 val displayText = remember(
@@ -245,7 +248,8 @@ fun ParsedBodyText(
                         24 * (fontSize / 16.0) * (reading.lineSpacingPercent / 100.0)
                     ).toInt().sp,
                     textAlign = if (reading.justifyText) TextAlign.Justify else TextAlign.Start,
-                    color = if (reading.sepia) SepiaInk else Color.Unspecified,
+                    color = if (reading.inkColor != Color.Unspecified) reading.inkColor
+                    else if (reading.sepia) SepiaInk else Color.Unspecified,
                     onTextLayout = { textLayout = it },
                     modifier = Modifier
                         .fillMaxWidth()

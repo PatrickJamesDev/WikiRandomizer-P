@@ -12,7 +12,7 @@
     <string name="authorName">Patrick James</string>
     <string name="curators">Curators</string>
     <string name="curatorsSubtitle">Community reading lists</string>
-    <string name="curatorsIntro">Follow people whose taste matches yours. Curated picks are hosted on GitHub, so the list can grow without an app update. Everything you save or like stays on this device.</string>
+    <string name="curatorsIntro">Follow people whose taste matches yours. Curated picks are hosted on GitHub, so the list can grow without an app update.</string>
     <string name="curatorsLoading">Loading curators…</string>
     <string name="curatorsOffline">Showing the bundled picks because GitHub could not be reached. Follows still work offline.</string>
     <string name="curatorsError">Could not load the curator list</string>
@@ -67,7 +67,7 @@
     <string name="librarySearchHighlights">Highlights</string>
     <string name="librarySearchHistory">Reading history</string>
     <string name="librarySearchPast">Past searches</string>
-    <string name="librarySearchEmpty">Search everything you have saved and read. Results are always free and stay on this device.</string>
+    <string name="librarySearchEmpty">Search everything you have saved and read. Results are always free.</string>
     <string name="librarySearchNoResults">No matches for “%1$s”</string>
     <string name="home">Home</string>
     <string name="image">Image</string>
@@ -440,7 +440,7 @@
     <string name="settingPreloadArticles">Preload articles</string>
     <string name="settingPreloadArticlesDesc">Quietly prepare the next random articles (text and pictures) while you read, so they open instantly. Uses a little extra data.</string>
     <string name="settingPersonalization">Learn from what I read</string>
-    <string name="settingPersonalizationDesc">Use reading time, scroll depth and likes to pick more articles from the topics you actually read. Everything stays on this device; turning it off forgets what was learned.</string>
+    <string name="settingPersonalizationDesc">Use reading time, scroll depth and likes to pick more articles from the topics you actually read. This learning is stored locally; turning it off forgets what was learned.</string>
     <string name="settingINaturalist">Show iNaturalist action</string>
     <string name="settingINaturalistDesc">Add a button to organism articles that opens the matching species page in the iNaturalist app. Off by default.</string>
     <string name="settingSwipeGestures">Swipe to go back and forward</string>
@@ -662,7 +662,7 @@
     <string name="statsBestDay">Best day</string>
     <string name="statsStreak">Current streak</string>
     <string name="statsActiveDays">Days with reading</string>
-    <string name="statsFootnote">Everything stays on this device. Daily figures, the streak and session records start counting with this update; the totals include everything from before.</string>
+    <string name="statsFootnote">Daily figures, the streak and session records start counting with this update; the totals include everything from before.</string>
     <string name="statsSettingsDesc">Articles read, time spent reading, streaks and more</string>
 
     <!-- About / author -->
@@ -756,6 +756,45 @@
     <string name="settingReadingMarginValue">%1$d dp</string>
     <string name="settingJustifyText">Justify text</string>
     <string name="settingJustifyTextDesc">Align paragraphs to both edges</string>
+    <string name="premium">Premium</string>
+    <string name="premiumFeature">Premium feature</string>
+    <string name="premiumUnlockHint">Donate once to unlock every premium feature. Thank you!</string>
+    <string name="readerAppearance">Reading appearance</string>
+    <string name="readerTextSize">Text size</string>
+    <string name="readerTextSizeValue">%1$d%%</string>
+    <string name="readerTextAlign">Text alignment</string>
+    <string name="readerTextAlignOriginal">Original</string>
+    <string name="readerTextAlignJustify">Justified</string>
+    <string name="settingReadingTheme">Reading theme</string>
+    <string name="settingReadingThemeDesc">Background and ink colours for articles</string>
+    <string name="readingThemeDefault">Default</string>
+    <string name="readingThemeDefaultDesc">Follow the app theme</string>
+    <string name="readingThemeSepia">Sepia</string>
+    <string name="readingThemeSepiaDesc">Warm paper background with softer ink for long reads</string>
+    <string name="readingThemeSolarizedLight">Solarized Light</string>
+    <string name="readingThemeSolarizedLightDesc">Low-contrast warm light theme</string>
+    <string name="readingThemeSolarizedDark">Solarized Dark</string>
+    <string name="readingThemeSolarizedDarkDesc">Low-contrast dark blue theme</string>
+    <string name="readingThemeNord">Nord</string>
+    <string name="readingThemeNordDesc">Cool arctic dark theme</string>
+    <string name="readingThemeGruvbox">Gruvbox</string>
+    <string name="readingThemeGruvboxDesc">Retro warm dark theme</string>
+    <string name="readingThemePaper">Paper</string>
+    <string name="readingThemePaperDesc">Soft cream paper</string>
+    <string name="readingThemeGray">Gray</string>
+    <string name="readingThemeGrayDesc">Neutral low-glare gray</string>
+    <string name="fontImportFormats">Supported formats: TTF, OTF and TTC. The font is copied into the app, so it keeps working if you delete the original file.</string>
+    <string name="fontImportPremium">Importing a custom font is a premium feature.</string>
+    <string name="ttsReadAloud">Read aloud</string>
+    <string name="ttsStop">Stop reading</string>
+    <string name="ttsPremium">Read aloud is a premium feature. Donate once to unlock it.</string>
+    <string name="ttsUnavailable">Text to speech is not available. Install or enable a speech engine in Android settings.</string>
+    <string name="ttsNoText">There is no article text to read yet.</string>
+    <string name="settingOfflineTopUp">Keep downloaded articles topped up</string>
+    <string name="settingOfflineTopUpDesc">Automatically download more articles back to your target whenever a connection is available</string>
+    <string name="settingOfflineTopUpValue">Target: %1$d articles</string>
+    <string name="settingOfflineTopUpOff">Off</string>
+    <string name="offlineTopUpStarted">Automatic top-up is on</string>
     <string name="settingSepiaTheme">Sepia reading theme</string>
     <string name="settingSepiaThemeDesc">Warm paper background with softer ink for long reads</string>
     <!-- Developer preview: link previews -->
@@ -802,10 +841,10 @@
     <string name="settingSearchHistoryHelp">Stores the terms you search for so you can reuse them. You can clear them from the search screen or Data settings.</string>
     <string name="settingPullForRandomHelp">Pull down on an article to load a new random article instead of refreshing the current page.</string>
     <string name="settingPreloadArticlesHelp">Prepares the next random articles in the background so Shuffle feels instant. This uses a little extra data and storage.</string>
-    <string name="settingPersonalizationHelp">Uses reading time, scroll depth and likes to favor topics you actually read. All learning stays on this device, and turning it off forgets what was learned.</string>
+    <string name="settingPersonalizationHelp">Uses reading time, scroll depth and likes to favor topics you actually read. Learning is stored locally, and turning it off forgets what was learned.</string>
     <string name="settingINaturalistGalleryHelp">Adds community photos from iNaturalist below the Commons gallery on species articles. Each photo can open in iNaturalist.</string>
     <string name="settingSwipeGesturesHelp">Swipe right inside an article to go back and left to go forward. Edge swipes remain reserved for the menu and tabs.</string>
-    <string name="settingWikivoyageHelp">Switches search, topics and random articles to Wikivoyage travel guides. Restart the app after changing this.</string>
+    <string name="settingWikivoyageHelp">Switches search, topics and random articles to Wikivoyage travel guides. The change takes effect immediately.</string>
 
     <!-- Quick Settings tile and launcher shortcut -->
     <string name="quickTileLabel">Random article</string>

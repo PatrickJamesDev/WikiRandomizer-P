@@ -59,7 +59,7 @@ fun StatisticsScreen(
         }
         item {
             Text(
-                text = "Saved articles and history stay on this device. Pictures, highlights and vocabulary are available in their own library screens.",
+                text = "Pictures, highlights and vocabulary are available in their own library screens.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 8.dp)
