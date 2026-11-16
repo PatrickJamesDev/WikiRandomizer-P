@@ -45,6 +45,7 @@ import coil3.request.crossfade
 import com.wikirandomizerp.app.R
 import com.wikirandomizerp.app.data.CommonsCategoryGallery
 import com.wikirandomizerp.app.data.CommonsGalleryImage
+import com.wikirandomizerp.app.ui.image.ImageCacheKeys
 
 /**
  * How the article page asks for the Commons gallery of the article it shows. Provided once by the
@@ -150,6 +151,7 @@ private fun GalleryThumb(
         AsyncImage(
             model = ImageRequest.Builder(context)
                 .data(image.thumbnailUrl)
+                .diskCacheKey(ImageCacheKeys.body(image.thumbnailUrl))
                 .crossfade(true)
                 .build(),
             contentDescription = image.title,

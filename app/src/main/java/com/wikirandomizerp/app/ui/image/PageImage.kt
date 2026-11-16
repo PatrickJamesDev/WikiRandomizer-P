@@ -14,6 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import coil3.compose.AsyncImagePainter
+import kotlinx.coroutines.delay
 import com.wikirandomizerp.app.R
 import com.wikirandomizerp.app.data.WikiPhoto
 
@@ -35,7 +41,9 @@ fun SharedTransitionScope.PageImage(
     painterState: AsyncImagePainter.State,
     background: Boolean,
     contentScale: ContentScale,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Backing colour while the bitmap decodes; full-screen viewers pass black to avoid a flash. */
+    loadingColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest
 ) {
     when (painterState) {
         is AsyncImagePainter.State.Success -> {
@@ -61,28 +69,24 @@ fun SharedTransitionScope.PageImage(
                 modifier = modifier
                     .fillMaxWidth()
                     .aspectRatio(safeAspectRatio(photo.width, photo.height))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .background(loadingColor)
+            )
+        }
+
+        is AsyncImagePainter.State.Error -> {
+            ImageLoadFailure(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .aspectRatio(safeAspectRatio(photo.width, photo.height))
             )
         }
 
         else -> {
             Box(
-                contentAlignment = Alignment.Center,
                 modifier = modifier
                     .fillMaxWidth()
-                    .aspectRatio(
-                        safeAspectRatio(photo.width, photo.height)
-                    )
-            ) {
-                Icon(
-                    painterResource(R.drawable.error),
-                    contentDescription = stringResource(R.string.errorLoadingImage),
-                    modifier = Modifier
-                        .padding(vertical = 16.dp)
-                        .size(64.dp),
-                    tint = colorScheme.error
-                )
-            }
+                    .aspectRatio(safeAspectRatio(photo.width, photo.height))
+            )
         }
     }
 }
@@ -96,7 +100,8 @@ fun SharedTransitionScope.PageImage(
     painter: AsyncImagePainter,
     painterState: AsyncImagePainter.State,
     contentScale: ContentScale,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    loadingColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest
 ) {
     when (painterState) {
         is AsyncImagePainter.State.Success -> {
@@ -118,25 +123,45 @@ fun SharedTransitionScope.PageImage(
             Box(
                 modifier = modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .background(loadingColor)
             )
         }
 
+        is AsyncImagePainter.State.Error -> {
+            ImageLoadFailure(modifier = modifier.fillMaxWidth())
+        }
+
         else -> {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = modifier
-                    .fillMaxWidth()
-            ) {
-                Icon(
-                    painterResource(R.drawable.error),
-                    contentDescription = stringResource(R.string.errorLoadingImage),
-                    modifier = Modifier
-                        .padding(vertical = 16.dp)
-                        .size(64.dp),
-                    tint = colorScheme.error
-                )
-            }
+            Box(modifier = modifier.fillMaxWidth())
+        }
+    }
+}
+
+/**
+ * Coil can briefly report an error while a cached bitmap is being restored, then succeed on the
+ * next frame. Showing the red warning immediately made cold starts look broken, so keep the
+ * neutral placeholder for a moment and only surface a real failure after that.
+ */
+@Composable
+private fun ImageLoadFailure(modifier: Modifier = Modifier) {
+    var showError by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(700)
+        showError = true
+    }
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+    ) {
+        if (showError) {
+            Icon(
+                painterResource(R.drawable.error),
+                contentDescription = stringResource(R.string.errorLoadingImage),
+                modifier = Modifier
+                    .padding(vertical = 16.dp)
+                    .size(64.dp),
+                tint = colorScheme.onSurfaceVariant
+            )
         }
     }
 }

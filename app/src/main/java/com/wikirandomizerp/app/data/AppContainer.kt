@@ -11,6 +11,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import com.wikirandomizerp.app.BuildConfig
 import com.wikirandomizerp.app.data.billing.DonationBilling
+import com.wikirandomizerp.app.data.sync.DriveSyncStore
 import com.wikirandomizerp.app.data.sync.LocalSyncStore
 import com.wikirandomizerp.app.network.DebugLogInterceptor
 import com.wikirandomizerp.app.network.HostSelectionInterceptor
@@ -32,6 +33,7 @@ interface AppContainer {
     val backupManager: BackupManager
     val donationBilling: DonationBilling
     val localSyncStore: LocalSyncStore
+    val driveSyncStore: DriveSyncStore
     val userAgentString: String
 }
 
@@ -147,6 +149,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
             searchHistoryDao = AppDatabase.getDatabase(context).searchHistoryDao(),
             savedArticleDao = AppDatabase.getDatabase(context).savedArticleDao(),
             savedHighlightDao = AppDatabase.getDatabase(context).savedHighlightDao(),
+            savedImageDao = AppDatabase.getDatabase(context).savedImageDao(),
             vocabularyDao = AppDatabase.getDatabase(context).vocabularyDao(),
             viewHistoryDao = AppDatabase.getDatabase(context).viewHistoryDao(),
             userLanguageDao = AppDatabase.getDatabase(context).userLanguageDao()
@@ -159,6 +162,14 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val localSyncStore: LocalSyncStore by lazy {
         LocalSyncStore(context.applicationContext, appDatabaseRepository)
+    }
+
+    override val driveSyncStore: DriveSyncStore by lazy {
+        DriveSyncStore(
+            context.applicationContext,
+            appDatabaseRepository,
+            appPreferencesRepository
+        )
     }
 
     override val updateChecker: UpdateChecker by lazy {

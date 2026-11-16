@@ -308,21 +308,34 @@ object DebugLog {
     }
 
     private fun writeLine(level: String, tag: String, msg: String, t: Throwable?) {
+        // Keep the UI thread out of timestamp formatting and stack-trace rendering. DateTimeFormatter
+        // and the regex machinery it uses showed up in scroll jank traces while debug logging was on.
         val now = Instant.now()
         val uptime = (System.nanoTime() - startNanos) / 1_000_000
         val thread = Thread.currentThread().name
+        android.util.Log.println(
+            when (level) { "E" -> android.util.Log.ERROR; "W" -> android.util.Log.WARN; else -> android.util.Log.DEBUG },
+            "WR/$tag", msg
+        )
+        writer.execute { append(formatLine(now, uptime, thread, level, tag, msg, t)) }
+    }
+
+    private fun formatLine(
+        now: Instant,
+        uptime: Long,
+        thread: String,
+        level: String,
+        tag: String,
+        msg: String,
+        t: Throwable?
+    ): String {
         val line = StringBuilder()
             .append(formatter.format(now)).append(" +").append(uptime).append("ms [")
             .append(thread).append("] ").append(level).append('/').append(tag).append(": ")
             .append(msg)
         if (t != null) line.append('\n').append(stackTrace(t))
         line.append('\n')
-        val text = line.toString()
-        android.util.Log.println(
-            when (level) { "E" -> android.util.Log.ERROR; "W" -> android.util.Log.WARN; else -> android.util.Log.DEBUG },
-            "WR/$tag", msg
-        )
-        writer.execute { append(text) }
+        return line.toString()
     }
 
     private fun append(text: String) {

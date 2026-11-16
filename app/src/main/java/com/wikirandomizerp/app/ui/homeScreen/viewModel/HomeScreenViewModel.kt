@@ -64,6 +64,10 @@ import com.wikirandomizerp.app.data.ALL_TOPICS
 import com.wikirandomizerp.app.data.AppDatabaseRepository
 import com.wikirandomizerp.app.data.ArticleCache
 import com.wikirandomizerp.app.ui.image.ImagePrefetcher
+import com.wikirandomizerp.app.ui.homeScreen.INaturalistImages
+import com.wikirandomizerp.app.ui.homeScreen.INaturalistObservations
+import com.wikirandomizerp.app.ui.homeScreen.INaturalistTaxa
+import com.wikirandomizerp.app.ui.homeScreen.isLikelyOrganismArticle
 import com.wikirandomizerp.app.data.ArticleRow
 import com.wikirandomizerp.app.data.CacheConfig
 import com.wikirandomizerp.app.data.DebugLog
@@ -72,6 +76,8 @@ import com.wikirandomizerp.app.data.IndexKeepAliveService
 import com.wikirandomizerp.app.data.InterestMatch
 import com.wikirandomizerp.app.data.InterestResolver
 import com.wikirandomizerp.app.data.LibraryExhaustedException
+import com.wikirandomizerp.app.data.LinkPreview
+import com.wikirandomizerp.app.data.WikiRevision
 import com.wikirandomizerp.app.data.LanguagePinnedWikipediaRepository
 import com.wikirandomizerp.app.data.BackupManager
 import com.wikirandomizerp.app.data.CommonsImage
@@ -151,9 +157,17 @@ private const val TOPIC_RANDOM_TIMEOUT_MS = 8_000L // hard ceiling on the whole 
 private const val MAX_BACKSTACK_ENTRIES = 8        // bounds memory when chaining random articles
 private const val MAX_CANDIDATE_FETCH_ATTEMPTS = 3 // retries if a chosen candidate's fetch fails
 private const val MAX_RECENTLY_CLOSED = 10         // closed tabs that can still be brought back
-private const val PREFETCH_TARGET = 12             // random articles kept ready in the background
-private const val PREFETCH_WARM_IMAGES = 8         // body pictures warmed for a background page
-private const val PREFETCH_WARM_FULL_RES = 2       // full-screen renditions warmed in the background
+private const val PREFETCH_TARGET = 16             // random articles kept ready in the background
+private const val PREFETCH_ALL_IMAGES = 3          // articles whose every thumbnail is warmed
+private const val PREFETCH_PARTIAL_IMAGES = 10     // next articles that get a partial image set
+private const val PREFETCH_WARM_IMAGES = 10        // body pictures warmed for a partial page
+private const val PREFETCH_WARM_FULL_RES = 4      // full-screen renditions for the next article
+private const val PREFETCH_WARM_FULL_RES_NEAR = 2  // full-screen renditions for the second
+private const val PREFETCH_WARM_FULL_RES_FAR = 1   // full-screen renditions for the third/fourth
+private const val IMAGE_PREFETCH_GAP_MS = 40L      // gentle spacing between image requests
+private const val INITIAL_IMAGES_WAIT = 1
+private const val PREFETCH_INAT_ARTICLES = 5        // queued species articles with photos prepared
+private const val PREFETCH_INAT_WAIT = 4           // iNaturalist thumbnails awaited during prefetch
 
 // Keep the text and body pictures of this many most-recently-read articles; older ones are
 // evicted from the caches (saved articles, offline downloads and open tabs are exempt).
@@ -234,6 +248,7 @@ class HomeScreenViewModel(
     val searchHistoryFlow = appDatabaseRepository.getSearchHistory().distinctUntilChanged()
     val recentLangsFlow = appDatabaseRepository.getRecentLanguages().distinctUntilChanged()
     val userLangsFlow = appDatabaseRepository.getUserLanguages().distinctUntilChanged()
+    val savedImagesFlow = appDatabaseRepository.getSavedImages().distinctUntilChanged()
 
     @OptIn(FlowPreview::class)
     val languageSearchQuery = languageSearchStr.debounce(500L)
@@ -319,7 +334,8 @@ class HomeScreenViewModel(
         val page: WikiApiPage,
         val libraryTitle: String,
         val content: String,
-        val key: String
+        val key: String,
+        var imageUrls: List<String> = emptyList()
     )
 
     /** The next few random articles, already downloaded (text on disk, pictures in the image cache). */
@@ -327,6 +343,10 @@ class HomeScreenViewModel(
     private val prefetchLock = Any()
     private val persistMutex = Mutex()
     private var prefetchJob: Job? = null
+    private var imagePrefetchJob: Job? = null
+    private val warmedThumbnails = ConcurrentHashMap.newKeySet<String>()
+    private val warmedFullRes = ConcurrentHashMap.newKeySet<String>()
+    private val warmedINaturalist = ConcurrentHashMap.newKeySet<String>()
     @Volatile private var libraryVersion = 0
 
     /** One article currently on screen; finished when the user leaves it (opt-in personalization). */
@@ -361,6 +381,11 @@ class HomeScreenViewModel(
         libraryVersion++
         synchronized(prefetchLock) { prefetchQueue.clear() }
         prefetchJob?.cancel()
+        imagePrefetchJob?.cancel()
+        imagePrefetchJob = null
+        warmedThumbnails.clear()
+        warmedFullRes.clear()
+        warmedINaturalist.clear()
         persistPrefetchQueue()
         // Topic/settings changes must begin refilling immediately, otherwise the next Random tap
         // has nothing prepared and falls back to a loading screen.
@@ -399,10 +424,11 @@ class HomeScreenViewModel(
                 // accident. A mode change also changes the queue key, but this is defence in depth.
                 if (entry.contentKind != currentMode) continue
                 val page = entry.page ?: continue
-                restored.add(PrefetchedRandom(page, parts[1], entry.wikitext, parts[0]))
+                restored.add(PrefetchedRandom(page, parts[1], entry.wikitext, parts[0], entry.imageUrls))
             }
             if (restored.isNotEmpty()) {
                 synchronized(prefetchLock) { prefetchQueue.addAll(0, restored) }
+                ensureQueuedImageWarm()
                 DebugLog.i("Prefetch", "restored ${restored.size} prepared article(s) from the previous session (mode=$currentMode)")
             }
         } catch (e: CancellationException) {
@@ -854,9 +880,9 @@ class HomeScreenViewModel(
     /**
      * Starts loading a page's pictures so they are on screen the moment the article opens.
      *
-     * A page the user actually reads warms every body picture at 960 px and all high-resolution
-     * 1920 px renditions. Background-prefetched pages warm only a handful, otherwise a dozen
-     * queued articles would download thousands of pictures and compete with the visible page.
+     * A page the user actually reads warms its body pictures and the nearest high-resolution
+     * renditions. Background tabs warm only a handful, otherwise a dozen tabs would compete with
+     * the visible page.
      */
     private fun warmImages(
         lang: String,
@@ -868,28 +894,19 @@ class HomeScreenViewModel(
         // (article open / tab switch); it is pure background work.
         viewModelScope.launch(Dispatchers.IO + errorHandler) {
             try {
-                val urls = ArrayList<String>()
-                // Both the thumbnail (article/infobox) and the original (full-screen viewer) so the
-                // viewer can open the lead picture instantly even before the body is scrolled.
-                ImagePrefetcher.standardThumbnailUrl(page.thumbnail?.source)?.let { urls.add(it) }
-                page.photo?.source?.let { urls.add(it) }
                 val limit = if (full) CacheConfig.MAX_ARTICLE_IMAGES else PREFETCH_WARM_IMAGES
-                if (preferencesState.value.renderMode == "html") {
-                    // REST HTML is converted to [[File:...]] blocks before rendering, so warm
-                    // exactly those file names (the raw <img> src is not what the renderer
-                    // requests).
-                    val media = splitHtmlMediaBlocks(content)
-                        .filter { it.contains("[[File:", ignoreCase = true) }
-                        .joinToString("\n")
-                    urls.addAll(ImagePrefetcher.firstImageUrls(lang, media, limit))
-                } else {
-                    urls.addAll(ImagePrefetcher.firstImageUrls(lang, content, limit))
-                }
+                val urls = imageUrlsFor(
+                    lang,
+                    page,
+                    content,
+                    preferencesState.value.renderMode == "html"
+                ).take(limit)
                 ImagePrefetcher.warm(
                     appContext,
                     urls,
                     maxFullRes = if (full) CacheConfig.MAX_HIGH_RES_IMAGES
-                    else PREFETCH_WARM_FULL_RES
+                    else PREFETCH_WARM_FULL_RES_FAR,
+                    gapMs = IMAGE_PREFETCH_GAP_MS
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -927,16 +944,49 @@ class HomeScreenViewModel(
         if (!preferencesState.value.dataSaver) warmImages(lang, page, content)
     }
 
+    private suspend fun awaitInitialImages(
+        lang: String,
+        page: WikiApiPage?,
+        content: String,
+        html: Boolean
+    ) {
+        if (preferencesState.value.dataSaver) return
+        // Only the article's main picture has to be ready before the article is shown. Everything
+        // else starts loading right after (cacheArticle -> warmImages), first picture first.
+        val urls = imageUrlsFor(lang, page, content, html).take(INITIAL_IMAGES_WAIT)
+        if (urls.isEmpty()) return
+        val start = System.nanoTime()
+        try {
+            // Never hold the article behind a slow image connection. The separate background
+            // warm job keeps downloading after this short deadline expires.
+            val finished = withTimeoutOrNull(1_200) {
+                ImagePrefetcher.warmAndWait(appContext, urls)
+                true
+            } ?: false
+            DebugLog.d(
+                "Prefetch",
+                "initial ${urls.size} pictures ${if (finished) "ready" else "still warming"} in " +
+                        "${(System.nanoTime() - start) / 1_000_000} ms"
+            )
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (e: Throwable) {
+            DebugLog.w("Prefetch", "could not prepare initial pictures: ${e.message}")
+        }
+    }
+
     /** All picture addresses in [content] (HTML <img> tags or wikitext [[File:]] blocks). */
     private fun imageUrlsFor(
         lang: String,
-        page: WikiApiPage,
+        page: WikiApiPage?,
         content: String,
         html: Boolean
     ): List<String> {
         val urls = LinkedHashSet<String>()
-        ImagePrefetcher.standardThumbnailUrl(page.thumbnail?.source)?.let(urls::add)
-        page.photo?.source?.let(urls::add)
+        ImagePrefetcher.standardThumbnailUrl(page?.thumbnail?.source)?.let(urls::add)
+        // The original file is only a fallback: it can be several megabytes and is never drawn
+        // while a thumbnail exists.
+        if (page?.thumbnail?.source == null) page?.photo?.source?.let(urls::add)
         try {
             if (html) {
                 // The rendered article requests FilePath URLs built from the [[File:...]] names
@@ -989,9 +1039,13 @@ class HomeScreenViewModel(
                 val openTabs = homeScreenState.value.tabs
                     .map { it.lang to it.title.lowercase(Locale.ROOT) }
                     .toHashSet()
+                val prefetched = synchronized(prefetchLock) {
+                    prefetchQueue.map { it.page.title.lowercase(Locale.ROOT) }.toHashSet()
+                }
                 for ((candidateLang, candidateTitle) in candidates) {
                     val key = candidateLang to candidateTitle.lowercase(Locale.ROOT)
                     if (key in openTabs) continue
+                    if (candidateTitle.lowercase(Locale.ROOT) in prefetched) continue
                     if (articleCache.isOffline(candidateLang, candidateTitle)) continue
                     val saved = try {
                         appDatabaseRepository.isTitleSaved(candidateTitle, candidateLang)
@@ -1131,11 +1185,14 @@ class HomeScreenViewModel(
 
     fun onAppForegrounded() {
         schedulePrefetch()
+        ensureQueuedImageWarm()
     }
 
     fun onAppBackgrounded() {
         prefetchJob?.cancel()
         prefetchJob = null
+        imagePrefetchJob?.cancel()
+        imagePrefetchJob = null
     }
 
     /**
@@ -1187,11 +1244,21 @@ class HomeScreenViewModel(
                     }
                     if (key != prefetchKey()) return@launch // settings changed meanwhile: start over later
                     val lang = prefetchLang
-                    articleCache.put(lang, title, picked.first, content, contentKind = mode)
-                    warmImages(lang, picked.first, content, full = false)
+                    val imageUrls = imageUrlsFor(lang, picked.first, content, mode == "html")
+                    articleCache.put(
+                        lang,
+                        title,
+                        picked.first,
+                        content,
+                        contentKind = mode,
+                        imageUrls = imageUrls
+                    )
                     synchronized(prefetchLock) {
-                        prefetchQueue.add(PrefetchedRandom(picked.first, picked.second, content, key))
+                        prefetchQueue.add(
+                            PrefetchedRandom(picked.first, picked.second, content, key, imageUrls)
+                        )
                     }
+                    ensureQueuedImageWarm()
                     persistPrefetchQueue()
                     DebugLog.i(
                         "Prefetch",
@@ -1204,6 +1271,96 @@ class HomeScreenViewModel(
                 DebugLog.d("Prefetch", "library exhausted: nothing to prepare")
             } catch (e: Exception) {
                 DebugLog.w("Prefetch", "could not prepare the next article: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Warms queued article pictures in reading order. The next six articles get every thumbnail,
+     * while full-screen renditions fall off with distance from the front of the queue. Species
+     * articles in that window also get their iNaturalist gallery photos prepared.
+     */
+    private fun ensureQueuedImageWarm() {
+        val prefs = preferencesState.value
+        if (prefs.dataSaver || !prefs.preloadArticles) return
+        if (imagePrefetchJob?.isActive == true) return
+        imagePrefetchJob = viewModelScope.launch(Dispatchers.IO + errorHandler) {
+            try {
+                while (true) {
+                    coroutineContext.ensureActive()
+                    val currentPrefs = preferencesState.value
+                    if (currentPrefs.dataSaver || !currentPrefs.preloadArticles) return@launch
+                    if (warmedThumbnails.size > 8_000) warmedThumbnails.clear()
+                    if (warmedFullRes.size > 3_000) warmedFullRes.clear()
+                    if (warmedINaturalist.size > 5_000) warmedINaturalist.clear()
+                    val snapshot = synchronized(prefetchLock) { prefetchQueue.toList() }
+                    if (snapshot.isEmpty()) return@launch
+                    val lang = currentPrefs.lang
+                    val html = currentPrefs.renderMode == "html"
+                    var warmedAny = false
+                    for ((index, article) in snapshot.withIndex()) {
+                        if (article.imageUrls.isEmpty()) {
+                            article.imageUrls = imageUrlsFor(lang, article.page, article.content, html)
+                        }
+                        val thumbnailLimit = when {
+                            index < PREFETCH_ALL_IMAGES -> CacheConfig.MAX_ARTICLE_IMAGES
+                            index < PREFETCH_PARTIAL_IMAGES -> PREFETCH_WARM_IMAGES
+                            else -> 2
+                        }
+                        val thumbnails = article.imageUrls
+                            .take(thumbnailLimit)
+                            .filter { warmedThumbnails.add(it) }
+                        if (thumbnails.isNotEmpty()) {
+                            ImagePrefetcher.warmPictures(
+                                context = appContext,
+                                thumbnails = thumbnails,
+                                gapMs = IMAGE_PREFETCH_GAP_MS
+                            )
+                            warmedAny = true
+                        }
+                        val fullResLimit = when (index) {
+                            0 -> PREFETCH_WARM_FULL_RES
+                            1 -> PREFETCH_WARM_FULL_RES_NEAR
+                            in 2 until PREFETCH_ALL_IMAGES -> PREFETCH_WARM_FULL_RES_FAR
+                            else -> 0
+                        }
+                        val fullRes = article.imageUrls
+                            .take(fullResLimit)
+                            .mapNotNull { ImagePrefetcher.largeVariant(it) }
+                            .filter { warmedFullRes.add(it) }
+                        if (fullRes.isNotEmpty()) {
+                            ImagePrefetcher.warmPictures(
+                                context = appContext,
+                                thumbnails = emptyList(),
+                                fullRes = fullRes,
+                                gapMs = IMAGE_PREFETCH_GAP_MS
+                            )
+                            warmedAny = true
+                        }
+                        if (currentPrefs.inaturalistGallery && index < PREFETCH_INAT_ARTICLES &&
+                            isLikelyOrganismArticle(article.content, article.page.description)
+                        ) {
+                            val taxonId = INaturalistTaxa.resolveId(article.page.title)
+                            if (taxonId != null) {
+                                val observations = INaturalistObservations.fetch(taxonId)
+                                val fresh = INaturalistImages.preload(
+                                    context = appContext,
+                                    observations = observations,
+                                    waitFor = if (index == 0) PREFETCH_INAT_WAIT else 0,
+                                    fullRes = if (index == 0) PREFETCH_WARM_FULL_RES
+                                    else PREFETCH_WARM_FULL_RES_NEAR,
+                                    done = warmedINaturalist
+                                )
+                                if (fresh > 0) warmedAny = true
+                            }
+                        }
+                    }
+                    if (!warmedAny) return@launch
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLog.w("Prefetch", "could not warm queued pictures: ${e.message}")
             }
         }
     }
@@ -1230,6 +1387,7 @@ class HomeScreenViewModel(
                 if (prefetchQueue.isEmpty()) null else prefetchQueue.removeAt(0)
             } ?: return null
             persistPrefetchQueue()
+            ensureQueuedImageWarm()
             if (pre.key != currentKey) {
                 DebugLog.d("Prefetch", "discarded a stale prepared article ('${pre.page.title}')")
                 continue
@@ -1678,7 +1836,9 @@ class HomeScreenViewModel(
     ): Int = withContext(Dispatchers.IO) {
         val lang = preferencesState.value.lang
         val index = topicIndexProvider(lang)
-        val topics = index.libraryStats().topics.filter { it.enabled }.map { it.topic }
+        val topics = index.libraryStats().topics
+            .filter { it.enabled && it.complete }
+            .map { it.topic }
         val rows = balancedOfflineRows(count, topics, lang, index)
         val kind = if (preferencesState.value.renderMode == "html") "html" else "wikitext"
         var stored = 0
@@ -1949,6 +2109,62 @@ class HomeScreenViewModel(
         }
         return null
     }
+
+    /** Articles already offered by the vertical feed in this session, so it never repeats one. */
+    private val feedShown = java.util.Collections.synchronizedSet(HashSet<String>())
+
+    /**
+     * The next [count] cards of the infinite vertical feed: random articles from the reader's
+     * topics (or Wikipedia's random generator when no topics are chosen), each with its cover
+     * picture and the start of its introduction. Articles with a cover picture come first.
+     */
+    suspend fun loadFeedCards(count: Int): List<com.wikirandomizerp.app.ui.homeScreen.VerticalFeedCard> =
+        withContext(Dispatchers.IO) {
+            val lang = preferencesState.value.lang
+            val withImage = ArrayList<WikiApiPage>()
+            val withoutImage = ArrayList<WikiApiPage>()
+            var attempts = 0
+            while (withImage.size < count && attempts < count * 4) {
+                attempts++
+                val page = (try {
+                    if (selectedTopicList().isEmpty()) randomArticleFromWikipedia()
+                    else pickFromIndexWithTitle(markSeen = false)?.first
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    null
+                }) ?: continue
+                if (!feedShown.add("$lang:${page.title}")) continue
+                val hasImage = (page.thumbnail?.source ?: page.photo?.source) != null
+                if (hasImage) withImage += page else withoutImage += page
+            }
+            var chosen: List<WikiApiPage> = withImage
+            if (chosen.isEmpty()) chosen = withoutImage.take(count)
+            if (chosen.isEmpty()) {
+                // Everything reachable was already shown: start the cycle again.
+                feedShown.clear()
+                return@withContext emptyList()
+            }
+            val intros: Map<String, String?> = try {
+                withHost(lang) { wikipediaRepository.getIntros(chosen.map { it.title }) }
+                    .query?.pages.orEmpty().associate { it.title to it.extract }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                emptyMap()
+            }
+            chosen.map { page ->
+                com.wikirandomizerp.app.ui.homeScreen.VerticalFeedCard(
+                    title = page.title,
+                    lang = lang,
+                    description = page.description,
+                    extract = (page.extract ?: intros[page.title])?.let {
+                        com.wikirandomizerp.app.ui.homeScreen.trimToSentence(it)
+                    },
+                    image = page.thumbnail?.source ?: page.photo?.source
+                )
+            }
+        }
 
     private suspend fun persistedSeen(lang: String): List<String> =
         appPreferencesRepository.readStringPreference("random_seen_$lang")
@@ -2361,6 +2577,12 @@ class HomeScreenViewModel(
         _showTutorial.value = true
     }
 
+    fun deleteSavedImage(image: com.wikirandomizerp.app.data.SavedImage) {
+        viewModelScope.launch(Dispatchers.IO + errorHandler) {
+            appDatabaseRepository.deleteSavedImage(image)
+        }
+    }
+
     // 笏笏 Start-up: reopen the last article, prepare random ones 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
 
     private suspend fun readLastArticle(): Pair<String, String>? {
@@ -2370,23 +2592,9 @@ class HomeScreenViewModel(
     }
 
     private suspend fun startUp() {
-        migrateTopicSelection()
-        try {
-            // Bound the permanent seen list: oldest entries may be offered again eventually.
-            topicIndexProvider(preferencesState.value.lang).pruneSeen()
-        } catch (e: Exception) {
-            DebugLog.w("Startup", "could not prune the seen list: ${e.message}")
-        }
-        try {
-            if (appPreferencesRepository.readBooleanPreference("tutorial-done") != true) {
-                _showTutorial.value = true
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            DebugLog.w("Startup", "could not read the tutorial flag: ${e.message}")
-        }
-
+        // Wakeup order matters: restore the article the reader left on screen before migration,
+        // tutorial checks, feed loading and prefetch work. Those used to do database and network
+        // I/O first, delaying the only thing the user was waiting to see.
         val last = try {
             readLastArticle()
         } catch (e: CancellationException) {
@@ -2413,15 +2621,37 @@ class HomeScreenViewModel(
                 fromRestore = true,
                 initialScroll = restoredTab?.let { it.scrollIndex to it.scrollOffset }
             )
-            loadFeed(silent = true)
         } else {
             // No restorable article, or the Wikipedia language changed since it was read: show a
             // feed in the current language instead of reopening an article in the old one.
             loadFeed()
         }
 
-        restorePrefetchQueue()
-        schedulePrefetch()
+        viewModelScope.launch(Dispatchers.IO + errorHandler) {
+            if (last != null && last.second == currentLang) {
+                loadFeed(silent = true)
+            }
+            migrateTopicSelection()
+            try {
+                // Bound the permanent seen list: oldest entries may be offered again eventually.
+                topicIndexProvider(preferencesState.value.lang).pruneSeen()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLog.w("Startup", "could not prune the seen list: ${e.message}")
+            }
+            try {
+                if (appPreferencesRepository.readBooleanPreference("tutorial-done") != true) {
+                    _showTutorial.value = true
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLog.w("Startup", "could not read the tutorial flag: ${e.message}")
+            }
+            restorePrefetchQueue()
+            schedulePrefetch()
+        }
 
         // An interrupted build (app closed, process killed, device slept) resumes by itself. The
         // membership rows are already on disk, so this only fills in the missing details.
@@ -2474,6 +2704,90 @@ class HomeScreenViewModel(
     fun setCompositionLocals(cs: ColorScheme, tg: Typography) {
         colorScheme = cs
         typography = tg
+    }
+
+    /** Talk page wikitext and revision list for the developer-preview article info sheet. */
+    suspend fun getTalkPage(title: String, lang: String): String? =
+        withContext(Dispatchers.IO) { wikipediaRepository.getTalkPage(title, lang) }
+
+    suspend fun getRevisions(title: String, lang: String): List<WikiRevision> =
+        withContext(Dispatchers.IO) { wikipediaRepository.getRevisions(title, lang) }
+
+    /** Summary for the long-press link preview (developer preview). */
+    suspend fun getLinkPreview(title: String, lang: String): LinkPreview? =
+        withContext(Dispatchers.IO) {
+            wikipediaRepository.getLinkPreview(title, lang)
+        }
+
+    /** Related articles from the topic libraries (used by the strip at the end of an article). */
+    suspend fun getRelatedArticles(title: String, lang: String): List<ArticleRow> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                topicIndexProvider(lang).relatedArticles(title, limit = 6)
+            }.getOrDefault(emptyList())
+        }
+
+    /** Opens an article the user shared into the app (notification or widget). */
+    fun openExternalArticle(title: String, lang: String?) {
+        viewModelScope.launch(errorHandler) {
+            loadPage(title = title, lang = lang, random = false)
+        }
+    }
+
+    /**
+     * Opens the Simple English Wikipedia version of [title] when one exists. The lookup runs in
+     * the "simple" language context, so it never changes the user's default Wikipedia language.
+     */
+    fun openSimpleEnglish(title: String, lang: String) {
+        if (lang == "simple" || title.isBlank() || title == "Error") return
+        viewModelScope.launch(errorHandler) {
+            val simpleWikipedia = LanguagePinnedWikipediaRepository(
+                wikipediaRepository,
+                interceptor,
+                "simple"
+            )
+            val page = withContext(Dispatchers.IO) {
+                runCatching { simpleWikipedia.getPageInfo(listOf(title)) }.getOrNull()
+            }?.query
+                ?.pages
+                ?.firstOrNull()
+            if (page == null || page.missing || page.pageid == 0 || page.title.isBlank()) {
+                snackBarHostState.showSnackbar(
+                    appContext.getString(R.string.simpleEnglishUnavailable)
+                )
+                return@launch
+            }
+            loadPage(title = page.title, lang = "simple", random = false)
+        }
+    }
+
+    /** Opens a random article from the enabled topic libraries, falling back to any random page. */
+    fun openRandomFromTopics() {
+        viewModelScope.launch(errorHandler) {
+            val prefs = preferencesState.value
+            val title = withContext(Dispatchers.IO) {
+                runCatching {
+                    val index = topicIndexProvider(prefs.lang)
+                    val topics = index.completeEnabledTopics()
+                    if (topics.isEmpty()) {
+                        null
+                    } else {
+                        index.pick(
+                            topics = topics,
+                            imagesOnly = false,
+                            minBytes = 0,
+                            qualityOnly = false,
+                            limit = 8
+                        ).firstOrNull()?.title
+                    }
+                }.getOrNull()
+            }
+            if (title.isNullOrBlank()) {
+                loadPage(title = null, random = true)
+            } else {
+                loadPage(title = title, lang = prefs.lang, random = false)
+            }
+        }
     }
 
     fun onAction(action: HomeAction) {
@@ -3213,7 +3527,8 @@ class HomeScreenViewModel(
                             }
                         }
 
-                    var sectionIndex = 3
+                    // LazyColumn item index of the first heading: 0 = header, 1 = intro.
+                    var sectionIndex = 2
                     val articleSections = mutableListOf<Pair<Int, String>>()
                     val parsedExtract = mutableListOf<List<AnnotatedString>>()
 
@@ -3252,6 +3567,8 @@ class HomeScreenViewModel(
                     } ?: LazyListState()
                     val loadedTitle = pageInfo?.title ?: "Error"
                     val savedHighlights = savedHighlightsFor(loadedTitle, setLang)
+                    awaitInitialImages(setLang, pageInfo, rawWikitext, htmlMode)
+                    coroutineContext.ensureActive()
                     if (!replaceBackstackEntry) backStack.add(
                         HomeSubscreen.Article(
                             title = loadedTitle,
@@ -3317,7 +3634,7 @@ class HomeScreenViewModel(
                                     else parsed.joinToString(separator = "").parseAsHtml().toString()
                                 )
                             )
-                            sectionIndex += 2
+                            sectionIndex += 1
                         }
                         parsedExtract.add(parsed)
 
@@ -3784,7 +4101,8 @@ class HomeScreenViewModel(
                 val extract: List<String> = parseSections(extractText)
 
                 sections = extract.size
-                var sectionIndex = 3
+                // LazyColumn item index of the first heading: 0 = header, 1 = intro.
+                var sectionIndex = 2
                 val articleSections = mutableListOf<Pair<Int, String>>()
                 val parsedExtract = mutableListOf<List<AnnotatedString>>()
 
@@ -3802,6 +4120,8 @@ class HomeScreenViewModel(
                 parsedExtract.add(section0)
                 currentSection = 1
 
+                awaitInitialImages(savedArticle.lang, apiResponse, savedArticle.pageContent, html = false)
+                coroutineContext.ensureActive()
                 backStack.add(
                     HomeSubscreen.Article(
                         title = apiResponse?.title ?: "Error",
@@ -3850,7 +4170,7 @@ class HomeScreenViewModel(
                                 parsed.joinToString(separator = "").parseAsHtml().toString()
                             )
                         )
-                        sectionIndex += 2
+                        sectionIndex += 1
                     }
                     parsedExtract.add(parsed)
 
@@ -3989,10 +4309,40 @@ class HomeScreenViewModel(
         return randomArticleFromWikipedia()
     }
 
-    private suspend fun randomArticleFromWikipedia(): WikiApiPage? =
-        withHost(preferencesState.value.lang) {
-            wikipediaRepository.getRandomResult().query?.pages?.randomOrNull()
+    /**
+     * Wikipedia's general random endpoint ignores the on-device seen list. That is fine while a
+     * complete topic library can serve the pick, but after an app/database upgrade the library is
+     * briefly marked incomplete (it has to fetch the new metadata). During that window this
+     * fallback used to show articles the reader had already finished. Query a few random pages
+     * and skip every title that is in either the permanent seen table or this session's set.
+     */
+    private suspend fun randomArticleFromWikipedia(): WikiApiPage? {
+        val lang = preferencesState.value.lang
+        val index = topicIndexProvider(lang)
+        var lastCandidate: WikiApiPage? = null
+        repeat(4) {
+            val pages = withHost(lang) {
+                wikipediaRepository.getRandomResult().query?.pages.orEmpty()
+            }
+            if (pages.isEmpty()) return@repeat
+            lastCandidate = lastCandidate ?: pages.first()
+            val seen = index.seenAmong(pages.map { it.title })
+            val unseen = pages.filterNot { page ->
+                page.title in sessionSeen || page.title in seen
+            }
+            if (unseen.isNotEmpty()) return unseen.randomOrNull()
+            DebugLog.d(
+                "Random",
+                "general random returned only already-seen articles; retrying (${pages.size} checked)"
+            )
         }
+        DebugLog.w(
+            "Random",
+            "no unseen article from Wikipedia's random endpoint after 4 attempts; repeating one"
+        )
+        lastCandidate?.let { notifyAllSeenRepeat() }
+        return lastCandidate
+    }
 
     private var lastAllSeenNoticeMs = 0L
 

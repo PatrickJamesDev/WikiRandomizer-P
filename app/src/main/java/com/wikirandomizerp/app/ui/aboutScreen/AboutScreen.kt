@@ -1,5 +1,6 @@
 package com.wikirandomizerp.app.ui.aboutScreen
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -51,6 +52,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import com.wikirandomizerp.app.BuildConfig
+import com.wikirandomizerp.app.SharedReaderActivity
 import com.wikirandomizerp.app.R
 import com.wikirandomizerp.app.WikiRandomizerPApplication
 import com.wikirandomizerp.app.data.DeveloperMode
@@ -332,9 +334,27 @@ fun AboutScreen(
                                 Text(stringResource(R.string.developerOptionsDesc))
                             },
                             colors = listItemColors,
-                            items = 1,
+                            items = 2,
                             index = 0
                         ) { onOpenDebug() }
+                        ClickableListItem(
+                            leadingContent = {
+                                Icon(painterResource(R.drawable.open_in_browser), null)
+                            },
+                            headlineContent = {
+                                Text(stringResource(R.string.sharedReaderPreview))
+                            },
+                            supportingContent = {
+                                Text(stringResource(R.string.sharedReaderPreviewDesc))
+                            },
+                            colors = listItemColors,
+                            items = 2,
+                            index = 1
+                        ) {
+                            context.startActivity(
+                                Intent(context, SharedReaderActivity::class.java)
+                            )
+                        }
                     }
                 }
             }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -378,6 +379,7 @@ fun HistoryScreen(
                                             description = it.description,
                                             background = imageBackground,
                                             pinnedThumbnail = true,
+                                            smartCrop = true,
                                             modifier = Modifier
                                                 .size(64.dp)
                                                 .clip(RoundedCornerShape(imageCorners))
@@ -565,9 +567,10 @@ private fun HistoryGridCard(
                     description = item.description,
                     background = imageBackground,
                     pinnedThumbnail = true,
+                    smartCrop = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp)
+                        .aspectRatio(4f / 3f)
                 )
             }
             Text(

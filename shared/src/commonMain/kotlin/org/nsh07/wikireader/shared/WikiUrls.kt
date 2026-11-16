@@ -22,14 +22,65 @@ object WikiUrls {
 
     fun mainPageUrl(lang: String): String = articleUrl(lang, "Main_Page")
 
+    fun talkPageUrl(lang: String, title: String): String =
+        articleUrl(lang, "Talk:${normalizeTitle(title)}")
+
+    fun historyUrl(lang: String, title: String): String =
+        "https://${host(lang)}/w/index.php?title=${encodeQuery(title)}&action=history"
+
+    fun pageInfoUrl(lang: String, title: String): String =
+        "https://${host(lang)}/w/index.php?title=${encodeQuery(title)}&action=info"
+
+    fun whatLinksHereUrl(lang: String, title: String): String =
+        "https://${host(lang)}/wiki/Special:WhatLinksHere/${encodeTitle(title)}"
+
+    fun talkWikitextUrl(lang: String, title: String): String =
+        "https://${host(lang)}/w/api.php?action=parse&page=Talk%3A${encodeTitle(title)}" +
+            "&prop=wikitext&format=json&formatversion=2"
+
+    fun revisionsUrl(lang: String, title: String, limit: Int = 20): String =
+        "https://${host(lang)}/w/api.php?action=query&prop=revisions&titles=${encodeTitle(title)}" +
+            "&rvlimit=${limit.coerceIn(1, 50)}&rvprop=user%7Ctimestamp%7Ccomment%7Csize" +
+            "&format=json&formatversion=2"
+
+    fun languageLinksUrl(lang: String, title: String): String =
+        "https://${host(lang)}/w/api.php?action=query&prop=langlinks&titles=${encodeTitle(title)}" +
+            "&lllimit=500&llprop=autonym%7Clangname&format=json&formatversion=2"
+
     fun randomSummaryUrl(lang: String): String =
         "https://${host(lang)}/api/rest_v1/page/random/summary"
 
     fun summaryUrl(lang: String, title: String): String =
         "https://${host(lang)}/api/rest_v1/page/summary/${encodeTitle(title)}"
 
+    /** Wiktionary's REST definition endpoint; the shared dictionary falls back to English. */
+    fun wiktionaryDefinitionUrl(lang: String, word: String): String =
+        "https://${cleanLang(lang)}.wiktionary.org/api/rest_v1/page/definition/${encodeTitle(word)}"
+
     fun searchUrl(lang: String, query: String): String =
         "https://${host(lang)}/w/index.php?search=${encodeQuery(query)}"
+
+    /** Full-text search via the MediaWiki generator API, including thumbnails and snippets. */
+    fun searchApiUrl(lang: String, query: String, limit: Int = 20): String =
+        "https://${host(lang)}/w/api.php?action=query&generator=search" +
+            "&gsrsearch=${encodeQuery(query)}&gsrnamespace=0&gsrlimit=$limit" +
+            "&gsrprop=snippet|titlesnippet|redirecttitle" +
+            "&prop=pageimages&piprop=thumbnail&pithumbsize=250" +
+            "&format=json&formatversion=2"
+
+    /** Wikipedia's daily featured feed: article, most-read, picture, news and on-this-day. */
+    fun feedUrl(lang: String, datePath: String): String =
+        "https://${host(lang)}/api/rest_v1/feed/featured/${datePath.trim('/')}"
+
+    fun commonsImagesUrl(lang: String, title: String): String =
+        "https://${host(lang)}/w/api.php?action=query&format=json&formatversion=2" +
+            "&generator=images&gimlimit=50&redirects=1" +
+            "&titles=${encodeTitle(title)}&prop=imageinfo&iiprop=url&iiurlwidth=600"
+
+    fun categoryMembersUrl(lang: String, category: String, limit: Int = 50): String =
+        "https://${host(lang)}/w/api.php?action=query&list=categorymembers" +
+            "&cmtitle=${encodeQuery("Category:$category")}" +
+            "&cmtype=page&cmnamespace=0&cmlimit=$limit&format=json&formatversion=2"
 
     /** Special:FilePath is the stable, resizing image endpoint used by the Android image loader. */
     fun filePathUrl(lang: String, fileName: String, width: Int = 0): String {

@@ -26,9 +26,9 @@ import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
 import com.github.tomtung.latex2unicode.LaTeX2Unicode
 import com.wikirandomizerp.app.data.DebugLog
-import com.wikirandomizerp.app.data.LanguageData.alpha3CodeToAlpha2CodeMap
-import com.wikirandomizerp.app.data.LanguageData.countryNameToAlpha2CodeMap
-import com.wikirandomizerp.app.data.LanguageData.fifaCodeToAlpha3CodeMap
+import com.wikirandomizerp.app.data.LanguageData
+import com.wikirandomizerp.app.data.alpha3CodeToAlpha2CodeMap
+import com.wikirandomizerp.app.data.countryNameToAlpha2CodeMap
 import com.wikirandomizerp.app.data.countryFlag
 import com.wikirandomizerp.app.data.formatToHumanReadable
 import com.wikirandomizerp.app.data.langCodeToName
@@ -1174,12 +1174,12 @@ fun String.toWikitextAnnotatedString(
 
                                 when (curr.length) {
                                     3 -> append(
-                                        countryFlag(alpha3CodeToAlpha2CodeMap[curr] ?: "")
+                                        countryFlag(LanguageData.alpha3CodeToAlpha2CodeMap[curr] ?: "")
                                                 + ' '
                                     )
 
                                     else -> append(
-                                        countryFlag(countryNameToAlpha2CodeMap[curr] ?: "")
+                                        countryFlag(LanguageData.countryNameToAlpha2CodeMap[curr] ?: "")
                                                 + ' '
                                     )
                                 }
@@ -1291,14 +1291,14 @@ fun String.toWikitextAnnotatedString(
                                 when (country.length) {
                                     3 -> append(
                                         countryFlag(
-                                            alpha3CodeToAlpha2CodeMap[fifaCodeToAlpha3CodeMap[country.uppercase()]
+                                            LanguageData.alpha3CodeToAlpha2CodeMap[LanguageData.fifaCodeToAlpha3CodeMap[country.uppercase()]
                                                 ?: country] ?: ""
                                         ) + " $country"
                                     )
 
                                     else -> append(
                                         countryFlag(
-                                            countryNameToAlpha2CodeMap[country] ?: ""
+                                            LanguageData.countryNameToAlpha2CodeMap[country] ?: ""
                                         ) + " $country"
                                     )
                                 }

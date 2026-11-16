@@ -606,20 +606,22 @@ fun absolutizeHtmlLinks(html: String, lang: String): String = hrefRegex.replace(
 }
 
 /**
- * Compose's HTML parser drops the visual separation between block elements. Without these
- * explicit newlines, consecutive `<p>` paragraphs, list items and headings ran together into a
- * single wall of text in HTML mode. The markup itself is left intact so inline formatting and
- * links still work; only whitespace is added around block boundaries.
+ * Compose's `AnnotatedString.fromHtml` uses Android's *compact* HTML mode: a `</p>` ends the line
+ * but leaves no blank line, and newline characters in the source are plain whitespace (they
+ * became a space, which is also what the old `<br>` -> "\n" replacement did, so line breaks were
+ * lost too). Paragraphs therefore ran together with no gap.
+ *
+ * The separation has to be real `<br>` elements: one after each paragraph gives exactly one blank
+ * line between paragraphs. Real `<br>` tags are left alone so line breaks inside a paragraph work.
+ * Leading and trailing breaks are removed so a chunk never starts or ends with an empty line.
  */
 fun paragraphizeHtml(html: String): String {
     if (html.isBlank()) return html
     return html
-        .replace(Regex("(?i)<br\\s*/?>"), "\n")
-        .replace(Regex("(?i)</p\\s*>"), "</p>\n\n")
-        .replace(Regex("(?i)</li\\s*>"), "</li>\n")
-        .replace(Regex("(?i)</(h[2-6]|blockquote|pre|table|dl|dt|dd)\\s*>"), "</$1>\n\n")
-        .replace(Regex("(?i)<(p|ul|ol|dl|dt|dd|blockquote|pre|table)\\b"), "\n<$1")
-        .replace(manyNewlinesRegex, "\n\n")
+        .replace(Regex("(?i)</p\\s*>(?:\\s*<br\\s*/?>)*"), "</p><br>")
+        .replace(Regex("(?i)</(blockquote|pre|dl)\\s*>"), "</$1><br>")
+        .replace(Regex("(?i)^(?:\\s*<br\\s*/?>)+"), "")
+        .replace(Regex("(?i)(?:<br\\s*/?>\\s*)+$"), "")
         .trim()
 }
 

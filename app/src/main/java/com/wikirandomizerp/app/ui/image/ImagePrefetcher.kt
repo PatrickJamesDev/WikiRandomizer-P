@@ -6,7 +6,12 @@ import coil3.SingletonImageLoader
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.size.Size
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import com.wikirandomizerp.app.data.CacheConfig
@@ -106,7 +111,7 @@ object ImagePrefetcher {
         val small = urls.mapNotNull { smallThumbnailUrl(it) }.distinct()
         if (small.isEmpty()) return
         val loader = SingletonImageLoader.get(context)
-        for (u in small) enqueueWarm(loader, context, u, ImageCacheKeys.thumbnail(u))
+        for (u in small) enqueueWarm(loader, context, u, ImageCacheKeys.thumbnail(u), 0)
     }
 
 
@@ -116,7 +121,7 @@ object ImagePrefetcher {
         val loader = SingletonImageLoader.get(context)
         for (u in urls) {
             val standard = standardThumbnailUrl(u) ?: u
-            enqueueWarm(loader, context, standard, ImageCacheKeys.body(standard))
+            enqueueWarm(loader, context, standard, ImageCacheKeys.body(standard), 0)
         }
     }
 
@@ -162,35 +167,188 @@ object ImagePrefetcher {
      * pictures are stored at the 960 px step, and the full-screen 1920 px renditions are stored
      * too (up to [CacheConfig.MAX_HIGH_RES_IMAGES]) so opening the viewer never waits.
      */
-    fun warm(
-        context: Context,
-        urls: Collection<String>,
-        maxFullRes: Int = CacheConfig.MAX_HIGH_RES_IMAGES
-    ) {
-        if (urls.isEmpty()) return
-        val loader = SingletonImageLoader.get(context)
-        for ((index, u) in urls.withIndex()) {
-            enqueueWarm(loader, context, u, ImageCacheKeys.body(u))
-            if (index < maxFullRes) largeVariant(u)?.let {
-                enqueueWarm(loader, context, it, ImageCacheKeys.body(it))
+    suspend fun warmAndWait(context: Context, urls: Collection<String>) =
+        withContext(Dispatchers.IO) {
+            val distinct = urls.mapNotNull { standardThumbnailUrl(it) }.distinct()
+            if (distinct.isEmpty()) return@withContext
+            val loader = SingletonImageLoader.get(context)
+            coroutineScope {
+                distinct.map { url ->
+                    async {
+                        try {
+                            loader.execute(
+                                ImageRequest.Builder(context)
+                                    .data(url)
+                                    .diskCacheKey(ImageCacheKeys.body(url))
+                                    .memoryCachePolicy(CachePolicy.DISABLED)
+                                    .size(Size(96, 96))
+                                    .build()
+                            )
+                        } catch (cancellation: CancellationException) {
+                            throw cancellation
+                        } catch (_: Throwable) {
+                        }
+                    }
+                }.awaitAll()
             }
         }
+
+    suspend fun warm(
+        context: Context,
+        urls: Collection<String>,
+        maxFullRes: Int = CacheConfig.MAX_HIGH_RES_IMAGES,
+        gapMs: Long = 0L
+    ) {
+        val distinct = urls.distinct()
+        if (distinct.isEmpty()) return
+        warmPictures(
+            context = context,
+            thumbnails = distinct,
+            fullRes = distinct.take(maxFullRes).mapNotNull(::largeVariant),
+            gapMs = gapMs,
+        )
     }
+
+    suspend fun warmPictures(
+        context: Context,
+        thumbnails: Collection<String>,
+        fullRes: Collection<String> = emptyList(),
+        gapMs: Long = 0L
+    ) = withContext(Dispatchers.Default) {
+        if (thumbnails.isEmpty() && fullRes.isEmpty()) return@withContext
+        val loader = SingletonImageLoader.get(context)
+        val batch = WarmQueue.newBatch()
+        // The first pictures of the article (the lead picture first) go before everything else.
+        thumbnails.forEachIndexed { index, u ->
+            enqueueWarm(loader, context, u, ImageCacheKeys.body(u), if (index < 3) 0 else 1, batch)
+            if (gapMs > 0 && index >= 3) delay(gapMs)
+        }
+        for (u in fullRes) {
+            enqueueWarm(loader, context, u, ImageCacheKeys.body(u), 3, batch)
+            if (gapMs > 0) delay(gapMs)
+        }
+    }
+
+    /** Lower number = loaded sooner. Covers/thumbnails first, 1920 px renditions last. */
+    private fun defaultPriority(url: String): Int =
+        if (url.contains("1920px") || url.contains("width=1920") || url.contains("1280px")) 3 else 1
 
     private fun enqueueWarm(
         loader: coil3.ImageLoader,
         context: Context,
         url: String,
-        diskCacheKey: String?
+        diskCacheKey: String?,
+        priority: Int = defaultPriority(url),
+        batch: Long = WarmQueue.newBatch()
     ) {
-        loader.enqueue(
-            ImageRequest.Builder(context)
-                .data(url)
-                .diskCacheKey(diskCacheKey)
-                .memoryCachePolicy(CachePolicy.DISABLED)
-                .size(Size(96, 96))
-                .build()
+        WarmQueue.submit(loader, context.applicationContext, url, diskCacheKey, priority, batch)
+    }
+
+    /**
+     * Background warming used to call loader.enqueue() for every picture of every prepared article
+     * at once (hundreds of requests, many of them 1920 px, some of them duplicates). All of them
+     * shared the same HTTP/2 connection to upload.wikimedia.org, so the picture the reader was
+     * actually looking at got a tiny slice of the bandwidth and took 2-3 s to appear.
+     *
+     * This queue keeps background loading to a few requests at a time, skips pictures that are
+     * already on disk or already queued, serves the newest request first (what the reader just
+     * opened) and always lets small pictures go before huge ones.
+     */
+    private object WarmQueue {
+        private const val MAX_CONCURRENT = 3
+        private const val MAX_PENDING = 300
+
+        private class Job(
+            val priority: Int,
+            val seq: Long,
+            val batch: Long,
+            val loader: coil3.ImageLoader,
+            val context: Context,
+            val url: String,
+            val key: String?
         )
+
+        private val scope = kotlinx.coroutines.CoroutineScope(
+            kotlinx.coroutines.SupervisorJob() + Dispatchers.IO
+        )
+        private val lock = Any()
+        private var seq = 0L
+        private var running = 0
+        private val known = HashSet<String>()
+        private val pending = java.util.TreeSet<Job>(
+            // Priority first; then the newest request group (the article the reader just opened);
+            // inside one group the original order, so the first picture of an article loads first.
+            compareBy<Job>({ it.priority }, { -it.batch }, { it.seq })
+        )
+        private val batches = java.util.concurrent.atomic.AtomicLong()
+
+        fun newBatch(): Long = batches.incrementAndGet()
+
+        fun submit(
+            loader: coil3.ImageLoader,
+            context: Context,
+            url: String,
+            key: String?,
+            priority: Int,
+            batch: Long
+        ) {
+            synchronized(lock) {
+                val id = key ?: url
+                if (!known.add(id)) return
+                pending.add(Job(priority, seq++, batch, loader, context, url, key))
+                while (pending.size > MAX_PENDING) {
+                    val dropped = pending.pollLast() ?: break
+                    known.remove(dropped.key ?: dropped.url)
+                }
+            }
+            pump()
+        }
+
+        private fun pump() {
+            while (true) {
+                val job = synchronized(lock) {
+                    if (running >= MAX_CONCURRENT) return
+                    val next = pending.pollFirst() ?: return
+                    running++
+                    next
+                }
+                scope.launch {
+                    try {
+                        run(job)
+                    } finally {
+                        synchronized(lock) {
+                            running--
+                            known.remove(job.key ?: job.url)
+                        }
+                        pump()
+                    }
+                }
+            }
+        }
+
+        private suspend fun run(job: Job) {
+            try {
+                val cacheKey = job.key
+                if (cacheKey != null) {
+                    val snapshot = job.loader.diskCache?.openSnapshot(cacheKey)
+                    if (snapshot != null) {
+                        snapshot.close()
+                        return // already on disk: no network, no decoding
+                    }
+                }
+                job.loader.execute(
+                    ImageRequest.Builder(job.context)
+                        .data(job.url)
+                        .diskCacheKey(cacheKey)
+                        .memoryCachePolicy(CachePolicy.DISABLED)
+                        .size(Size(96, 96))
+                        .build()
+                )
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Throwable) {
+            }
+        }
     }
 
     /** Removes body-picture cache entries (never pinned thumbnails) for a retired article. */
@@ -240,6 +398,24 @@ object ImagePrefetcher {
             if (!head.contains(':')) continue
             val name = head.substringAfter(':').substringBefore("]]").trim()
             if (name.matches(fileNameRegex)) out.add(fileUrl(lang, name))
+        }
+        var galleryFrom = 0
+        while (out.size < max) {
+            val open = wikitext.indexOf("<gallery", galleryFrom, ignoreCase = true)
+            if (open < 0) break
+            val bodyStart = wikitext.indexOf('>', open)
+            if (bodyStart < 0) break
+            val close = wikitext.indexOf("</gallery", bodyStart, ignoreCase = true)
+            if (close < 0) break
+            galleryFrom = close + 1
+            for (line in wikitext.substring(bodyStart + 1, close).lineSequence()) {
+                if (out.size >= max) break
+                val raw = line.substringBefore('|').trim()
+                val name = if (raw.startsWith("File:", true) || raw.startsWith("Image:", true)) {
+                    raw.substringAfter(':').trim()
+                } else raw
+                if (name.matches(fileNameRegex)) out.add(fileUrl(lang, name))
+            }
         }
         return out.toList()
     }

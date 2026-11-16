@@ -45,8 +45,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -65,6 +68,8 @@ import androidx.window.core.layout.WindowSizeClass
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import com.wikirandomizerp.app.FeatureFlags
+import com.wikirandomizerp.app.data.TrackRecompositions
+import com.wikirandomizerp.app.data.perfMeasure
 import com.wikirandomizerp.app.R.drawable
 import com.wikirandomizerp.app.R.string
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.FeedSection
@@ -86,70 +91,117 @@ fun AppNavigationDrawer(
     onLibrarySearchClick: () -> Unit = {},
     onHomeClick: () -> Unit,
     onSavedArticlesClick: () -> Unit,
+    onSavedImagesClick: () -> Unit,
     onHighlightsClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onCuratorsClick: () -> Unit,
     onVerticalFeedClick: () -> Unit = {},
     onTabsClick: () -> Unit = {},
     menuOnRight: Boolean = false,
+    /** The TikTok-style feed is a developer preview and stays out of the normal menu. */
+    developerMode: Boolean = false,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val items = buildList {
+    TrackRecompositions("AppNavigationDrawer") {
+        "drawer=${drawerState.targetValue} menuRight=$menuOnRight developer=$developerMode"
+    }
+    // Keep the menu model stable across AppScreen recompositions (article scroll-position saves
+    // recompose this whole subtree). The callbacks read the latest lambdas through state, so the
+    // list and its PainterResource lookups are not rebuilt every time.
+    val latestHomeClick by rememberUpdatedState(onHomeClick)
+    val latestVerticalFeedClick by rememberUpdatedState(onVerticalFeedClick)
+    val latestSavedClick by rememberUpdatedState(onSavedArticlesClick)
+    val latestSavedImagesClick by rememberUpdatedState(onSavedImagesClick)
+    val latestHighlightsClick by rememberUpdatedState(onHighlightsClick)
+    val latestHistoryClick by rememberUpdatedState(onHistoryClick)
+    val latestLibrarySearchClick by rememberUpdatedState(onLibrarySearchClick)
+    val latestCuratorsClick by rememberUpdatedState(onCuratorsClick)
+    val latestTabsClick by rememberUpdatedState(onTabsClick)
+    val latestSettingsClick by rememberUpdatedState(onSettingsClick)
+    // painterResource is composable, so resolve the painters before the remember block.
+    val homeOutlined = painterResource(drawable.outline_home)
+    val homeFilled = painterResource(drawable.filled_home)
+    val feedIcon = painterResource(drawable.feed)
+    val savedOutlined = painterResource(drawable.download_done)
+    val savedFilled = painterResource(drawable.filled_download_done)
+    val savedImagesIcon = painterResource(drawable.image)
+    val highlightIcon = painterResource(drawable.highlight)
+    val historyIcon = painterResource(drawable.history)
+    val historySelected = painterResource(drawable.history_selected)
+    val searchIcon = painterResource(drawable.search)
+    val groupsIcon = painterResource(drawable.groups)
+    val tabIcon = painterResource(drawable.tab)
+    val settingsOutlined = painterResource(drawable.outline_settings)
+    val settingsFilled = painterResource(drawable.filled_settings)
+    val items = remember(developerMode, historyEnabled) { buildList {
         add(
             Item(
                 string.home,
-                painterResource(drawable.outline_home),
-                painterResource(drawable.filled_home),
+                homeOutlined,
+                homeFilled,
                 HomeScreen::class,
-                onHomeClick
+                { latestHomeClick() }
             )
         )
-        add(
-            Item(
-                string.verticalFeed,
-                painterResource(drawable.feed),
-                painterResource(drawable.feed),
-                VerticalFeedRoute::class,
-                onVerticalFeedClick
+        // Developer preview: hidden for everyone until developer mode is switched on.
+        if (developerMode) {
+            add(
+                Item(
+                    string.verticalFeed,
+                    feedIcon,
+                    feedIcon,
+                    VerticalFeedRoute::class,
+                    { latestVerticalFeedClick() }
+                )
             )
-        )
+        }
         add(
             Item(
                 string.saved,
-                painterResource(drawable.download_done),
-                painterResource(drawable.filled_download_done),
+                savedOutlined,
+                savedFilled,
                 SavedArticlesScreen::class,
-                onSavedArticlesClick
+                { latestSavedClick() }
+            )
+        )
+        add(
+            Item(
+                string.savedImages,
+                savedImagesIcon,
+                savedImagesIcon,
+                SavedImagesRoute::class,
+                { latestSavedImagesClick() }
             )
         )
         add(
             Item(
                 string.savedHighlights,
-                painterResource(drawable.highlight),
-                painterResource(drawable.highlight),
+                highlightIcon,
+                highlightIcon,
                 HighlightsScreen::class,
-                onHighlightsClick
+                { latestHighlightsClick() }
             )
         )
         add(
             Item(
                 string.history,
-                painterResource(drawable.history),
-                painterResource(drawable.history_selected),
+                historyIcon,
+                historySelected,
                 HistoryScreen::class,
-                onHistoryClick,
+                { latestHistoryClick() },
                 historyEnabled
             )
         )
         add(
             Item(
                 string.librarySearch,
-                painterResource(drawable.search),
-                painterResource(drawable.search),
+                searchIcon,
+                searchIcon,
                 LibrarySearchRoute::class,
-                onLibrarySearchClick
+                { latestLibrarySearchClick() },
+                closeBeforeNavigate = true
             )
         )
         // Curators stay fully wired but hidden while the feature is not ready for release.
@@ -157,32 +209,32 @@ fun AppNavigationDrawer(
             add(
                 Item(
                     string.curators,
-                    painterResource(drawable.groups),
-                    painterResource(drawable.groups),
+                    groupsIcon,
+                    groupsIcon,
                     CuratorsScreen::class,
-                    onCuratorsClick
+                    { latestCuratorsClick() }
                 )
             )
         }
         add(
             Item(
                 string.tabs,
-                painterResource(drawable.tab),
-                painterResource(drawable.tab),
+                tabIcon,
+                tabIcon,
                 null,
-                onTabsClick
+                { latestTabsClick() }
             )
         )
         add(
             Item(
                 string.settings,
-                painterResource(drawable.outline_settings),
-                painterResource(drawable.filled_settings),
+                settingsOutlined,
+                settingsFilled,
                 SettingsScreen::class,
-                onSettingsClick
+                { latestSettingsClick() }
             )
         )
-    }
+    } }
 
     val compactScreen =
         remember { !windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND) }
@@ -278,6 +330,17 @@ private fun CompactNavigationDrawer(
     LaunchedEffect(visible) {
         if (!visible && drawerState.isOpen) drawerState.close()
     }
+    // The drawer list was measured (65-80 ms) in the first frames after every launch/resume even
+    // though it is off screen. Compose its content once the app has settled, or as soon as the
+    // drawer starts to open.
+    var drawerReady by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(1_500)
+        drawerReady = true
+    }
+    LaunchedEffect(drawerState.targetValue) {
+        if (drawerState.targetValue != DrawerValue.Closed) drawerReady = true
+    }
     val drawerDirection = if (menuOnRight) LayoutDirection.Rtl else LayoutDirection.Ltr
     CompositionLocalProvider(LocalLayoutDirection provides drawerDirection) {
         ModalNavigationDrawer(
@@ -296,7 +359,7 @@ private fun CompactNavigationDrawer(
                         .fillMaxHeight()
                         .width(320.dp)
                 ) {
-                    AppDrawerContent(
+                    if (drawerReady) AppDrawerContent(
                         drawerState = drawerState,
                         homeBackStackEntry = homeBackStackEntry,
                         backStackEntry = backStackEntry,
@@ -321,7 +384,13 @@ private fun AppDrawerContent(
     navItems: List<Item>,
     scope: CoroutineScope
 ) {
-    val showingHome = backStackEntry?.destination?.hasRoute(HomeScreen::class) == true
+    // The drawer content stays composed while the drawer is closed. Building every section row
+    // during startup (and then again whenever an article/feed update recomposes this subtree)
+    // showed up as jank in the startup trace. Sections are only needed once the drawer is opening;
+    // keep them while it closes so the rows do not vanish during the close animation.
+    val showingHome =
+        (drawerState.currentValue == DrawerValue.Open || drawerState.targetValue == DrawerValue.Open) &&
+                backStackEntry?.destination?.hasRoute(HomeScreen::class) == true
     // Do not read the feed/article scroll state while the drawer is closed. The drawer content is
     // still composed then, and reading it on every scroll frame was a source of visible jank.
     // Key the remember on the LazyListState identity, not on the whole Article: data-class
@@ -341,7 +410,7 @@ private fun AppDrawerContent(
     LazyColumn(
         contentPadding = PaddingValues(vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().perfMeasure("drawer list")
     ) {
         item(key = "drawer-title") {
             Text(
@@ -366,8 +435,17 @@ private fun AppDrawerContent(
                         // Screens replace the current destination anyway. Items without a route
                         // (Tabs) close the drawer themselves before opening their panel, so the
                         // two animations run in sequence instead of on top of each other.
-                        if (item.route != null) scope.launch { drawerState.close() }
-                        item.onClick()
+                        if (item.closeBeforeNavigate) {
+                            // The full-screen library search also opens the keyboard. Wait for
+                            // the drawer animation to finish so both transitions do not overlap.
+                            scope.launch {
+                                drawerState.close()
+                                item.onClick()
+                            }
+                        } else {
+                            if (item.route != null) scope.launch { drawerState.close() }
+                            item.onClick()
+                        }
                     }
                 },
                 icon = {
@@ -732,7 +810,9 @@ private data class Item(
     /** Null for actions that do not correspond to a navigation destination (e.g. Tabs). */
     val route: KClass<out Any>?,
     val onClick: () -> Unit,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
+    /** Waits for the drawer to close before running [onClick] (for screens with their own animation). */
+    val closeBeforeNavigate: Boolean = false
 )
 
 /**

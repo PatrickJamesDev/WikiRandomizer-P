@@ -91,6 +91,7 @@ object PerfMonitor {
     private var msgDesc = ""
 
     private val recompCounts = ConcurrentHashMap<String, AtomicInteger>()
+    private val recompDetails = ConcurrentHashMap<String, String>()
     private var measureWindowStart = 0L
     private var measureInWindow = 0
 
@@ -99,6 +100,11 @@ object PerfMonitor {
 
     fun recomposed(name: String) {
         recompCounts.getOrPut(name) { AtomicInteger() }.incrementAndGet()
+    }
+
+    fun recomposed(name: String, detail: String) {
+        recompCounts.getOrPut(name) { AtomicInteger() }.incrementAndGet()
+        if (detail.isNotEmpty()) recompDetails[name] = detail else recompDetails.remove(name)
     }
 
     fun slowMeasure(name: String, ms: Double, w: Int, h: Int) {
@@ -323,7 +329,9 @@ object PerfMonitor {
     private fun region(st: Array<StackTraceElement>): String {
         // strongest signal first: the first rule that matches ANY frame wins
         val rules = listOf(
+            "font loading" to listOf("androidx.compose.ui.text.font", "android.graphics.Typeface"),
             "text layout" to listOf("androidx.compose.ui.text", "android.text.", "android.graphics.text", "MeasuredParagraph", "StaticLayout"),
+            "image decode" to listOf("android.graphics.BitmapFactory", "coil3.decode", "coil3.util"),
             "image loading (coil)" to listOf("coil3."),
             "database" to listOf("androidx.room", "android.database", "androidx.sqlite"),
             "regex" to listOf("java.util.regex"),
@@ -332,6 +340,7 @@ object PerfMonitor {
             "compose runtime" to listOf("androidx.compose.runtime"),
             "compose layout/measure" to listOf("androidx.compose.ui.node", "androidx.compose.ui.layout"),
             "compose draw/graphics" to listOf("androidx.compose.ui.graphics", "androidx.compose.ui.draw"),
+            "navigation/saveable" to listOf("androidx.navigation", "androidx.savedstate", "androidx.lifecycle"),
             "Android view system" to listOf("android.view.", "android.app."),
             "class loading / JIT" to listOf("java.lang.ClassLoader", "dalvik.system")
         )
@@ -522,7 +531,13 @@ object PerfMonitor {
                     sb.append(" | ").append(cpuFreqs()).append(thermal())
                     val recomp = recompCounts.entries.map { it.key to it.value.getAndSet(0) }
                         .filter { it.second > 0 }.sortedByDescending { it.second }.take(8)
-                    if (recomp.isNotEmpty()) sb.append(" | recomposed: ").append(recomp.joinToString(", ") { "${it.first} ${it.second}" })
+                    if (recomp.isNotEmpty()) {
+                        sb.append(" | recomposed: ").append(recomp.joinToString(", ") {
+                            val detail = recompDetails[it.first]
+                            if (detail.isNullOrEmpty()) "${it.first} ${it.second}"
+                            else "${it.first} ${it.second} {$detail}"
+                        })
+                    }
                     if (++vitalsRound % 5 == 0) sb.append(" | ").append(slowExtras())
                     sb.append(" | ").append(context())
                     DebugLog.i(TAG, sb.toString())

@@ -6,14 +6,12 @@ interface DatabaseRepository {
     suspend fun insertSearchHistory(search: SearchHistoryItem, deduplicate: Boolean = true)
     suspend fun deleteSearchHistory(search: SearchHistoryItem)
     suspend fun deleteAllSearchHistory()
-    suspend fun deleteOldSearchHistory()
     fun getSearchHistory(): Flow<List<SearchHistoryItem>>
 
     suspend fun insertViewHistory(viewHistoryItem: ViewHistoryItem)
     suspend fun deleteViewHistory(viewHistoryItem: ViewHistoryItem)
     suspend fun deleteViewHistoryByTitle(title: String, lang: String)
     suspend fun deleteAllViewHistory()
-    suspend fun deleteOldViewHistory()
     fun getViewHistory(): Flow<List<ViewHistoryItem>>
     fun getRecentLanguages(): Flow<List<String>>
     suspend fun getViewedTitles(lang: String): List<String>
@@ -46,6 +44,11 @@ interface DatabaseRepository {
     suspend fun insertSavedHighlight(highlight: SavedHighlight): Long
     suspend fun findSavedHighlight(title: String, lang: String, text: String): SavedHighlight?
     suspend fun getSavedHighlightsForArticle(title: String, lang: String): List<SavedHighlight>
+    suspend fun insertSavedImage(image: SavedImage, deduplicate: Boolean = true): Long
+    suspend fun deleteSavedImage(image: SavedImage)
+    suspend fun deleteAllSavedImages()
+    fun getSavedImages(): Flow<List<SavedImage>>
+    suspend fun countSavedImages(): Int
     suspend fun deleteSavedHighlight(id: Long)
     suspend fun deleteAllSavedHighlights()
     fun getSavedHighlights(): Flow<List<SavedHighlight>>
@@ -72,6 +75,7 @@ class AppDatabaseRepository(
     private val searchHistoryDao: SearchHistoryDao,
     private val savedArticleDao: SavedArticleDao,
     private val savedHighlightDao: SavedHighlightDao,
+    private val savedImageDao: SavedImageDao,
     private val vocabularyDao: VocabularyDao,
     private val viewHistoryDao: ViewHistoryDao,
     private val userLanguageDao: UserLanguageDao
@@ -85,13 +89,12 @@ class AppDatabaseRepository(
         searchHistoryDao.delete(search)
 
     override suspend fun deleteAllSearchHistory() = searchHistoryDao.deleteAll()
-    override suspend fun deleteOldSearchHistory() = searchHistoryDao.deleteOld()
     override fun getSearchHistory(): Flow<List<SearchHistoryItem>> =
         searchHistoryDao.getSearchHistory()
 
     override suspend fun insertViewHistory(viewHistoryItem: ViewHistoryItem) {
         // Keep one entry per article (moved to the top) instead of only de-duplicating
-        // consecutive visits, so revisits don't flood the 200-item history.
+        // consecutive visits; history has no fixed length limit.
         viewHistoryDao.deleteByTitle(viewHistoryItem.title, viewHistoryItem.lang)
         viewHistoryDao.insert(viewHistoryItem)
     }
@@ -103,7 +106,6 @@ class AppDatabaseRepository(
         viewHistoryDao.deleteByTitle(title, lang)
 
     override suspend fun deleteAllViewHistory() = viewHistoryDao.deleteAll()
-    override suspend fun deleteOldViewHistory() = viewHistoryDao.deleteOld()
     override fun getViewHistory(): Flow<List<ViewHistoryItem>> = viewHistoryDao.getViewHistory()
     override fun getRecentLanguages(): Flow<List<String>> = viewHistoryDao.getRecentLanguages()
     override suspend fun getViewedTitles(lang: String): List<String> =
@@ -187,6 +189,18 @@ class AppDatabaseRepository(
 
     override fun getSavedHighlights(): Flow<List<SavedHighlight>> =
         savedHighlightDao.getAll()
+
+    override suspend fun insertSavedImage(image: SavedImage, deduplicate: Boolean): Long {
+        if (deduplicate) {
+            savedImageDao.deduplicate(image.imageUrl, image.articleTitle, image.articleLang)
+        }
+        return savedImageDao.insert(image)
+    }
+
+    override suspend fun deleteSavedImage(image: SavedImage) = savedImageDao.delete(image)
+    override suspend fun deleteAllSavedImages() = savedImageDao.deleteAll()
+    override fun getSavedImages(): Flow<List<SavedImage>> = savedImageDao.getSavedImages()
+    override suspend fun countSavedImages(): Int = savedImageDao.count()
 
     override suspend fun searchSavedHighlights(query: String): List<SavedHighlight> =
         if (query.isBlank()) emptyList() else savedHighlightDao.search(query)

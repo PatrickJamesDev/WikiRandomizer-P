@@ -43,9 +43,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.coerceAtLeast
@@ -72,6 +74,8 @@ fun FullScreenImage(
     background: Boolean,
     modifier: Modifier = Modifier,
     link: String? = null,
+    articleTitle: String? = null,
+    articleLang: String? = null,
     onBack: () -> Unit,
 ) {
     var currentLightStatusBars = true
@@ -89,7 +93,7 @@ fun FullScreenImage(
         model = ImageRequest.Builder(context)
             .data(displaySource)
             .diskCacheKey(ImageCacheKeys.body(displaySource))
-            .crossfade(true)
+            .crossfade(false)
             .build(),
         contentScale = contentScale,
     )
@@ -129,7 +133,30 @@ fun FullScreenImage(
         }
     }
 
-    val download = rememberImageDownload(photo?.source, photoDesc ?: title)
+    val download = rememberImageDownload(
+        url = photo?.source,
+        description = photoDesc ?: title,
+        articleTitle = articleTitle,
+        articleLang = articleLang,
+        thumbnailUrl = photo?.source
+    )
+    val saveToGallery = rememberSaveImage(
+        url = photo?.source,
+        description = photoDesc ?: title,
+        articleTitle = articleTitle,
+        articleLang = articleLang,
+        thumbnailUrl = photo?.source
+    )
+    var showImageActions by remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
+    val longPress = remember(download, saveToGallery, haptic) {
+        {
+            if (download != null || saveToGallery != null) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                showImageActions = true
+            }
+        }
+    }
     with(sharedScope) {
         Scaffold(
             topBar = {
@@ -142,6 +169,7 @@ fun FullScreenImage(
                         description = title,
                         link = link,
                         onDownload = download,
+                        onSaveToGallery = saveToGallery,
                         onBack = onBack
                     )
                 }
@@ -198,8 +226,10 @@ fun FullScreenImage(
                                 scope = coroutineScope,
                                 doubleTapSpec = doubleTapSpec,
                                 onTap = { showTopBar = !showTopBar },
-                                onScaleChanged = { showTopBar = it <= 1.1f }
+                                onScaleChanged = { showTopBar = it <= 1.1f },
+                                onLongPress = longPress
                             )
+                            .transformable(state = state, canPan = { zoom.scale > 1.01f })
                     ) {
                         PageImage(
                             photo = photo,
@@ -208,6 +238,7 @@ fun FullScreenImage(
                             painterState = painterState,
                             contentScale = contentScale,
                             background = background,
+                            loadingColor = Color.Transparent,
                             modifier = Modifier
                                 .onSizeChanged { zoom.size = it }
                                 .graphicsLayer {
@@ -216,7 +247,6 @@ fun FullScreenImage(
                                     translationX = zoom.offset.x
                                     translationY = zoom.offset.y
                                 }
-                                .transformable(state = state)
                                 .fillMaxSize()
                                 .padding(borderRadius.coerceAtLeast(0.dp))
                                 .clip(RoundedCornerShape(borderRadius.coerceAtLeast(0.dp)))
@@ -224,6 +254,12 @@ fun FullScreenImage(
                     }
                 }
         }
+        ImageActionDialog(
+            visible = showImageActions,
+            onDismiss = { showImageActions = false },
+            onDownload = download,
+            onSaveToGallery = saveToGallery
+        )
     }
 }
 
@@ -237,6 +273,8 @@ fun FullScreenArticleImage(
     modifier: Modifier = Modifier,
     link: String? = null,
     background: Boolean,
+    articleTitle: String? = null,
+    articleLang: String? = null,
     onBack: () -> Unit,
 ) {
     var currentLightStatusBars = true
@@ -255,7 +293,7 @@ fun FullScreenArticleImage(
         model = ImageRequest.Builder(context)
             .data(displaySource)
             .diskCacheKey(ImageCacheKeys.body(displaySource))
-            .crossfade(true)
+            .crossfade(false)
             .build(),
         contentScale = contentScale,
     )
@@ -295,7 +333,30 @@ fun FullScreenArticleImage(
         }
     }
 
-    val download = rememberImageDownload(uri, description)
+    val download = rememberImageDownload(
+        url = uri,
+        description = description,
+        articleTitle = articleTitle,
+        articleLang = articleLang,
+        thumbnailUrl = uri
+    )
+    val saveToGallery = rememberSaveImage(
+        url = uri,
+        description = description,
+        articleTitle = articleTitle,
+        articleLang = articleLang,
+        thumbnailUrl = uri
+    )
+    var showImageActions by remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
+    val longPress = remember(download, saveToGallery, haptic) {
+        {
+            if (download != null || saveToGallery != null) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                showImageActions = true
+            }
+        }
+    }
     with(sharedScope) {
         Scaffold(
             topBar = {
@@ -308,6 +369,7 @@ fun FullScreenArticleImage(
                         description = description,
                         link = link,
                         onDownload = download,
+                        onSaveToGallery = saveToGallery,
                         onBack = onBack
                     )
                 }
@@ -359,8 +421,10 @@ fun FullScreenArticleImage(
                             scope = scope,
                             doubleTapSpec = doubleTapSpec,
                             onTap = { showTopBar = !showTopBar },
-                            onScaleChanged = { showTopBar = it <= 1.1f }
+                            onScaleChanged = { showTopBar = it <= 1.1f },
+                            onLongPress = longPress
                         )
+                        .transformable(state = state, canPan = { zoom.scale > 1.01f })
                 ) {
                     PageImage(
                         uri = uri,
@@ -369,6 +433,7 @@ fun FullScreenArticleImage(
                         painterState = painterState,
                         contentScale = contentScale,
                         background = background,
+                        loadingColor = Color.Transparent,
                         modifier = Modifier
                             .onSizeChanged { zoom.size = it }
                             .graphicsLayer {
@@ -377,13 +442,18 @@ fun FullScreenArticleImage(
                                 translationX = zoom.offset.x
                                 translationY = zoom.offset.y
                             }
-                            .transformable(state = state)
                             .padding(borderRadius.coerceAtLeast(0.dp))
                             .clip(RoundedCornerShape(borderRadius.coerceAtLeast(0.dp)))
                     )
                 }
             }
         }
+        ImageActionDialog(
+            visible = showImageActions,
+            onDismiss = { showImageActions = false },
+            onDownload = download,
+            onSaveToGallery = saveToGallery
+        )
     }
 }
 

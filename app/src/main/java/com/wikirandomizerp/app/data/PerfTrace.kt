@@ -17,6 +17,17 @@ inline fun TrackRecompositions(name: String) {
 }
 
 /**
+ * Same as [TrackRecompositions], but records a small context string alongside the counter (for
+ * example which article or how many sections the composable had). VITALS then shows, for the
+ * busiest composables, what was on screen when they recomposed. The detail lambda only runs while
+ * debug logging is enabled.
+ */
+@Composable
+inline fun TrackRecompositions(name: String, noinline detail: () -> String) {
+    if (DebugLog.enabled) SideEffect { PerfMonitor.recomposed(name, detail()) }
+}
+
+/**
  * Measures how long measuring + laying out this node (including its children) takes and reports
  * anything slow as SLOWMEASURE in the debug log. No-op while the debug log is off.
  */

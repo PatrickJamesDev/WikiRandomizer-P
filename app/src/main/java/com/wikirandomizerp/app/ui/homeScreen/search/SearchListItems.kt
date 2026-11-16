@@ -143,6 +143,8 @@ fun LazyItemScope.PrefixSearchResultListItem(
     val isPressed by interactionSource.collectIsPressedAsState()
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val terms = item.terms
+    val thumbnail = item.thumbnail
 
     val top by animateDpAsState(
         if (isPressed) 36.dp
@@ -170,10 +172,10 @@ fun LazyItemScope.PrefixSearchResultListItem(
                 overflow = TextOverflow.Ellipsis
             )
         },
-        supportingContent = if (item.terms != null) {
+        supportingContent = if (terms != null) {
             {
                 Text(
-                    item.terms.description.firstOrNull().orEmpty(),
+                    terms.description.firstOrNull().orEmpty(),
                     softWrap = true,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis
@@ -181,9 +183,9 @@ fun LazyItemScope.PrefixSearchResultListItem(
             }
         } else null,
         trailingContent = {
-            if (item.thumbnail != null && !dataSaver)
+            if (thumbnail != null && !dataSaver)
                 FeedImage(
-                    source = item.thumbnail.source,
+                    source = thumbnail.source,
                     contentScale = ContentScale.Crop,
                     background = imageBackground,
                     modifier = Modifier
@@ -233,6 +235,8 @@ fun LazyItemScope.SearchResultListItem(
     val isPressed by interactionSource.collectIsPressedAsState()
 
     // HTML parsing is not free and this row is recomposed on every press animation frame.
+    val redirectTitle = it.redirectTitle
+    val thumbnail = it.thumbnail
     val titleText = remember(it.titleSnippet, it.title) {
         AnnotatedString.fromHtml(it.titleSnippet.ifEmpty { it.title })
     }
@@ -258,12 +262,12 @@ fun LazyItemScope.SearchResultListItem(
     )
 
     ListItem(
-        overlineContent = if (it.redirectTitle != null) {
+        overlineContent = if (redirectTitle != null) {
             {
                 Text(
                     stringResource(
                         R.string.redirectedFrom,
-                        it.redirectTitle
+                        redirectTitle
                     ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -287,9 +291,9 @@ fun LazyItemScope.SearchResultListItem(
             )
         },
         trailingContent = {
-            if (it.thumbnail != null && !dataSaver)
+            if (thumbnail != null && !dataSaver)
                 FeedImage(
-                    source = it.thumbnail.source,
+                    source = thumbnail.source,
                     contentScale = ContentScale.Crop,
                     background = imageBackground,
                     modifier = Modifier

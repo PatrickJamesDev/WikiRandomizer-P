@@ -3,23 +3,42 @@ package com.wikirandomizerp.app.ui.image
 import android.content.ContentValues
 import android.content.Context
 import android.os.Build
+import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import android.widget.Toast
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import com.wikirandomizerp.app.R
+import com.wikirandomizerp.app.WikiRandomizerPApplication
 import com.wikirandomizerp.app.data.DebugLog
+import com.wikirandomizerp.app.data.SavedImage
 import java.io.File
 import java.io.IOException
 import java.net.URLDecoder
@@ -31,13 +50,19 @@ import kotlin.coroutines.cancellation.CancellationException
  *    through MediaStore, so no storage permission is needed.
  *  - Older Android: the app's own Pictures folder (also permission-free).
  */
+/** Where the saved file lives, plus the URI the in-app gallery can display. */
+data class DownloadedImage(
+    val location: String,
+    val localUri: String?
+)
+
 object ImageDownloader {
     private val client by lazy { OkHttpClient.Builder().followRedirects(true).build() }
     private const val USER_AGENT =
         "WikiRandomizer-P (Android; image download) okhttp/5 (https://github.com/PatrickJamesDev/WikiRandomizer-P)"
 
-    /** @return a human-readable location of the saved file */
-    suspend fun download(context: Context, url: String, suggestedName: String?): String =
+    /** @return the saved file's location and a gallery/content URI for it */
+    suspend fun download(context: Context, url: String, suggestedName: String?): DownloadedImage =
         withContext(Dispatchers.IO) {
             val t0 = System.nanoTime()
             val request = Request.Builder().url(url).header("User-Agent", USER_AGENT).build()
@@ -48,7 +73,7 @@ object ImageDownloader {
                 val fileName = fileNameFor(url, suggestedName, mime)
                 val input = response.body?.byteStream() ?: throw IOException("empty response")
 
-                val where = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val saved = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     val bitmap = mime != "image/svg+xml"
                     val collection = if (bitmap) MediaStore.Images.Media.EXTERNAL_CONTENT_URI
                     else MediaStore.Downloads.EXTERNAL_CONTENT_URI
@@ -71,16 +96,16 @@ object ImageDownloader {
                         resolver.delete(uri, null, null)
                         throw e
                     }
-                    "$folder/$fileName"
+                    DownloadedImage("$folder/$fileName", uri.toString())
                 } else {
                     val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "WikiRandomizer-P")
                     dir.mkdirs()
                     val file = File(dir, fileName)
                     file.outputStream().use { out -> input.use { it.copyTo(out) } }
-                    file.absolutePath
+                    DownloadedImage(file.absolutePath, Uri.fromFile(file).toString())
                 }
-                DebugLog.i("Download", "saved $url -> $where in ${(System.nanoTime() - t0) / 1_000_000} ms")
-                where
+                DebugLog.i("Download", "saved $url -> ${saved.location} in ${(System.nanoTime() - t0) / 1_000_000} ms")
+                saved
             }
         }
 
@@ -117,17 +142,45 @@ object ImageDownloader {
  * failed); null when there is no image to download.
  */
 @Composable
-fun rememberImageDownload(url: String?, description: String?): (() -> Unit)? {
+fun rememberImageDownload(
+    url: String?,
+    description: String?,
+    articleTitle: String? = null,
+    articleLang: String? = null,
+    pageUrl: String? = null,
+    thumbnailUrl: String? = null
+): (() -> Unit)? {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val article = LocalArticleImageContext.current
+    val saveTitle = articleTitle ?: article.title
+    val saveLang = articleLang ?: article.lang
     if (url == null) return null
-    return remember(url, description) {
+    return remember(url, description, saveTitle, saveLang, pageUrl, thumbnailUrl) {
         val handler: () -> Unit = {
             scope.launch {
                 Toast.makeText(context, context.getString(R.string.imageDownloading), Toast.LENGTH_SHORT).show()
                 try {
-                    val where = ImageDownloader.download(context, url, description)
-                    Toast.makeText(context, context.getString(R.string.imageSavedTo, where), Toast.LENGTH_LONG).show()
+                    val saved = ImageDownloader.download(context, url, description)
+                    // Also record the picture in the in-app Gallery. The phone gallery remains the
+                    // durable copy; localUri makes the in-app grid independent of the article cache.
+                    try {
+                        recordSavedImage(
+                            context = context,
+                            url = url,
+                            localUri = saved.localUri,
+                            thumbnailUrl = thumbnailUrl,
+                            description = description,
+                            articleTitle = saveTitle,
+                            articleLang = saveLang,
+                            pageUrl = pageUrl
+                        )
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        DebugLog.w("Download", "could not add the picture to the in-app Gallery: ${e.message}")
+                    }
+                    Toast.makeText(context, context.getString(R.string.imageSavedTo, saved.location), Toast.LENGTH_LONG).show()
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -145,6 +198,85 @@ fun rememberImageDownload(url: String?, description: String?): (() -> Unit)? {
 }
 
 
+/** Adds a picture to the in-app Gallery without downloading a second copy to the device. */
+private suspend fun recordSavedImage(
+    context: Context,
+    url: String,
+    localUri: String?,
+    thumbnailUrl: String?,
+    description: String?,
+    articleTitle: String?,
+    articleLang: String?,
+    pageUrl: String?
+) {
+    val app = context.applicationContext as? WikiRandomizerPApplication ?: return
+    app.container.appDatabaseRepository.insertSavedImage(
+        SavedImage(
+            imageUrl = url,
+            localUri = localUri,
+            thumbnailUrl = thumbnailUrl,
+            description = description,
+            articleTitle = articleTitle.orEmpty(),
+            articleLang = articleLang.orEmpty(),
+            pageUrl = pageUrl
+        )
+    )
+}
+
+/**
+ * Returns a handler that only adds [url] to the in-app Gallery. Unlike [rememberImageDownload] it
+ * does not write a copy to Pictures/Downloads, so the two actions can sit side by side.
+ */
+@Composable
+fun rememberSaveImage(
+    url: String?,
+    description: String?,
+    articleTitle: String? = null,
+    articleLang: String? = null,
+    pageUrl: String? = null,
+    thumbnailUrl: String? = null
+): (() -> Unit)? {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val article = LocalArticleImageContext.current
+    val saveTitle = articleTitle ?: article.title
+    val saveLang = articleLang ?: article.lang
+    if (url == null) return null
+    return remember(url, description, saveTitle, saveLang, pageUrl, thumbnailUrl) {
+        val handler: () -> Unit = {
+            scope.launch {
+                try {
+                    recordSavedImage(
+                        context = context,
+                        url = url,
+                        localUri = null,
+                        thumbnailUrl = thumbnailUrl,
+                        description = description,
+                        articleTitle = saveTitle,
+                        articleLang = saveLang,
+                        pageUrl = pageUrl
+                    )
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.imageSavedToGallery),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    DebugLog.e("Download", "could not save the picture to the Gallery: $url", e)
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.imageSaveToGalleryFailed),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+        handler
+    }
+}
+
 /** Open/closed state of the small menu that appears when a picture is held. */
 class ImageMenuState {
     var open by androidx.compose.runtime.mutableStateOf(false)
@@ -155,16 +287,39 @@ fun rememberImageMenuState(): ImageMenuState = remember { ImageMenuState() }
 
 /**
  * The menu shown after holding a picture in an article: download it without opening the full-screen
- * viewer. Place it next to the picture inside the same Box (it anchors to its parent) and set
- * [ImageMenuState.open] from the picture's long-click handler.
+ * viewer, or keep it only in the in-app Gallery. Place it next to the picture inside the same Box
+ * (it anchors to its parent) and set [ImageMenuState.open] from the picture's long-click handler.
  *
  * @param url full-size address of the picture to save
  */
 @Composable
-fun ImageDownloadMenu(state: ImageMenuState, url: String?, description: String?) {
-    val download = rememberImageDownload(url, description)
+fun ImageDownloadMenu(
+    state: ImageMenuState,
+    url: String?,
+    description: String?,
+    articleTitle: String? = null,
+    articleLang: String? = null,
+    pageUrl: String? = null,
+    thumbnailUrl: String? = null
+) {
+    val download = rememberImageDownload(
+        url = url,
+        description = description,
+        articleTitle = articleTitle,
+        articleLang = articleLang,
+        pageUrl = pageUrl,
+        thumbnailUrl = thumbnailUrl
+    )
+    val saveToGallery = rememberSaveImage(
+        url = url,
+        description = description,
+        articleTitle = articleTitle,
+        articleLang = articleLang,
+        pageUrl = pageUrl,
+        thumbnailUrl = thumbnailUrl
+    )
     androidx.compose.material3.DropdownMenu(
-        expanded = state.open && download != null,
+        expanded = state.open && (download != null || saveToGallery != null),
         onDismissRequest = { state.open = false }
     ) {
         androidx.compose.material3.DropdownMenuItem(
@@ -180,5 +335,72 @@ fun ImageDownloadMenu(state: ImageMenuState, url: String?, description: String?)
                 download?.invoke()
             }
         )
+        androidx.compose.material3.DropdownMenuItem(
+            text = { androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(R.string.saveImageToGallery)) },
+            leadingIcon = {
+                androidx.compose.material3.Icon(
+                    androidx.compose.ui.res.painterResource(R.drawable.image),
+                    contentDescription = null
+                )
+            },
+            onClick = {
+                state.open = false
+                saveToGallery?.invoke()
+            }
+        )
+    }
+}
+
+/**
+ * Small dialog shown after holding a picture in the full-screen viewer. It offers the same two
+ * actions as the inline menu: download a copy to the phone, or keep it only in the in-app Gallery.
+ */
+@Composable
+fun ImageActionDialog(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    onDownload: (() -> Unit)?,
+    onSaveToGallery: (() -> Unit)?
+) {
+    if (!visible || (onDownload == null && onSaveToGallery == null)) return
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            tonalElevation = 6.dp
+        ) {
+            Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                Text(
+                    stringResource(R.string.image),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                )
+                if (onDownload != null) {
+                    TextButton(
+                        onClick = {
+                            onDismiss()
+                            onDownload()
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                    ) {
+                        Icon(painterResource(R.drawable.download), contentDescription = null)
+                        Spacer(Modifier.width(12.dp))
+                        Text(stringResource(R.string.downloadImage))
+                    }
+                }
+                if (onSaveToGallery != null) {
+                    TextButton(
+                        onClick = {
+                            onDismiss()
+                            onSaveToGallery()
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                    ) {
+                        Icon(painterResource(R.drawable.image), contentDescription = null)
+                        Spacer(Modifier.width(12.dp))
+                        Text(stringResource(R.string.saveImageToGallery))
+                    }
+                }
+            }
+        }
     }
 }

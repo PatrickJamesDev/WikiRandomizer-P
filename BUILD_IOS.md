@@ -1,20 +1,20 @@
 # Building WikiRandomizer-P for iOS
 
-WikiRandomizer-P uses a small Kotlin Multiplatform core (`shared`) plus two native UI shells:
+WikiRandomizer-P uses a Kotlin Multiplatform module (`shared`) for the shared core and the Compose UI, hosted by Android and iOS:
 
 ```
-shared/                 Kotlin Multiplatform (Android + iOS) – URL/title/text logic
-app/                    Android app (Jetpack Compose)
-iosApp/                 SwiftUI iOS app, links the `shared` framework
+shared/                 Kotlin Multiplatform (Android + iOS) – core logic + shared Compose UI
+app/                    Android host (Jetpack Compose entry point)
+iosApp/                 SwiftUI host that displays the shared Compose reader
 build_ios.sh            Installer/build script for macOS
 build_android.sh        Android build script for macOS/Linux
 build_windows.bat       Android build script for Windows
 ```
 
 Kotlin/Native compiles the `shared` module to a static `shared.framework` for `iosArm64`,
-`iosX64` and `iosSimulatorArm64`. Xcode compiles the SwiftUI shell and links that framework.
-The same shared source is compiled into the Android app, so URL encoding, title normalisation
-and text helpers cannot drift between platforms.
+`iosX64` and `iosSimulatorArm64`. Xcode compiles the small SwiftUI host and links that
+framework. The shared Compose UI compiles for both targets; iOS renders it today while the
+remaining Android screens migrate to it, so URL encoding and text helpers cannot drift.
 
 > **Apple limitation:** producing an iOS `.app`/`.ipa` requires macOS and Xcode. There is no
 > legal or practical way to cross-compile the final iOS binary on Linux or Windows. The script
@@ -89,10 +89,28 @@ several minutes. Later builds are incremental.
 
 - The shared core builds every Wikipedia URL (article, mobile article, random summary, image,
   search) and provides title/text helpers.
-- `iosApp` is a native SwiftUI reader: pick a language, fetch a random article summary from the
-  Wikipedia REST API, preview the lead image and extract, then open the full mobile article in a
-  `WKWebView` (tables, references and collapsible sections work there).
+- `iosApp` hosts `ReaderViewController()`, which renders the shared Compose app shell. It picks a
+  language, fetches a random summary through Ktor/Darwin, shows the title, description, read time
+  and extract, and opens the full article in an embedded `WKWebView` (Android uses `WebView`).
+  The drawer also contains Topics, Saved, History, Search, Wikipedia, Stats, Settings and About. Topic picks load random
+  category articles; Saved articles (including folders and personal notes), opened-article history
+  and the seen-article list use the shared `LibraryRepository`; random picks skip already-seen titles and Settings can forget them;
+  library search filters both lists and keeps recent queries; the Wikipedia screen runs full-text
+  search through the shared search-source contract; community curators load from GitHub, fall
+  back to the bundled list offline and can be followed; Discover shows the daily featured article, most-read pages, picture of the day,
+  news and on-this-day, plus a swipe-card feed, saved pictures, highlights, a Wiktionary-backed
+  vocabulary, Commons galleries and article tabs; theme, language, article text size, line
+  spacing, margins, justification, typeface, sepia mode and browsing-history prefs persist through
+  `NSUserDefaults` via the shared `SettingsStore`; Settings can export the shared library and
+  preferences as JSON and restore them from the clipboard. The article toolbar loads talk-page
+  wikitext and recent revisions in-app, opens Wikipedia talk/history/page-information/backlink
+  pages in Safari, lists the article's other language versions, resolves organism articles on
+  iNaturalist and can copy the canonical link. Settings can also restore language, theme, topic
+  and reading defaults without touching the saved library. A three-step welcome guide appears
+  on first launch and can be reopened from Settings.
 - The Android app keeps all of its existing features; `build_ios.sh` does not change the APK.
+- Remaining Android screens are migrated into `shared/src/commonMain` in phases, then both hosts
+  use the same implementation.
 
 ## Adding shared code
 

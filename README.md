@@ -75,6 +75,30 @@ app initializes Firebase manually and disables sync when the properties are abse
 are gzip-compressed before upload; records are merged by article id and timestamp instead of
 replacing the remote copy.
 
+### Google Drive (optional, compact state)
+
+Google Drive sync stores a compact snapshot in the hidden `drive.appdata` folder: settings, reading
+history, reading progress, highlights and vocabulary. Article bodies, offline copies, images and
+caches are never uploaded. The file is private to this app and does not appear in the user's normal
+Drive listing.
+
+1. Create a project in [Google Cloud Console](https://console.cloud.google.com/).
+2. Enable **Google Drive API** under *APIs & Services*.
+3. Configure the OAuth consent screen. Add the app-data scope
+   `https://www.googleapis.com/auth/drive.appdata`; no client secret is shipped in the app.
+4. Create an **Android** OAuth client with package name `com.wikirandomizerp.app` and the SHA-1 of
+   the signing certificate. Play services matches the installed signature, so different debug and
+   release keystores need their own client.
+5. Build with:
+
+```text
+GOOGLE_DRIVE_CLIENT_ID=1234567890-abcdef.apps.googleusercontent.com
+```
+
+`GOOGLE_DRIVE_CLIENT_ID` only gates the feature in this build. The value is not sent as a secret;
+Google Play services resolves the Android client from the package and signature. When the property
+is blank, the Drive row stays hidden and local backups continue to work.
+
 ## Download
 
 - **GitHub Releases:** Download the latest APK from
@@ -97,8 +121,18 @@ platform 36.
 
 ### iOS
 
-The app has a Kotlin Multiplatform core (`shared`) consumed by the Android app and by a native
-SwiftUI iOS shell. On macOS with Xcode:
+The app has a Kotlin Multiplatform core and shared Compose UI (`shared`) consumed by the Android
+app and by a small SwiftUI iOS host. iOS currently runs the shared reader shell, topic selection, Saved, History,
+saved-article folders and notes, seen-article memory, library search with recent queries, Wikipedia search, community curators,
+the daily featured feed with a swipe-card view, saved pictures, highlights, vocabulary,
+Commons galleries and article tabs; adjustable article text size, line spacing, margins,
+justification, a sans-serif/serif typeface choice and a sepia theme; article tools with talk-page wikitext and recent revision history,
+plus language-version switching, an iNaturalist taxon lookup and links for talk pages, history,
+page information and backlinks; statistics, settings, JSON
+backup/restore, a first-run welcome guide, reset-to-default settings and an embedded
+`WKWebView` article view. On Android, the same shared shell
+is available as a developer preview: enable Developer options on About, then open **Shared Compose
+reader**. The production launcher still opens the feature-complete Android UI. On macOS with Xcode:
 
 ```bash
 ./build_ios.sh              # install tools, build, install and launch in the simulator

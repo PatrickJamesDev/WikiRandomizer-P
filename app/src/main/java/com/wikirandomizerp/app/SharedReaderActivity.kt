@@ -1,0 +1,56 @@
+package com.wikirandomizerp.app
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.remember
+import org.nsh07.wikireader.shared.reader.AndroidArticleInfoSource
+import org.nsh07.wikireader.shared.reader.AndroidArticleLanguagesSource
+import org.nsh07.wikireader.shared.reader.AndroidCommonsSource
+import org.nsh07.wikireader.shared.reader.AndroidCuratorSource
+import org.nsh07.wikireader.shared.reader.AndroidDictionarySource
+import org.nsh07.wikireader.shared.reader.AndroidFeedSource
+import org.nsh07.wikireader.shared.reader.AndroidINaturalistSource
+import org.nsh07.wikireader.shared.reader.AndroidRandomArticleSource
+import org.nsh07.wikireader.shared.reader.AndroidWikipediaSearchSource
+import org.nsh07.wikireader.shared.settings.AndroidSettingsStore
+import org.nsh07.wikireader.shared.ui.ReaderApp
+
+/**
+ * Developer-only preview of the shared Compose shell on Android.
+ *
+ * This is the migration seam: the production launcher still opens the feature-complete Android
+ * UI, while this activity renders exactly the same [ReaderApp] as iOS. Once the remaining Android
+ * features move into `shared`, this activity can become the main entry point.
+ */
+class SharedReaderActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            val source = remember { AndroidRandomArticleSource() }
+            val searchSource = remember { AndroidWikipediaSearchSource() }
+            val curatorSource = remember { AndroidCuratorSource() }
+            val feedSource = remember { AndroidFeedSource() }
+            val dictionarySource = remember { AndroidDictionarySource() }
+            val commonsSource = remember { AndroidCommonsSource() }
+            val articleInfoSource = remember { AndroidArticleInfoSource() }
+            val articleLanguagesSource = remember { AndroidArticleLanguagesSource() }
+            val iNaturalistSource = remember { AndroidINaturalistSource() }
+            val settingsStore = remember { AndroidSettingsStore(this) }
+            ReaderApp(
+                source = source,
+                searchSource = searchSource,
+                curatorSource = curatorSource,
+                feedSource = feedSource,
+                dictionarySource = dictionarySource,
+                commonsSource = commonsSource,
+                articleInfoSource = articleInfoSource,
+                articleLanguagesSource = articleLanguagesSource,
+                iNaturalistSource = iNaturalistSource,
+                settingsStore = settingsStore
+            )
+        }
+    }
+}

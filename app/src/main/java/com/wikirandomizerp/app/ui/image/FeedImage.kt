@@ -11,9 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,7 +41,14 @@ fun FeedImage(
      * True for list covers (History / Saved / tabs). Their pictures are stored under the pinned
      * thumbnail cache key, so the article retention policy never evicts them.
      */
-    pinnedThumbnail: Boolean = false
+    pinnedThumbnail: Boolean = false,
+    /**
+     * For list rows and grid cards whose box has a fixed shape. Pictures come in every aspect
+     * ratio, so a plain centre crop cuts heads off tall portraits and destroys panoramas, maps and
+     * diagrams. Normal pictures are cropped towards the top (where subjects usually are); very wide
+     * or very tall ones are shown whole on a neutral background instead of being cropped to a sliver.
+     */
+    smartCrop: Boolean = false
 ) {
     val context = LocalContext.current
     val placeholderColor = MaterialTheme.colorScheme.surfaceContainerHighest
@@ -77,15 +87,26 @@ fun FeedImage(
                 val intrinsic = painter.intrinsicSize
                 SideEffect { ImageAspectCache.record(source, intrinsic.width, intrinsic.height) }
             }
+            val intrinsic = painter.intrinsicSize
+            val ratio = knownRatio ?: if (intrinsic.isSpecified && intrinsic.height > 0f)
+                intrinsic.width / intrinsic.height else null
+            val extreme = smartCrop && ratio != null && (ratio > 2.2f || ratio < 0.55f)
             Image(
                 painter = painter,
                 contentDescription = description,
-                contentScale = contentScale,
+                contentScale = if (extreme) ContentScale.Fit else contentScale,
+                alignment = if (smartCrop && !extreme) BiasAlignment(0f, -0.4f) else Alignment.Center,
                 colorFilter = colorFilter,
                 modifier = modifier
                     .fillMaxWidth()
                     .aspectRatio(displayRatio)
-                    .background(if (imageNeedsWhiteBackground(source, background)) Color.White else Color.Transparent)
+                    .background(
+                        when {
+                            imageNeedsWhiteBackground(source, background) -> Color.White
+                            extreme -> placeholderColor
+                            else -> Color.Transparent
+                        }
+                    )
             )
         }
 

@@ -8,6 +8,15 @@ sealed class SettingsAction {
 
     data class SaveFontSize(val value: Int) : SettingsAction()
 
+    data class SaveLineSpacing(val value: Int) : SettingsAction()
+    data class SaveReadingMargin(val value: Int) : SettingsAction()
+    data class SaveJustifyText(val value: Boolean) : SettingsAction()
+    data class SaveSepiaTheme(val value: Boolean) : SettingsAction()
+    data class SaveLinkPreviews(val value: Boolean) : SettingsAction()
+    data class SaveTalkPages(val value: Boolean) : SettingsAction()
+    data class SaveDailyNotification(val value: Boolean) : SettingsAction()
+    data class SaveHomeWidget(val value: Boolean) : SettingsAction()
+
     data class SaveBlackTheme(val value: Boolean) : SettingsAction()
     data class SaveDataSaver(val value: Boolean) : SettingsAction()
     data class SaveExpandedSections(val value: Boolean) : SettingsAction()
@@ -28,6 +37,7 @@ sealed class SettingsAction {
     data class SaveSaveFolders(val value: Boolean) : SettingsAction()
     data class SaveSaveNotes(val value: Boolean) : SettingsAction()
     data class SaveINaturalist(val value: Boolean) : SettingsAction()
+    data class SaveINaturalistGallery(val value: Boolean) : SettingsAction()
     data class SaveSwipeGestures(val value: Boolean) : SettingsAction()
     data class SaveWikivoyage(val value: Boolean) : SettingsAction()
     data class SavePopularityBias(val value: Int) : SettingsAction()

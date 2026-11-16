@@ -2,13 +2,18 @@ package com.wikirandomizerp.app.ui.homeScreen
 
 import android.content.Intent
 import android.net.Uri
+import com.wikirandomizerp.app.data.ArticleRow
 import com.wikirandomizerp.app.data.DebugLog
+import com.wikirandomizerp.app.data.LinkPreview
+import com.wikirandomizerp.app.ui.image.ArticleImageContext
 import com.wikirandomizerp.app.ui.image.ImageAspectCache
+import com.wikirandomizerp.app.ui.image.LocalArticleImageContext
 import com.wikirandomizerp.app.ui.image.ArticleGalleryBuilder
 import com.wikirandomizerp.app.ui.image.ArticleGalleryItem
 import com.wikirandomizerp.app.ui.image.ImagePrefetcher
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.first
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -16,6 +21,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -73,6 +79,8 @@ import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeAction
 import com.wikirandomizerp.app.ui.homeScreen.viewModel.HomeSubscreen
 import com.wikirandomizerp.app.ui.image.ImageCard
 import com.wikirandomizerp.app.ui.settingsScreen.viewModel.PreferencesState
+import com.wikirandomizerp.app.ui.theme.LocalReadingOptions
+import com.wikirandomizerp.app.ui.theme.SepiaBackground
 import com.wikirandomizerp.app.ui.theme.isDark
 import com.wikirandomizerp.app.ui.theme.rememberReadingFontFamily
 
@@ -98,7 +106,11 @@ fun PageContent(
     onSaveHighlight: (String) -> Unit = {},
     onSearchInBrowser: (String) -> Unit = {},
     /** Saved passage texts for this article, passed down to tint the rendered body. */
-    highlights: List<String> = emptyList()
+    highlights: List<String> = emptyList(),
+    /** Related articles from the topic libraries, shown before References. */
+    relatedLoader: suspend (String, String) -> List<ArticleRow> = { _, _ -> emptyList() },
+    /** REST summary for the long-press link preview (developer preview). */
+    previewLoader: suspend (String, String) -> LinkPreview? = { _, _ -> null }
 ) {
     val photo = content.photo
     val photoDesc = content.photoDesc
@@ -114,6 +126,9 @@ fun PageContent(
     val appContext = LocalContext.current
     val scope = rememberCoroutineScope()
     var openingINaturalist by remember(content.uid) { mutableStateOf(false) }
+    // Asks "iNaturalist app or browser?" (or uses the remembered answer) for every iNaturalist link.
+    val inatOpener = rememberINaturalistOpener()
+    inatOpener.Dialogs()
     val density = LocalDensity.current
     val swipeEdgePx = with(density) { 48.dp.toPx() }
     val swipeThresholdPx = with(density) { 72.dp.toPx() }
@@ -129,6 +144,73 @@ fun PageContent(
     val pullToRefreshState = rememberPullToRefreshState()
 
     var isRefreshing by remember { mutableStateOf(false) }
+
+    val latestPreviewLoader by rememberUpdatedState(previewLoader)
+    var previewLink by remember(content.uid) { mutableStateOf<String?>(null) }
+    var previewData by remember(content.uid) { mutableStateOf<LinkPreview?>(null) }
+    var previewLoading by remember(content.uid) { mutableStateOf(false) }
+    val handleLinkLongPress: (String) -> Unit = { link ->
+        if (preferencesState.linkPreviews) {
+            previewLink = link
+        } else {
+            onAction(HomeAction.OpenInNewTab(link, content.currentLang ?: preferencesState.lang))
+        }
+    }
+    LaunchedEffect(previewLink) {
+        val target = previewLink ?: return@LaunchedEffect
+        previewLoading = true
+        previewData = null
+        previewData = runCatching {
+            latestPreviewLoader(target, content.currentLang ?: preferencesState.lang)
+        }.getOrNull()
+        previewLoading = false
+    }
+    if (previewLink != null) {
+        LinkPreviewDialog(
+            preview = previewData,
+            loading = previewLoading,
+            onRead = {
+                val target = previewLink
+                previewLink = null
+                previewData = null
+                if (target != null) {
+                    onAction(
+                        HomeAction.LoadPage(
+                            target,
+                            lang = content.currentLang ?: preferencesState.lang
+                        )
+                    )
+                }
+            },
+            onOpenTab = {
+                val target = previewLink
+                previewLink = null
+                previewData = null
+                if (target != null) {
+                    onAction(
+                        HomeAction.OpenInNewTab(
+                            target,
+                            content.currentLang ?: preferencesState.lang
+                        )
+                    )
+                }
+            },
+            onDismiss = {
+                previewLink = null
+                previewData = null
+            }
+        )
+    }
+    val latestRelatedLoader by rememberUpdatedState(relatedLoader)
+    var relatedArticles by remember(content.uid) {
+        mutableStateOf<List<ArticleRow>>(emptyList())
+    }
+    LaunchedEffect(content.uid) {
+        if (content.title.isBlank() || content.title == "Error") return@LaunchedEffect
+        relatedArticles = runCatching {
+            latestRelatedLoader(content.title, lang)
+        }.getOrDefault(emptyList())
+    }
 
     if (showLanguageSheet)
         ArticleLanguageBottomSheet(
@@ -192,7 +274,9 @@ fun PageContent(
         // a moment), and again as more sections finish parsing: scrolling and the gallery then show
         // pictures instantly. Skipped in data-saver mode.
         val prefetchContext = LocalContext.current
-        com.wikirandomizerp.app.data.TrackRecompositions("PageContent")
+        com.wikirandomizerp.app.data.TrackRecompositions("PageContent") {
+            "uid=${content.uid} sections=${content.extract.size} title=${content.title.take(40)}"
+        }
         val prefetched = remember(content.uid) { HashSet<String>() }
         // Performance log: what the user is looking at / doing when a slow frame is reported.
         LaunchedEffect(content.uid) {
@@ -309,6 +393,14 @@ fun PageContent(
         }
         val commonsGallery =
             if (referencesIndex >= 0 || extractSettled) commonsGalleryLoaded else null
+        // iNaturalist community photos of the species, shown right below the Commons gallery.
+        val inatGalleryLoaded = rememberINaturalistGallery(
+            title = content.title,
+            enabled = organismArticle && preferencesState.inaturalistGallery &&
+                    !preferencesState.dataSaver && content.title.isNotBlank()
+        )
+        val inatGallery =
+            if (referencesIndex >= 0 || extractSettled) inatGalleryLoaded else null
 
         // ---- One gallery for the whole article -------------------------------------------------
         // Any picture tapped (lead picture, body, <gallery>, infobox, Commons strip) opens the same
@@ -332,15 +424,45 @@ fun PageContent(
                     leadSource = src,
                     leadCaption = article.title,
                     extract = article.extract,
-                    commons = latestCommons
+                    commons = latestCommons,
+                    articleTitle = article.title,
+                    articleLang = lang
                 )
                 val index = ArticleGalleryBuilder.indexOf(items, uri)
                 if (index >= 0) latestOpenGallery(items, index)
                 else {
                     // A picture the page scan does not know (e.g. one inside an infobox): show it
                     // first, the rest of the article's pictures follow.
-                    latestOpenGallery(listOf(ArticleGalleryItem(uri, description)) + items, 0)
+                    latestOpenGallery(
+                        listOf(
+                            ArticleGalleryItem(
+                                uri = uri,
+                                caption = description,
+                                articleTitle = article.title,
+                                articleLang = lang,
+                                thumbnailUrl = uri
+                            )
+                        ) + items,
+                        0
+                    )
                 }
+            }
+        }
+        // iNaturalist observations open in the same in-app viewer: no redirect to the app or
+        // browser just to look at a photo. Their observation page remains available in the viewer.
+        val openINatGallery: (List<INatObservation>, Int) -> Unit = remember {
+            { observations, index ->
+                latestOpenGallery(
+                    observations.map { obs ->
+                        ArticleGalleryItem(
+                            uri = obs.largeUrl,
+                            caption = obs.attribution?.takeIf { it.isNotBlank() }
+                                ?: obs.observer,
+                            pageUrl = obs.observationUrl
+                        )
+                    },
+                    index.coerceIn(0, (observations.size - 1).coerceAtLeast(0))
+                )
             }
         }
         val openLeadImage: () -> Unit = remember(openGallery, lang) {
@@ -365,7 +487,10 @@ fun PageContent(
             commonsGalleryLoaded?.let { ImagePrefetcher.preloadCommons(prefetchContext, it) }
         }
 
-        CompositionLocalProvider(LocalLinkTapGuard provides linkGuard) {
+        CompositionLocalProvider(
+            LocalLinkTapGuard provides linkGuard,
+            LocalArticleImageContext provides ArticleImageContext(content.title, lang)
+        ) {
         HighlightSelectionContainer(
             onSaveHighlight = onSaveHighlight,
             onSearchInBrowser = onSearchInBrowser,
@@ -388,6 +513,10 @@ fun PageContent(
                         modifier = Modifier
                             .widthIn(max = readingWidth)
                             .fillMaxSize()
+                            .background(
+                                if (LocalReadingOptions.current.sepia) SepiaBackground
+                                else Color.Transparent
+                            )
                             .then(
                                 if (preferencesState.swipeGestures) Modifier.pointerInput(Unit) {
                                     // Only the centre of the article is ours: edge drags stay with
@@ -479,14 +608,7 @@ fun PageContent(
                                                 // never a search results page.
                                                 val url = id?.let(::inaturalistTaxonUrl)
                                                     ?: "https://www.inaturalist.org/"
-                                                val appIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                                    .setPackage(INATURALIST_PACKAGE)
-                                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                val opened = runCatching {
-                                                    appContext.startActivity(appIntent)
-                                                    true
-                                                }.getOrDefault(false)
-                                                if (!opened) runCatching { uriHandler.openUri(url) }
+                                                inatOpener.open(url)
                                             }
                                         }
                                     },
@@ -553,14 +675,7 @@ fun PageContent(
                             onLinkClick = {
                                 onAction(HomeAction.LoadPage(it, lang = content.currentLang))
                             },
-                            onLinkLongClick = {
-                                onAction(
-                                    HomeAction.OpenInNewTab(
-                                        it,
-                                        content.currentLang ?: preferencesState.lang
-                                    )
-                                )
-                            },
+                            onLinkLongClick = handleLinkLongPress,
                             onGalleryImageClick = openGallery,
                             showRef = { onAction(HomeAction.UpdateRef(it)) },
                             // Use the same file the lead card actually draws, so the duplicate
@@ -578,11 +693,32 @@ fun PageContent(
                 ) { i ->
                     Column {
                         // The Commons gallery sits at the end of the article, right before References.
-                        if (commonsGallery != null && i == referencesIndex)
-                            CommonsCategoryGalleryStrip(
-                                gallery = commonsGallery,
-                                onImageClick = openGallery
-                            )
+                        if (i == referencesIndex) {
+                            if (relatedArticles.isNotEmpty()) {
+                                RelatedArticlesStrip(
+                                    articles = relatedArticles,
+                                    onOpen = { title ->
+                                        onAction(
+                                            HomeAction.LoadPage(
+                                                title,
+                                                lang = content.currentLang
+                                            )
+                                        )
+                                    }
+                                )
+                            }
+                            if (commonsGallery != null)
+                                CommonsCategoryGalleryStrip(
+                                    gallery = commonsGallery,
+                                    onImageClick = openGallery
+                                )
+                            if (inatGallery != null)
+                                INaturalistGalleryStrip(
+                                    gallery = inatGallery,
+                                    opener = inatOpener,
+                                    onOpenImage = openINatGallery
+                                )
+                        }
                         ExpandableSection(
                             title = content.extract[i],
                             body = content.extract.getOrElse(i + 1) { emptyList() },
@@ -598,14 +734,7 @@ fun PageContent(
                             onLinkClick = {
                                 onAction(HomeAction.LoadPage(it, lang = content.currentLang))
                             },
-                            onLinkLongClick = {
-                                onAction(
-                                    HomeAction.OpenInNewTab(
-                                        it,
-                                        content.currentLang ?: preferencesState.lang
-                                    )
-                                )
-                            },
+                            onLinkLongClick = handleLinkLongPress,
                             onGalleryImageClick = openGallery,
                             showRef = { onAction(HomeAction.UpdateRef(it)) },
                             boldText = preferencesState.boldArticleText,
@@ -618,12 +747,36 @@ fun PageContent(
                     }
                 }
                 // Articles without a References section: the gallery closes the article instead.
-                if (commonsGallery != null && referencesIndex < 0 && content.extract.size > 1) {
+                if ((commonsGallery != null || inatGallery != null) &&
+                    referencesIndex < 0 && content.extract.size > 1
+                ) {
                     item(key = "$pageId.$lang#commons-gallery") {
-                        CommonsCategoryGalleryStrip(
-                            gallery = commonsGallery,
-                            onImageClick = openGallery
-                        )
+                        Column {
+                            if (relatedArticles.isNotEmpty()) {
+                                RelatedArticlesStrip(
+                                    articles = relatedArticles,
+                                    onOpen = { title ->
+                                        onAction(
+                                            HomeAction.LoadPage(
+                                                title,
+                                                lang = content.currentLang
+                                            )
+                                        )
+                                    }
+                                )
+                            }
+                            if (commonsGallery != null)
+                                CommonsCategoryGalleryStrip(
+                                    gallery = commonsGallery,
+                                    onImageClick = openGallery
+                                )
+                            if (inatGallery != null)
+                                INaturalistGalleryStrip(
+                                    gallery = inatGallery,
+                                    opener = inatOpener,
+                                    onOpenImage = openINatGallery
+                                )
+                        }
                     }
                 }
                 item {

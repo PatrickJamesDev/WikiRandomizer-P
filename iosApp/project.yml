@@ -35,6 +35,8 @@ targets:
           - $(inherited)
           - -framework
           - shared
+          - -framework
+          - WebKit
         ENABLE_USER_SCRIPT_SANDBOXING: NO
     preBuildScripts:
       - name: Build shared Kotlin framework

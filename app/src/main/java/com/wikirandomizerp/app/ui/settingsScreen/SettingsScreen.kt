@@ -5,11 +5,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.saveable.rememberSaveable
+import android.Manifest
 import android.app.LocaleManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.text.format.DateUtils
@@ -99,6 +101,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -110,6 +113,8 @@ import com.wikirandomizerp.app.R.string
 import com.wikirandomizerp.app.WikiRandomizerPApplication
 import com.wikirandomizerp.app.data.DeveloperMode
 import com.wikirandomizerp.app.data.LibraryStats
+import com.wikirandomizerp.app.data.TrackRecompositions
+import com.wikirandomizerp.app.data.perfMeasure
 import com.wikirandomizerp.app.data.UpdateResult
 import com.wikirandomizerp.app.data.UpdateState
 import com.wikirandomizerp.app.data.langCodeToName
@@ -256,12 +261,15 @@ fun SettingsScreen(
         }
     }
 
-    val currentLocales =
+    // Service lookup and LocaleList work do not belong in the composition; Settings recomposes
+    // for search, switches and dialogs. The locale list is re-read when this screen is recreated.
+    val currentLocales = remember {
         if (Build.VERSION.SDK_INT >= 33) {
             context
                 .getSystemService(LocaleManager::class.java)
                 .applicationLocales
         } else null
+    }
     val currentLocalesSize = currentLocales?.size() ?: 0
 
     val theme = preferencesState.theme
@@ -286,10 +294,17 @@ fun SettingsScreen(
         SyncAuthState.NotConfigured
     }
     val cloudAccess = localSyncStore?.hasCloudAccess() == true
+    val driveSyncStore = app?.container?.driveSyncStore
+    val driveConfigured = driveSyncStore?.configured == true
     var showCloudSyncDialog by remember { mutableStateOf(false) }
+    var showDriveSyncDialog by remember { mutableStateOf(false) }
     var autoSync by remember { mutableStateOf(localSyncStore?.autoSync ?: false) }
     var lastSyncAt by remember { mutableStateOf(localSyncStore?.lastSyncAt) }
     var syncing by remember { mutableStateOf(false) }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
 
     val fontImportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -319,6 +334,9 @@ fun SettingsScreen(
     val (showLanguageSheet, setShowLanguageSheet) = remember { mutableStateOf(false) }
     val (showAppLocaleSheet, setShowAppLocaleSheet) = remember { mutableStateOf(false) }
     var settingsSearchQuery by rememberSaveable { mutableStateOf("") }
+    TrackRecompositions("SettingsScreen") {
+        "queryLength=${settingsSearchQuery.length} developer=$developerEnabled"
+    }
     var settingsCategory by rememberSaveable { mutableStateOf(SettingsCategory.ROOT) }
     val settingsListState = rememberLazyListState()
     LaunchedEffect(settingsCategory) {
@@ -384,7 +402,8 @@ fun SettingsScreen(
                 R.drawable.data_saver_on,
                 string.settingDataSaver,
                 string.settingDataSaverDesc,
-                SettingsAction::SaveDataSaver
+                SettingsAction::SaveDataSaver,
+                help = R.string.settingDataSaverHelp
             ),
             SettingsSwitchItem(
                 preferencesState.feedEnabled,
@@ -399,7 +418,8 @@ fun SettingsScreen(
                 R.drawable.expand_all,
                 string.settingExpandSections,
                 string.settingExpandSectionsDesc,
-                SettingsAction::SaveExpandedSections
+                SettingsAction::SaveExpandedSections,
+                help = R.string.settingExpandSectionsHelp
             ),
             SettingsSwitchItem(
                 preferencesState.imageBackground,
@@ -427,7 +447,8 @@ fun SettingsScreen(
                 R.drawable.download,
                 string.settingSaveOffline,
                 string.settingSaveOfflineDesc,
-                SettingsAction::SaveSaveOffline
+                SettingsAction::SaveSaveOffline,
+                help = R.string.settingSaveOfflineHelp
             ),
             SettingsSwitchItem(
                 preferencesState.saveFolders,
@@ -455,14 +476,16 @@ fun SettingsScreen(
                 R.drawable.search_history,
                 string.settingSearchHistory,
                 string.settingSearchHistoryDesc,
-                SettingsAction::SaveSearchHistory
+                SettingsAction::SaveSearchHistory,
+                help = R.string.settingSearchHistoryHelp
             ),
             SettingsSwitchItem(
                 preferencesState.pullForRandom,
                 R.drawable.keyboard_arrow_down,
                 string.settingPullForRandom,
                 string.settingPullForRandomDesc,
-                SettingsAction::SavePullForRandom
+                SettingsAction::SavePullForRandom,
+                help = R.string.settingPullForRandomHelp
             ),
             SettingsSwitchItem(
                 preferencesState.preloadArticles,
@@ -470,14 +493,16 @@ fun SettingsScreen(
                 string.settingPreloadArticles,
                 string.settingPreloadArticlesDesc,
                 SettingsAction::SavePreloadArticles,
-                enabled = !preferencesState.dataSaver
+                enabled = !preferencesState.dataSaver,
+                help = R.string.settingPreloadArticlesHelp
             ),
             SettingsSwitchItem(
                 preferencesState.personalizationEnabled,
                 R.drawable.thumb_up,
                 string.settingPersonalization,
                 string.settingPersonalizationDesc,
-                SettingsAction::SavePersonalization
+                SettingsAction::SavePersonalization,
+                help = R.string.settingPersonalizationHelp
             ),
             SettingsSwitchItem(
                 preferencesState.reduceMotion,
@@ -512,14 +537,24 @@ fun SettingsScreen(
                 R.drawable.menu_open,
                 string.settingSwipeGestures,
                 string.settingSwipeGesturesDesc,
-                SettingsAction::SaveSwipeGestures
+                SettingsAction::SaveSwipeGestures,
+                help = R.string.settingSwipeGesturesHelp
             ),
             SettingsSwitchItem(
                 preferencesState.wikivoyageEnabled,
                 R.drawable.translate,
                 string.settingWikivoyage,
                 string.settingWikivoyageDesc,
-                SettingsAction::SaveWikivoyage
+                SettingsAction::SaveWikivoyage,
+                help = R.string.settingWikivoyageHelp
+            ),
+            SettingsSwitchItem(
+                preferencesState.inaturalistGallery,
+                R.drawable.leaf,
+                string.settingINaturalistGallery,
+                string.settingINaturalistGalleryDesc,
+                SettingsAction::SaveINaturalistGallery,
+                help = R.string.settingINaturalistGalleryHelp
             ),
         )
     }
@@ -545,7 +580,8 @@ fun SettingsScreen(
             SettingsCategory.APPEARANCE, // 16 bold text
             SettingsCategory.READING, // 17 iNaturalist action
             SettingsCategory.BEHAVIOUR, // 18 swipe gestures
-            SettingsCategory.BEHAVIOUR // 19 Wikivoyage
+            SettingsCategory.BEHAVIOUR, // 19 Wikivoyage
+            SettingsCategory.READING // 20 iNaturalist gallery
         )
     }
 
@@ -589,6 +625,12 @@ fun SettingsScreen(
                 autoSync = localSyncStore.autoSync
                 lastSyncAt = localSyncStore.lastSyncAt
             }
+        )
+    }
+    if (showDriveSyncDialog && driveSyncStore != null) {
+        DriveSyncDialog(
+            store = driveSyncStore,
+            onDismiss = { showDriveSyncDialog = false }
         )
     }
     if (showDebugLog) DebugLogDialog(onDismiss = { setShowDebugLog(false) })
@@ -659,6 +701,7 @@ fun SettingsScreen(
             modifier = Modifier
                 .background(topBarColors.containerColor)
                 .padding(horizontal = 16.dp)
+                .perfMeasure("settings list")
         ) {
             item { Spacer(Modifier.height(8.dp)) }
             item(key = "settings-search") {
@@ -924,6 +967,181 @@ fun SettingsScreen(
                         .clip(bottomListItemShape)
                 )
             }
+            if (developerEnabled) {
+                item {
+                    ListItem(
+                        leadingContent = {
+                            Icon(painterResource(R.drawable.format_size), contentDescription = null)
+                        },
+                        headlineContent = { Text(stringResource(string.settingLineSpacing)) },
+                        supportingContent = {
+                            Column {
+                                Text(stringResource(string.settingLineSpacingDesc))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.padding(top = 8.dp)
+                                ) {
+                                    IconButton(
+                                        enabled = preferencesState.lineSpacing > 80,
+                                        onClick = {
+                                            onAction(
+                                                SettingsAction.SaveLineSpacing(
+                                                    (preferencesState.lineSpacing - 10).coerceAtLeast(80)
+                                                )
+                                            )
+                                        }
+                                    ) {
+                                        Icon(
+                                            painterResource(R.drawable.remove),
+                                            contentDescription = null
+                                        )
+                                    }
+                                    Text(
+                                        text = stringResource(
+                                            string.settingLineSpacingValue,
+                                            preferencesState.lineSpacing
+                                        ),
+                                        style = typography.titleMedium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    IconButton(
+                                        enabled = preferencesState.lineSpacing < 200,
+                                        onClick = {
+                                            onAction(
+                                                SettingsAction.SaveLineSpacing(
+                                                    (preferencesState.lineSpacing + 10).coerceAtMost(200)
+                                                )
+                                            )
+                                        }
+                                    ) {
+                                        Icon(
+                                            painterResource(R.drawable.add),
+                                            contentDescription = null
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        colors = listItemColors
+                    )
+                }
+                item {
+                    ListItem(
+                        leadingContent = {
+                            Icon(painterResource(R.drawable.format_size), contentDescription = null)
+                        },
+                        headlineContent = { Text(stringResource(string.settingReadingMargin)) },
+                        supportingContent = {
+                            Column {
+                                Text(stringResource(string.settingReadingMarginDesc))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.padding(top = 8.dp)
+                                ) {
+                                    IconButton(
+                                        enabled = preferencesState.readingMargin > 4,
+                                        onClick = {
+                                            onAction(
+                                                SettingsAction.SaveReadingMargin(
+                                                    (preferencesState.readingMargin - 4).coerceAtLeast(4)
+                                                )
+                                            )
+                                        }
+                                    ) {
+                                        Icon(
+                                            painterResource(R.drawable.remove),
+                                            contentDescription = null
+                                        )
+                                    }
+                                    Text(
+                                        text = stringResource(
+                                            string.settingReadingMarginValue,
+                                            preferencesState.readingMargin
+                                        ),
+                                        style = typography.titleMedium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    IconButton(
+                                        enabled = preferencesState.readingMargin < 48,
+                                        onClick = {
+                                            onAction(
+                                                SettingsAction.SaveReadingMargin(
+                                                    (preferencesState.readingMargin + 4).coerceAtMost(48)
+                                                )
+                                            )
+                                        }
+                                    ) {
+                                        Icon(
+                                            painterResource(R.drawable.add),
+                                            contentDescription = null
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        colors = listItemColors
+                    )
+                }
+                item {
+                    ListItem(
+                        leadingContent = {
+                            Icon(painterResource(R.drawable.format_size), contentDescription = null)
+                        },
+                        headlineContent = { Text(stringResource(string.settingJustifyText)) },
+                        supportingContent = { Text(stringResource(string.settingJustifyTextDesc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = preferencesState.justifyText,
+                                onCheckedChange = {
+                                    onAction(SettingsAction.SaveJustifyText(it))
+                                },
+                                colors = switchColors
+                            )
+                        },
+                        colors = listItemColors
+                    )
+                }
+                item {
+                    ListItem(
+                        leadingContent = {
+                            Icon(painterResource(R.drawable.format_size), contentDescription = null)
+                        },
+                        headlineContent = { Text(stringResource(string.settingSepiaTheme)) },
+                        supportingContent = { Text(stringResource(string.settingSepiaThemeDesc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = preferencesState.sepiaTheme,
+                                onCheckedChange = {
+                                    onAction(SettingsAction.SaveSepiaTheme(it))
+                                },
+                                colors = switchColors
+                            )
+                        },
+                        colors = listItemColors
+                    )
+                }
+                item {
+                    ListItem(
+                        leadingContent = {
+                            Icon(painterResource(R.drawable.format_size), contentDescription = null)
+                        },
+                        headlineContent = { Text(stringResource(string.settingLinkPreviews)) },
+                        supportingContent = { Text(stringResource(string.settingLinkPreviewsDesc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = preferencesState.linkPreviews,
+                                onCheckedChange = {
+                                    onAction(SettingsAction.SaveLinkPreviews(it))
+                                },
+                                colors = switchColors
+                            )
+                        },
+                        colors = listItemColors
+                    )
+                }
+            }
             }
             if (settingsCategory == SettingsCategory.DATA) {
             item {
@@ -970,10 +1188,35 @@ fun SettingsScreen(
                     },
                     colors = listItemColors,
                     modifier = Modifier
-                        .clip(bottomListItemShape)
+                        .clip(if (driveConfigured) middleListItemShape else bottomListItemShape)
                         .clickable { onBackup() }
                 )
             }
+            if (driveConfigured && driveSyncStore != null) {
+                item {
+                    val driveSupporting = if (driveSyncStore.connected) {
+                        context.getString(string.settingDriveConnected)
+                    } else {
+                        context.getString(string.settingDriveNotConnected)
+                    }
+                    ListItem(
+                        leadingContent = {
+                            Icon(painterResource(R.drawable.cloud), contentDescription = null)
+                        },
+                        headlineContent = { Text(stringResource(string.settingDriveSync)) },
+                        supportingContent = { Text(driveSupporting) },
+                        trailingContent = {
+                            Icon(painterResource(R.drawable.arrow_forward), contentDescription = null)
+                        },
+                        colors = listItemColors,
+                        modifier = Modifier
+                            .clip(bottomListItemShape)
+                            .clickable { showDriveSyncDialog = true }
+                    )
+                }
+            }
+            // Firebase sync is a developer preview. It stays completely out of the normal UI.
+            if (developerEnabled) {
             item { Spacer(Modifier.height(12.dp)) }
             item {
                 val supporting = when {
@@ -1099,6 +1342,7 @@ fun SettingsScreen(
                 )
             }
             }
+            }
             if (settingsCategory == SettingsCategory.READING) {
             item {
                 // Renderer: fast native wikitext parsing, or Wikipedia's fully rendered HTML.
@@ -1197,6 +1441,77 @@ fun SettingsScreen(
                     colors = listItemColors,
                     modifier = Modifier.clip(cardShape)
                 )
+            }
+            if (developerEnabled) {
+                item {
+                    ListItem(
+                        leadingContent = {
+                            Icon(painterResource(R.drawable.person), contentDescription = null)
+                        },
+                        headlineContent = { Text(stringResource(string.settingTalkPages)) },
+                        supportingContent = { Text(stringResource(string.settingTalkPagesDesc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = preferencesState.talkPages,
+                                onCheckedChange = {
+                                    onAction(SettingsAction.SaveTalkPages(it))
+                                },
+                                colors = switchColors
+                            )
+                        },
+                        colors = listItemColors
+                    )
+                }
+                item {
+                    ListItem(
+                        leadingContent = {
+                            Icon(painterResource(R.drawable.leaf), contentDescription = null)
+                        },
+                        headlineContent = { Text(stringResource(string.settingDailyNotification)) },
+                        supportingContent = {
+                            Text(stringResource(string.settingDailyNotificationDesc))
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = preferencesState.dailyNotification,
+                                onCheckedChange = { enabled ->
+                                    if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                        ContextCompat.checkSelfPermission(
+                                            context,
+                                            Manifest.permission.POST_NOTIFICATIONS
+                                        ) != PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        notificationPermissionLauncher.launch(
+                                            Manifest.permission.POST_NOTIFICATIONS
+                                        )
+                                    }
+                                    onAction(SettingsAction.SaveDailyNotification(enabled))
+                                },
+                                colors = switchColors
+                            )
+                        },
+                        colors = listItemColors
+                    )
+                }
+                item {
+                    ListItem(
+                        leadingContent = {
+                            Icon(painterResource(R.drawable.history), contentDescription = null)
+                        },
+                        headlineContent = { Text(stringResource(string.settingHomeWidget)) },
+                        supportingContent = { Text(stringResource(string.settingHomeWidgetDesc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = preferencesState.homeWidget,
+                                onCheckedChange = {
+                                    onAction(SettingsAction.SaveHomeWidget(it))
+                                },
+                                colors = switchColors
+                            )
+                        },
+                        colors = listItemColors
+                    )
+                }
             }
             }
             item { Spacer(Modifier.height(12.dp)) }
@@ -1382,7 +1697,14 @@ fun SettingsScreen(
                     leadingContent = {
                         Icon(painterResource(item.icon), contentDescription = null)
                     },
-                    headlineContent = { Text(stringResource(item.label)) },
+                    headlineContent = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = stringResource(item.label),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    },
                     supportingContent = { Text(stringResource(item.description)) },
                     trailingContent = {
                         Switch(
@@ -1427,13 +1749,6 @@ fun SettingsScreen(
             if (settingsCategory == SettingsCategory.ABOUT) {
             item {
                 ClickableListItem(
-                    leadingContent = {
-                        Icon(
-                            painterResource(R.drawable.outline_info),
-                            tint = colorScheme.primary,
-                            contentDescription = null
-                        )
-                    },
                     headlineContent = { Text(stringResource(string.settingReplayTutorial)) },
                     supportingContent = { Text(stringResource(string.settingReplayTutorialDesc)) },
                     colors = listItemColors,
@@ -1444,9 +1759,6 @@ fun SettingsScreen(
             item { Spacer(Modifier.height(12.dp)) }
             item {
                 ListItem(
-                    leadingContent = {
-                        Icon(painterResource(R.drawable.outline_info), contentDescription = null)
-                    },
                     headlineContent = { Text(stringResource(string.version)) },
                     supportingContent = { Text(BuildConfig.VERSION_NAME) },
                     colors = listItemColors,
@@ -1744,21 +2056,6 @@ fun SettingsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Spacer(
-                                Modifier
-                                    .clip(MaterialShapes.Cookie12Sided.toShape())
-                                    .background(colorScheme.secondaryContainer)
-                                    .padding(8.dp)
-                                    .size(24.dp)
-                            )
-                            Icon(
-                                painterResource(R.drawable.filled_info),
-                                tint = colorScheme.onSecondaryContainer,
-                                contentDescription = stringResource(string.information),
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
                         Text(
                             stringResource(string.setAsDefault),
                             style = typography.headlineSmall
@@ -1994,7 +2291,7 @@ fun SettingsScreen(
                         SettingsSearchEntry(
                             context.getString(string.settingReplayTutorial),
                             context.getString(string.settingReplayTutorialDesc),
-                            "tour help onboarding", R.drawable.outline_info
+                            "tour help onboarding", R.drawable.menu_open
                         ) { onReplayTutorial() }
                     )
                     add(
@@ -2032,11 +2329,21 @@ fun SettingsScreen(
                             "backup backups restore export import data storage", R.drawable.download_done
                         ) { onBackup() }
                     )
+                    if (driveConfigured) {
+                        add(
+                            SettingsSearchEntry(
+                                context.getString(string.settingDriveSync),
+                                context.getString(string.settingDriveSyncDesc),
+                                "drive google cloud sync account settings history progress highlights vocabulary",
+                                R.drawable.cloud
+                            ) { showDriveSyncDialog = true }
+                        )
+                    }
                     add(
                         SettingsSearchEntry(
                             context.getString(string.setAsDefault),
                             context.getString(string.setAsDefaultDesc),
-                            "links default browser", R.drawable.filled_info
+                            "links default browser", R.drawable.open_in_browser
                         ) { context.startActivity(appInfoIntent) }
                     )
                     add(
@@ -2164,7 +2471,7 @@ private enum class SettingsCategory(
         6
     ),
     ABOUT(
-        R.drawable.outline_info,
+        R.drawable.outline_settings,
         string.settingsAbout,
         string.settingsAboutDesc,
         5
@@ -2349,5 +2656,6 @@ data class SettingsSwitchItem(
     val label: Int,
     val description: Int,
     val actionConstructor: (Boolean) -> SettingsAction,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
+    val help: Int? = null
 )

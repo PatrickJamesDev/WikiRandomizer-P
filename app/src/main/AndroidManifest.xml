@@ -8,6 +8,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <!-- Lets the app detect the iNaturalist app (package visibility on Android 11+). -->
+    <queries>
+        <package android:name="org.inaturalist.android" />
+    </queries>
     <application
         android:name=".WikiRandomizerPApplication"
         android:allowBackup="true"
@@ -31,6 +35,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -43,6 +51,12 @@
                 <data android:pathPrefix="/wiki/"/>
             </intent-filter>
         </activity>
+
+        <!-- Developer preview of the shared Compose shell; production still opens MainActivity. -->
+        <activity
+            android:name="com.wikirandomizerp.app.SharedReaderActivity"
+            android:exported="false"
+            android:theme="@style/Theme.WikiRandomizerP.Starting" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -59,6 +73,29 @@
             android:name="com.wikirandomizerp.app.data.IndexKeepAliveService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <service
+            android:name="com.wikirandomizerp.app.widget.RandomArticleTileService"
+            android:exported="true"
+            android:icon="@drawable/shuffle"
+            android:label="@string/quickTileLabel"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Developer-preview home-screen widget; disabled by default in Settings. -->
+        <receiver
+            android:name="com.wikirandomizerp.app.widget.RandomArticleWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_random_info" />
+        </receiver>
     </application>
 
 </manifest>

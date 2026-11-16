@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -417,6 +418,7 @@ fun SavedArticlesScreen(
                                             description = it.description,
                                             background = imageBackground,
                                             pinnedThumbnail = true,
+                                            smartCrop = true,
                                             modifier = Modifier
                                                 .size(64.dp)
                                                 .clip(RoundedCornerShape(imageCorners.coerceAtLeast(0.dp)))
@@ -635,9 +637,10 @@ private fun SavedGridCard(
                     description = article.description,
                     background = imageBackground,
                     pinnedThumbnail = true,
+                    smartCrop = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp)
+                        .aspectRatio(4f / 3f)
                 )
             }
             Text(

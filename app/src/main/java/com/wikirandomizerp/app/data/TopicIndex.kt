@@ -4,57 +4,6 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-/** Per-topic breakdown shown in the UI. */
-data class TopicStat(
-    val topic: String,
-    val resolved: String,
-    val discovered: Int,
-    val indexed: Int,
-    val withImages: Int,
-    val good: Int,
-    val featured: Int,
-    val builtAt: Long,
-    /** False while article details are still being collected (build interrupted / running). */
-    val complete: Boolean,
-    /** Whether this topic takes part in random picks. Disabling keeps its downloaded library. */
-    val enabled: Boolean = true,
-    val readCount: Int = 0
-) {
-    val remaining: Int get() = (indexed - readCount).coerceAtLeast(0)
-}
-
-data class LibraryStats(
-    /** Size of the library database on disk. */
-    val sizeBytes: Long = 0L,
-    val totalArticles: Int,
-    /** Articles never shown yet (not in the permanent "seen" list). */
-    val unseen: Int,
-    val topics: List<TopicStat>
-)
-
-/** One indexed article. [tier]: 0 = normal, 1 = Good article, 2 = Featured article. */
-data class ArticleRow(
-    val title: String,
-    val bytes: Int,
-    val hasImage: Boolean,
-    val tier: Int,
-    /** Shortest category distance from the topic's own category (0 = directly in it). */
-    val depth: Int = 0,
-    /** Wikidata short description, used to judge relevance. null = not fetched yet. */
-    val descr: String? = null,
-    /** How many of the topic's key words the article's title/description matches; -1 = unknown. */
-    val rel: Int = -1,
-    /** Absolute topic-word coverage, 0..100; -1 = not scored yet (passes every threshold). */
-    val cov: Int = -1,
-    /** Views in the last 30 days; -1 = unknown. Used to prefer obscure or popular articles. */
-    val views: Int = -1,
-    /** One selected topic this article belongs to (used for learned topic affinity). */
-    val topic: String = ""
-)
-
-/** Membership row used by the relevance pass. */
-data class MemberDescr(val title: String, val depth: Int, val descr: String?)
-
 /**
  * On-device topic index: for every topic the user selected, the articles of that category's
  * subtree, with size / image / quality / description info, so the Random button is an instant
@@ -132,12 +81,45 @@ class TopicIndex private constructor(context: Context, val lang: String) :
      * request. The library is only a cache of public data, so start it again from empty.
      */
     override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        // The library itself is a rebuildable cache, but the seen list is user history: keep it
+        // when an older build is installed over a newer one. Older schemas may not have seen_at.
+        val seen = ArrayList<Pair<String, Long>>()
+        runCatching {
+            db.rawQuery("SELECT title, seen_at FROM seen", null).use { cursor ->
+                while (cursor.moveToNext()) seen.add(cursor.getString(0) to cursor.getLong(1))
+            }
+        }.onFailure {
+            runCatching {
+                db.rawQuery("SELECT title FROM seen", null).use { cursor ->
+                    val now = System.currentTimeMillis()
+                    while (cursor.moveToNext()) seen.add(cursor.getString(0) to now)
+                }
+            }
+        }
         for (table in listOf(
             "articles", "membership", "topics", "seen", "feedback", "reading", "topic_affinity"
         )) {
             db.execSQL("DROP TABLE IF EXISTS $table")
         }
         onCreate(db)
+        if (seen.isNotEmpty()) {
+            db.beginTransaction()
+            try {
+                val insert = db.compileStatement(
+                    "INSERT OR IGNORE INTO seen(title, seen_at) VALUES(?, ?)"
+                )
+                for ((title, seenAt) in seen) {
+                    insert.bindString(1, title)
+                    insert.bindLong(2, seenAt)
+                    insert.executeInsert()
+                    insert.clearBindings()
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+            DebugLog.w("TopicIndex", "downgrade rebuild kept ${seen.size} seen article(s)")
+        }
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -241,6 +223,19 @@ class TopicIndex private constructor(context: Context, val lang: String) :
         return out
     }
 
+    /**
+     * Enabled topics whose article details are complete. Picking from an incomplete topic during
+     * a rebuild can expose unrelated category members, so shortcut entry points use this list.
+     */
+    fun completeEnabledTopics(): List<String> {
+        val out = ArrayList<String>()
+        readableDatabase.rawQuery(
+            "SELECT topic FROM topics WHERE enabled = 1 AND complete = 1 ORDER BY topic",
+            null
+        ).use { c -> while (c.moveToNext()) out.add(c.getString(0)) }
+        return out
+    }
+
     fun isTopicEnabled(topic: String): Boolean =
         readableDatabase.rawQuery(
             "SELECT 1 FROM topics WHERE topic = ? AND enabled = 1", arrayOf(topic)
@@ -281,6 +276,29 @@ class TopicIndex private constructor(context: Context, val lang: String) :
             arrayOf(title)
         ).use { c -> while (c.moveToNext()) out.add(c.getString(0)) }
         return out
+    }
+
+    /**
+     * A few more articles from the same topic libraries as [title], excluding the article itself.
+     * Used by the "Related articles" strip at the end of an article. When the article is not in a
+     * library, samples from the enabled topics so the strip still has something to show.
+     */
+    fun relatedArticles(title: String, limit: Int): List<ArticleRow> {
+        if (limit <= 0) return emptyList()
+        val topics = topicsForTitle(title).ifEmpty { completeEnabledTopics().take(3) }
+        if (topics.isEmpty()) return emptyList()
+        val normalized = title.replace('_', ' ').trim()
+        return pick(
+            topics = topics,
+            imagesOnly = false,
+            minBytes = 0,
+            qualityOnly = false,
+            limit = limit + 6,
+            includeSeen = true
+        ).asSequence()
+            .filter { !it.title.replace('_', ' ').equals(normalized, ignoreCase = true) }
+            .take(limit)
+            .toList()
     }
 
     /** Needs a (re)build: missing entirely, or interrupted before it finished. */
@@ -708,6 +726,28 @@ class TopicIndex private constructor(context: Context, val lang: String) :
         readableDatabase.rawQuery("SELECT 1 FROM seen WHERE title = ?", arrayOf(title))
             .use { it.moveToFirst() }
 
+    /**
+     * Batch form of [isSeen] for random fallbacks that receive several titles at once. One query
+     * instead of one per page keeps the fallback cheap even when many articles are already read.
+     */
+    fun seenAmong(titles: Collection<String>): Set<String> {
+        val unique = titles.asSequence()
+            .filter { it.isNotBlank() }
+            .distinct()
+            .toList()
+        if (unique.isEmpty()) return emptySet()
+        val out = HashSet<String>()
+        // Older Android SQLite builds cap bound variables at 999.
+        for (batch in unique.chunked(900)) {
+            val placeholders = batch.joinToString(",") { "?" }
+            readableDatabase.rawQuery(
+                "SELECT title FROM seen WHERE title IN ($placeholders)",
+                batch.toTypedArray()
+            ).use { cursor -> while (cursor.moveToNext()) out.add(cursor.getString(0)) }
+        }
+        return out
+    }
+
     /** User pressed "Start over": forget everything that was shown. */
     fun clearSeen() {
         writableDatabase.execSQL("DELETE FROM seen")
@@ -801,6 +841,71 @@ class TopicIndex private constructor(context: Context, val lang: String) :
     }
 
     // ── reading ───────────────────────────────────────────────────────────────
+
+    /** Compact reading rows used by cloud sync; one per article. */
+    fun readingEntries(): List<ReadingEntry> {
+        val out = ArrayList<ReadingEntry>()
+        readableDatabase.rawQuery(
+            "SELECT title, topic, seconds, progress, read_at FROM reading " +
+                    "ORDER BY read_at DESC LIMIT 5000",
+            null
+        ).use { c ->
+            while (c.moveToNext()) {
+                out.add(
+                    ReadingEntry(
+                        title = c.getString(0),
+                        topic = c.getString(1),
+                        seconds = c.getDouble(2),
+                        progress = c.getDouble(3),
+                        readAt = c.getLong(4)
+                    )
+                )
+            }
+        }
+        return out
+    }
+
+    /**
+     * Merges reading rows from another device into this language's index. Time and depth only
+     * move forward, so re-syncing the same snapshot cannot shrink progress.
+     */
+    fun mergeReadingEntries(entries: Collection<ReadingEntry>) {
+        if (entries.isEmpty()) return
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            val existing = HashMap<String, Triple<Double, Double, Long>>()
+            db.rawQuery(
+                "SELECT title, seconds, progress, read_at FROM reading",
+                null
+            ).use { c ->
+                while (c.moveToNext()) {
+                    existing[c.getString(0)] = Triple(
+                        c.getDouble(1),
+                        c.getDouble(2),
+                        c.getLong(3)
+                    )
+                }
+            }
+            for (entry in entries) {
+                if (entry.title.isBlank()) continue
+                val topic = entry.topic.takeIf { it.isNotBlank() } ?: continue
+                val old = existing[entry.title]
+                val seconds = maxOf(entry.seconds, old?.first ?: 0.0)
+                val progress = maxOf(entry.progress, old?.second ?: 0.0)
+                val readAt = maxOf(entry.readAt, old?.third ?: 0L)
+                db.execSQL(
+                    "INSERT OR REPLACE INTO reading(title, topic, seconds, progress, read_at) " +
+                            "VALUES(?, ?, ?, ?, ?)",
+                    arrayOf<Any?>(entry.title, topic, seconds, progress, readAt)
+                )
+                existing[entry.title] = Triple(seconds, progress, readAt)
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
 
     fun topicStats(): List<TopicStat> {
         val t0 = System.nanoTime()
@@ -926,6 +1031,15 @@ class TopicIndex private constructor(context: Context, val lang: String) :
             instances.getOrPut(lang) { TopicIndex(context.applicationContext, lang) }
     }
 }
+
+/** One article's reading time and furthest scroll depth. */
+data class ReadingEntry(
+    val title: String,
+    val topic: String,
+    val seconds: Double,
+    val progress: Double,
+    val readAt: Long
+)
 
 /** Thrown when every article matching the user's topics and filters has already been shown. */
 class LibraryExhaustedException(

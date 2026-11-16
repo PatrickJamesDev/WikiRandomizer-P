@@ -59,16 +59,15 @@ fun SharedTransitionScope.ImageWithCaption(
         ImagePrefetcher.fileUrl(lang, fileName, width = 1920)
     }
 
-    val pageImageName = remember(pageImageUri) { imageNameFromUrl(pageImageUri) }
-    val normalizedFileName = remember(fileName) { normalizeImageName(fileName) }
 
     // `checkFirstImage` means "this section is under the lead image". The API leads with one
     // picture; when the article body shows the same file again we would draw it twice. The old
     // condition was inverted: with a lead image present it hid every intro picture whose file was
     // *different* (taking its caption with it) and rendered the duplicate instead. Skip only the
     // duplicate, and keep its caption below the lead image.
-    val isLeadDuplicate = checkFirstImage && pageImageName != null &&
-            pageImageName.equals(normalizedFileName, ignoreCase = true)
+    val pageImageKey = remember(pageImageUri) { imageCompareKey(pageImageUri?.let { imageNameFromUrl(it) }) }
+    val fileKey = remember(fileName) { imageCompareKey(fileName) }
+    val isLeadDuplicate = checkFirstImage && pageImageKey != null && pageImageKey == fileKey
 
     val description = remember(text) {
         // The caption is everything after the file name, not just the first parameter:
@@ -160,7 +159,26 @@ fun SharedTransitionScope.ImageWithCaption(
 /** File name of the last path segment of an image URL ("960px-Pea.jpg" -> "Pea.jpg"). */
 internal fun imageNameFromUrl(url: String?): String? {
     if (url.isNullOrBlank()) return null
-    return normalizeImageName(url.substringBefore('?').substringAfterLast('/'))
+    val path = url.substringBefore('?').substringBefore('#')
+    // A Wikimedia thumbnail is .../thumb/a/ab/Original_name.jpg/960px-Original_name.jpg. The
+    // original name is the segment *before* the last one: unlike the last segment it survives
+    // long names (thumbnails are then called just "960px-thumbnail.jpg"), converted formats
+    // (".tif.jpg", ".pdf.jpg", "lossy-page1-…") and renamed prefixes.
+    val thumbMatch = Regex("/thumb/[0-9a-f]/[0-9a-f]{2}/([^/]+)/[^/]+$").find(path)
+    val raw = thumbMatch?.groupValues?.get(1) ?: path.substringAfterLast('/')
+    return normalizeImageName(raw)
+}
+
+/**
+ * A comparison key that ignores case, underscores/spaces, punctuation, encoding and the file
+ * extension, so the same picture is recognised however Wikipedia spelled it in the API and in
+ * the article.
+ */
+internal fun imageCompareKey(name: String?): String? {
+    val n = normalizeImageName(name) ?: return null
+    val withoutExt = n.substringBeforeLast('.', n)
+    val key = withoutExt.lowercase().filter { it.isLetterOrDigit() }
+    return key.ifEmpty { null }
 }
 
 /**
@@ -172,11 +190,14 @@ internal fun imageNameFromUrl(url: String?): String? {
 internal fun normalizeImageName(name: String?): String? {
     if (name.isNullOrBlank()) return null
     var value = name.substringBefore('?').substringAfterLast('/').trim()
-    value = runCatching { java.net.URLDecoder.decode(value, "UTF-8") }.getOrDefault(value)
+    // URLDecoder would turn a literal '+' in a file name into a space.
+    value = runCatching { java.net.URLDecoder.decode(value.replace("+", "%2B"), "UTF-8") }.getOrDefault(value)
     value = value.replace(Regex("^(?:lossy-)?page\\d+-", RegexOption.IGNORE_CASE), "")
     value = value.replace(Regex("^\\d+px-"), "")
     value = value.replace(Regex("^(?:file|image):", RegexOption.IGNORE_CASE), "")
-    value = value.replace(Regex("(?i)\\.(svg)\\.(?:png|jpe?g|webp)$"), ".$1")
+    value = value.replace(
+        Regex("(?i)\\.(svg|tiff?|pdf|djvu|webm|ogv|ogg|mpg|mpeg|stl)\\.(?:png|jpe?g|webp)$"), ".$1"
+    )
     value = value.replace(' ', '_')
     return value.ifBlank { null }
 }

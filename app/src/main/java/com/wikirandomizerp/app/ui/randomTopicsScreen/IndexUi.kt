@@ -461,9 +461,10 @@ private fun RunningView(
             style = typography.bodySmall,
             color = if (sinceActivity > 30_000) colorScheme.error else colorScheme.onSurfaceVariant
         )
-        if (p?.status != null) {
+        val status = p?.status
+        if (status != null) {
             Spacer(Modifier.height(12.dp))
-            Text(p.status, style = typography.bodyMedium, color = colorScheme.error)
+            Text(status, style = typography.bodyMedium, color = colorScheme.error)
         }
         if (usableNow) {
             Spacer(Modifier.height(20.dp))

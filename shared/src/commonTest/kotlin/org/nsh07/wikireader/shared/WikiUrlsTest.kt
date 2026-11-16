@@ -31,6 +31,19 @@ class WikiUrlsTest {
     }
 
     @Test
+    fun articleToolUrlsUseMediaWikiConventions() {
+        assertEquals(
+            "https://en.wikipedia.org/wiki/Talk%3ACaf%C3%A9",
+            WikiUrls.talkPageUrl("en", "Café")
+        )
+        assertEquals(
+            "https://en.wikipedia.org/w/index.php?title=Caf%C3%A9&action=history",
+            WikiUrls.historyUrl("en", "Café")
+        )
+        assertTrue(WikiUrls.whatLinksHereUrl("en", "Café").endsWith("/Caf%C3%A9"))
+    }
+
+    @Test
     fun fileUrlsSupportOptionalResizeWidth() {
         assertEquals(
             "https://en.wikipedia.org/wiki/Special:FilePath/Example.jpg",
@@ -39,6 +52,36 @@ class WikiUrlsTest {
         assertTrue(
             WikiUrls.filePathUrl("en", "Example.jpg", 640)
                 .endsWith("?width=640")
+        )
+    }
+
+    @Test
+    fun categoryMembersUrlIsReadyForTopicDiscovery() {
+        assertEquals(
+            "https://en.wikipedia.org/w/api.php?action=query&list=categorymembers" +
+                "&cmtitle=Category%3AOrchids&cmtype=page&cmnamespace=0" +
+                "&cmlimit=50&format=json&formatversion=2",
+            WikiUrls.categoryMembersUrl("en", "Orchids")
+        )
+        assertTrue(
+            WikiUrls.categoryMembersUrl("de", "Rosen & Verwandte", limit = 20)
+                .contains("cmlimit=20")
+        )
+    }
+
+    @Test
+    fun searchApiUrlUsesGeneratorSearchAndEncodesQuery() {
+        assertEquals(
+            "https://en.wikipedia.org/w/api.php?action=query&generator=search" +
+                "&gsrsearch=black%20hole&gsrnamespace=0&gsrlimit=20" +
+                "&gsrprop=snippet|titlesnippet|redirecttitle" +
+                "&prop=pageimages&piprop=thumbnail&pithumbsize=250" +
+                "&format=json&formatversion=2",
+            WikiUrls.searchApiUrl("en", " black hole ")
+        )
+        assertTrue(
+            WikiUrls.searchApiUrl("de", "Köln", limit = 5)
+                .contains("gsrsearch=K%C3%B6ln")
         )
     }
 

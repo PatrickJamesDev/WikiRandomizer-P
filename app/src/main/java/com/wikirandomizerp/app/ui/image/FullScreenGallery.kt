@@ -43,7 +43,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -133,7 +135,32 @@ fun SharedTransitionScope.FullScreenGallery(
     }
 
     val item = items[pagerState.currentPage.coerceIn(0, items.lastIndex)]
-    val download = rememberImageDownload(item.uri, item.caption.ifBlank { null })
+    val download = rememberImageDownload(
+        url = item.uri,
+        description = item.caption.ifBlank { null },
+        articleTitle = item.articleTitle,
+        articleLang = item.articleLang,
+        pageUrl = item.pageUrl,
+        thumbnailUrl = item.thumbnailUrl
+    )
+    val saveToGallery = rememberSaveImage(
+        url = item.uri,
+        description = item.caption.ifBlank { null },
+        articleTitle = item.articleTitle,
+        articleLang = item.articleLang,
+        pageUrl = item.pageUrl,
+        thumbnailUrl = item.thumbnailUrl
+    )
+    var showImageActions by remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
+    val longPress = remember(download, saveToGallery, haptic) {
+        {
+            if (download != null || saveToGallery != null) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                showImageActions = true
+            }
+        }
+    }
     val colorScheme = MaterialTheme.colorScheme
     val typography = MaterialTheme.typography
     val captionText = remember(item.caption) {
@@ -164,6 +191,7 @@ fun SharedTransitionScope.FullScreenGallery(
                 background = background,
                 doubleTapSpec = doubleTapSpec,
                 onTap = { barsRequested = !barsRequested },
+                onLongPress = longPress,
                 onScaleChanged = { scale ->
                     if (page == pagerState.currentPage) {
                         if (scale > 1.1f && currentScale <= 1.1f) barsRequested = false
@@ -183,6 +211,7 @@ fun SharedTransitionScope.FullScreenGallery(
                 description = counter,
                 link = item.pageUrl,
                 onDownload = download,
+                onSaveToGallery = saveToGallery,
                 onBack = onBack
             )
         }
@@ -214,6 +243,12 @@ fun SharedTransitionScope.FullScreenGallery(
             }
         }
     }
+    ImageActionDialog(
+        visible = showImageActions,
+        onDismiss = { showImageActions = false },
+        onDownload = download,
+        onSaveToGallery = saveToGallery
+    )
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -224,6 +259,7 @@ private fun GalleryImagePage(
     background: Boolean,
     doubleTapSpec: androidx.compose.animation.core.AnimationSpec<Float>,
     onTap: () -> Unit,
+    onLongPress: () -> Unit,
     onScaleChanged: (Float) -> Unit
 ) {
     val context = LocalContext.current
@@ -243,7 +279,9 @@ private fun GalleryImagePage(
         model = ImageRequest.Builder(context)
             .data(item.uri)
             .diskCacheKey(ImageCacheKeys.body(item.uri))
-            .crossfade(true)
+            // No crossfade when the viewer opens: the bitmap either comes straight from the
+            // preloaded disk cache or shows the progress indicator on black, never a white frame.
+            .crossfade(false)
             .build(),
         contentScale = ContentScale.Fit
     )
@@ -267,8 +305,10 @@ private fun GalleryImagePage(
                 scope = scope,
                 doubleTapSpec = doubleTapSpec,
                 onTap = onTap,
-                onScaleChanged = onScaleChanged
+                onScaleChanged = onScaleChanged,
+                onLongPress = onLongPress
             )
+            .transformable(state = transformState, canPan = { zoom.scale > 1.01f })
     ) {
         when (painterState) {
             is AsyncImagePainter.State.Success -> {
@@ -290,8 +330,6 @@ private fun GalleryImagePage(
                             translationX = zoom.offset.x
                             translationY = zoom.offset.y
                         }
-                        // canPan: at 1x a one-finger drag belongs to the pager (page turn).
-                        .transformable(state = transformState, canPan = { zoom.scale > 1.01f })
                         .background(
                             if (imageNeedsWhiteBackground(item.uri, background)) Color.White
                             else Color.Transparent

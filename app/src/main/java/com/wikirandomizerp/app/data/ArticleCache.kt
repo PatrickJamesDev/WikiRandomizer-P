@@ -176,7 +176,7 @@ class ArticleCache(context: Context) {
      * Keeps the cache bounded: oldest non-offline files go first.
      *
      * Writing every article used to list and stat the whole cache directory. With a large
-     * 400 MB budget that becomes visible while prefetching a batch, so a write only triggers a
+     * 600 MB budget that becomes visible while prefetching a batch, so a write only triggers a
      * scan every few entries (or after ten seconds); the small overshoot is bounded by those
      * few files.
      */

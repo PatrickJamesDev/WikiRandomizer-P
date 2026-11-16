@@ -102,6 +102,7 @@ internal class ImageZoomState {
  * Tap, double tap and "double tap, then drag" on a full-screen picture.
  *
  *  - one tap: [onTap] (show/hide the bars);
+ *  - hold without moving: [onLongPress] (save the picture);
  *  - two quick taps: zoom in/out around the second tap;
  *  - tap once, then touch down again and move the finger without lifting it: the picture zooms
  *    continuously around that point (drag down = zoom in, drag up = zoom out), like the map and
@@ -116,10 +117,12 @@ internal fun Modifier.imageZoomGestures(
     scope: CoroutineScope,
     doubleTapSpec: AnimationSpec<Float>,
     onTap: () -> Unit,
-    onScaleChanged: (Float) -> Unit
-): Modifier = pointerInput(zoom) {
+    onScaleChanged: (Float) -> Unit,
+    onLongPress: () -> Unit = {},
+): Modifier = pointerInput(zoom, onLongPress) {
     detectTapAndDragZoom(
         onTap = onTap,
+        onLongPress = onLongPress,
         onDoubleTap = { anchor -> zoom.toggleZoom(anchor, scope, doubleTapSpec, onScaleChanged) },
         onDragZoomStart = { zoom.animation?.cancel() },
         onDragZoom = { anchor, factor ->
@@ -131,18 +134,55 @@ internal fun Modifier.imageZoomGestures(
 
 private suspend fun PointerInputScope.detectTapAndDragZoom(
     onTap: () -> Unit,
+    onLongPress: () -> Unit,
     onDoubleTap: (Offset) -> Unit,
     onDragZoomStart: () -> Unit,
     onDragZoom: (anchor: Offset, factor: Float) -> Unit
 ) {
     val slop = viewConfiguration.touchSlop
     val doubleTapTimeout = viewConfiguration.doubleTapTimeoutMillis
+    val longPressTimeout = viewConfiguration.longPressTimeoutMillis
 
     awaitEachGesture {
-        awaitFirstDown(requireUnconsumed = false)
-        // null: the finger moved (pan), a second finger arrived (pinch) or the touch was
-        // cancelled. Those belong to the transformable modifier, not to this detector.
-        waitForUpOrCancellation() ?: return@awaitEachGesture
+        val down = awaitFirstDown(requireUnconsumed = false)
+        // Watch the first press up to the long-press timeout. Releasing earlier is a normal tap;
+        // holding still saves the picture; moving, adding a finger or cancellation belongs to the
+        // transformable/pager gestures instead.
+        var cancelled = false
+        val upBeforeLongPress = withTimeoutOrNull(longPressTimeout) {
+            var change = down
+            while (change.pressed) {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                if (event.changes.count { it.pressed } > 1) {
+                    cancelled = true
+                    return@withTimeoutOrNull null
+                }
+                val current = event.changes.firstOrNull { it.id == down.id }
+                if (current == null) {
+                    cancelled = true
+                    return@withTimeoutOrNull null
+                }
+                if ((current.position - down.position).getDistance() > slop) {
+                    cancelled = true
+                    return@withTimeoutOrNull null
+                }
+                change = current
+            }
+            change
+        }
+        if (upBeforeLongPress == null) {
+            if (!cancelled) {
+                onLongPress()
+                // Swallow the rest of this press so it does not also count as a tap.
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    val current = event.changes.firstOrNull { it.id == down.id } ?: break
+                    current.consume()
+                    if (!current.pressed) break
+                }
+            }
+            return@awaitEachGesture
+        }
 
         val second = withTimeoutOrNull(doubleTapTimeout) {
             awaitFirstDown(requireUnconsumed = false)

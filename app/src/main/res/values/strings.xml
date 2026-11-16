@@ -186,8 +186,11 @@
     <string name="popularityPreferPopular">Prefer widely-read articles</string>
     <string name="popularityPopularOnly">Only popular articles (most read 25%)</string>
     <string name="downloadImage">Download image</string>
+    <string name="saveImageToGallery">Save to gallery</string>
     <string name="imageDownloading">Downloading…</string>
     <string name="imageSavedTo">Saved to %1$s</string>
+    <string name="imageSavedToGallery">Saved to your gallery</string>
+    <string name="imageSaveToGalleryFailed">Could not save the image to your gallery</string>
     <string name="imageDownloadFailed">Download failed: %1$s</string>
     <string name="indexServiceChannel">Library download</string>
     <string name="indexServiceTitle">Building your article library</string>
@@ -304,6 +307,10 @@
     <string name="resetSettingsIconDesc">Reset settings to default</string>
     <string name="saved">Saved</string>
     <string name="savedArticles">Saved articles</string>
+    <string name="savedImages">Saved images</string>
+    <string name="savedImagesEmpty">No saved images yet</string>
+    <string name="savedImagesEmptyDesc">Long-press a picture, or use Save to gallery in the full-screen view, to keep it here.</string>
+    <string name="savedImageNoArticle">This image is not linked to an article.</string>
     <string name="scrollLeft">Scroll left</string>
     <string name="scrollRight">Scroll right</string>
     <string name="scroll_to_top">Scroll to top</string>
@@ -328,7 +335,7 @@
     <string name="settingFeed">Feed</string>
     <string name="settingFeedDesc">Show a feed of trending articles, news and more on app startup</string>
     <string name="verticalFeed">Vertical feed</string>
-    <string name="verticalFeedEmpty">No feed cards are available yet. Load the home feed first.</string>
+    <string name="verticalFeedEmpty">Could not load articles. Check your connection and your chosen topics, then try again.</string>
     <string name="verticalFeedTapToRead">Tap to read</string>
     <string name="settingSync">Automatic sync</string>
     <string name="settingSyncDesc">Merge reading progress and history across your devices without overwriting either side.</string>
@@ -584,6 +591,29 @@
     <string name="statsMinutes">%1$d min</string>
     <string name="backup">Back up data</string>
     <string name="backupDesc">Export or restore your saved articles, highlights, history, statistics and settings</string>
+    <string name="settingDriveSync">Google Drive sync</string>
+    <string name="settingDriveSyncDesc">Sync settings, history, reading progress, highlights and vocabulary through your Google account.</string>
+    <string name="settingDriveConnected">Connected. Data syncs through your Google Drive app folder.</string>
+    <string name="settingDriveNotConnected">Connect your Google account to sync across devices.</string>
+    <string name="settingDriveNotConfigured">Google Drive sync is not configured in this build. Set GOOGLE_DRIVE_CLIENT_ID when building. Local backups still work.</string>
+    <string name="settingDriveConnect">Connect Google Drive</string>
+    <string name="settingDriveDisconnect">Disconnect</string>
+    <string name="settingDriveAutoSync">Automatic sync</string>
+    <string name="settingDriveSyncNow">Sync now</string>
+    <string name="settingDriveDelete">Delete Drive copy</string>
+    <string name="settingDriveDeleteDesc">The synced settings, history, progress, highlights and vocabulary stored in your Google Drive app folder will be deleted. Data on this device stays.</string>
+    <string name="settingDriveDeleteConfirm">Delete Drive copy</string>
+    <string name="settingDriveDeleted">The Google Drive copy was deleted.</string>
+    <string name="settingDriveLastSync">Last synced %1$s</string>
+    <string name="settingDriveNeverSynced">Not synced yet</string>
+    <string name="settingDriveSyncComplete">Synced %1$d history records</string>
+    <string name="settingDriveSyncCompleteRestart">Synced %1$d history records. Restart the app to apply synced settings.</string>
+    <string name="settingDriveFailed">Google Drive sync failed: %1$s</string>
+    <string name="settingDriveAuthCancelled">Google authorization was cancelled.</string>
+    <string name="settingDriveReconnect">Reconnect Google Drive</string>
+    <string name="settingDriveReconnectRequired">Google Drive access expired. Reconnect your Google account, then sync again.</string>
+    <string name="settingDriveNeedsActivity">Google authorization needs an active screen.</string>
+    <string name="settingDriveAuthOpenFailed">Could not open Google authorization: %1$s</string>
     <string name="backupCreated">Backup created</string>
     <string name="backupFailed">Could not create the backup</string>
     <string name="backupShare">Share backup</string>
@@ -664,6 +694,8 @@
     <!-- Debug menu -->
     <string name="developerOptions">Developer options</string>
     <string name="developerOptionsDesc">Supporter tools, donation tests and diagnostics</string>
+    <string name="sharedReaderPreview">Shared Compose reader</string>
+    <string name="sharedReaderPreviewDesc">Preview the Kotlin Multiplatform UI used by iOS</string>
     <string name="debugModeEnabled">Developer mode activated!</string>
     <string name="debugModeDisabled">Developer options disabled</string>
     <string name="debugMenuTitle">Developer options</string>
@@ -697,4 +729,90 @@
     <string name="debugOpenLogDesc">Inspect network calls, timings and errors</string>
     <string name="debugDisable">Disable developer options</string>
     <string name="debugDisableDesc">The About screen tap shortcut keeps working</string>
+    <!-- iNaturalist: where to open, and the species photo gallery -->
+    <string name="inat_open_title">Open in</string>
+    <string name="inat_open_app">iNaturalist app</string>
+    <string name="inat_open_app_missing">iNaturalist app (not installed)</string>
+    <string name="inat_open_browser">Web browser</string>
+    <string name="inat_open_remember">Always use this choice</string>
+    <string name="inat_open_prefs_title">Open iNaturalist links in</string>
+    <string name="inat_open_ask">Ask every time</string>
+    <string name="inat_close">Close</string>
+    <string name="inat_app_fallback_toast">The iNaturalist app could not open this link, so it was opened in the browser.</string>
+    <string name="inat_gallery_title">iNaturalist observations</string>
+    <string name="inat_gallery_subtitle">Community photos of this species (research grade, openly licensed)</string>
+    <string name="inat_gallery_view_all">View all on iNaturalist</string>
+    <string name="inat_gallery_where">Where do links open?</string>
+    <string name="inat_open_observation">Open this observation in iNaturalist</string>
+    <string name="inat_observed_by">Observed by %1$s</string>
+    <string name="settingINaturalistGallery">Show iNaturalist gallery</string>
+    <string name="settingINaturalistGalleryDesc">Show a row of community photos from iNaturalist below the Wikimedia Commons gallery on species articles. Each photo can be opened in iNaturalist, in its app or in the browser.</string>
+    <!-- Developer preview: reading customisation -->
+    <string name="settingLineSpacing">Line spacing</string>
+    <string name="settingLineSpacingDesc">Space between lines while reading</string>
+    <string name="settingLineSpacingValue">%1$d%%</string>
+    <string name="settingReadingMargin">Side margins</string>
+    <string name="settingReadingMarginDesc">Horizontal padding around article text</string>
+    <string name="settingReadingMarginValue">%1$d dp</string>
+    <string name="settingJustifyText">Justify text</string>
+    <string name="settingJustifyTextDesc">Align paragraphs to both edges</string>
+    <string name="settingSepiaTheme">Sepia reading theme</string>
+    <string name="settingSepiaThemeDesc">Warm paper background with softer ink for long reads</string>
+    <!-- Developer preview: link previews -->
+    <string name="settingLinkPreviews">Link previews</string>
+    <string name="settingLinkPreviewsDesc">Long-press a link to peek at the page before opening it</string>
+    <string name="linkPreviewLoading">Loading preview…</string>
+    <string name="linkPreviewFailed">No preview available</string>
+    <string name="linkPreviewRead">Read article</string>
+    <string name="linkPreviewOpenTab">Open in new tab</string>
+    <!-- Related articles strip -->
+    <string name="relatedArticlesTitle">Related articles</string>
+    <string name="relatedArticlesDesc">More from this article\'s topic libraries</string>
+    <!-- Developer preview: talk pages and history -->
+    <string name="settingTalkPages">Talk pages and history</string>
+    <string name="settingTalkPagesDesc">Show talk page and revision history shortcuts on articles</string>
+    <string name="articleTalkPage">Talk page</string>
+    <string name="articleRevisionHistory">Revision history</string>
+    <string name="articleInfoTitle">Article info</string>
+    <string name="articleInfoTabTalk">Talk</string>
+    <string name="articleInfoTabHistory">History</string>
+    <string name="articleInfoTalkEmpty">No talk page content found for this article.</string>
+    <string name="articleInfoHistoryEmpty">No revisions returned.</string>
+    <string name="articleInfoRevisionBy">%1$s · %2$s</string>
+    <string name="articleInfoRevisionSize">%1$d bytes</string>
+    <!-- Developer preview: daily notification and widget -->
+    <string name="settingDailyNotification">Daily article notification</string>
+    <string name="settingDailyNotificationDesc">One quiet notification a day with an article from your topics</string>
+    <string name="settingHomeWidget">Home-screen widget</string>
+    <string name="settingHomeWidgetDesc">Shows a widget that opens a random article from your topics</string>
+    <string name="notificationChannelName">Daily article</string>
+    <string name="notificationChannelDesc">A daily article picked from your topic libraries</string>
+    <string name="dailyArticleNotificationTitle">Today\'s article</string>
+    <string name="widget_name">WikiRandomizer</string>
+    <string name="widget_subtitle">A random article from your topics</string>
+    <string name="widget_button">Surprise me</string>
+    <string name="widget_dev_only">Add it from Settings once developer mode is on</string>
+    <string name="widget_disabled">Enable the widget in Settings to use it</string>
+    <string name="widget_description">Open a random article from your topic libraries</string>
+
+    <!-- Short help dialogs for ambiguous settings -->
+    <string name="settingDataSaverHelp">Turns off article images and the home feed to reduce data use. Article text and search still work.</string>
+    <string name="settingSaveOfflineHelp">When on, the full article text is stored on this device. When off, saving only bookmarks the article and it still needs a connection to open.</string>
+    <string name="settingExpandSectionsHelp">Opens every collapsible section as soon as an article loads, so you do not have to tap each heading.</string>
+    <string name="settingSearchHistoryHelp">Stores the terms you search for so you can reuse them. You can clear them from the search screen or Data settings.</string>
+    <string name="settingPullForRandomHelp">Pull down on an article to load a new random article instead of refreshing the current page.</string>
+    <string name="settingPreloadArticlesHelp">Prepares the next random articles in the background so Shuffle feels instant. This uses a little extra data and storage.</string>
+    <string name="settingPersonalizationHelp">Uses reading time, scroll depth and likes to favor topics you actually read. All learning stays on this device, and turning it off forgets what was learned.</string>
+    <string name="settingINaturalistGalleryHelp">Adds community photos from iNaturalist below the Commons gallery on species articles. Each photo can open in iNaturalist.</string>
+    <string name="settingSwipeGesturesHelp">Swipe right inside an article to go back and left to go forward. Edge swipes remain reserved for the menu and tabs.</string>
+    <string name="settingWikivoyageHelp">Switches search, topics and random articles to Wikivoyage travel guides. Restart the app after changing this.</string>
+
+    <!-- Quick Settings tile and launcher shortcut -->
+    <string name="quickTileLabel">Random article</string>
+    <string name="shortcutRandomFromTopicsShort">Random</string>
+    <string name="shortcutRandomFromTopicsLong">Random from my topics</string>
+
+    <!-- Simple English shortcut -->
+    <string name="explainSimply">Explain it simply</string>
+    <string name="simpleEnglishUnavailable">No Simple English version was found for this article.</string>
 </resources>

@@ -1,0 +1,34 @@
+package org.nsh07.wikireader.shared.settings
+
+/**
+ * Small key/value boundary for reader preferences.
+ *
+ * iOS uses NSUserDefaults; Android will wrap the existing preference repository. Keeping the
+ * contract this narrow lets the shared UI persist choices without depending on a platform API.
+ */
+interface SettingsStore {
+    fun getString(key: String, defaultValue: String): String
+    fun putString(key: String, value: String)
+}
+
+object SettingsKeys {
+    const val LANGUAGE = "wikiLanguage"
+    const val THEME = "wikiTheme"
+    const val TOPIC = "wikiSelectedTopic"
+    const val SAVED_ARTICLES = "wikiSavedArticles"
+    const val ARTICLE_HISTORY = "wikiArticleHistory"
+    const val SEARCH_HISTORY = "wikiSearchHistory"
+    const val SEEN_ARTICLES = "wikiSeenArticles"
+    const val BROWSING_HISTORY = "wikiBrowsingHistory"
+    const val FOLLOWED_CURATORS = "wikiFollowedCurators"
+    const val ARTICLE_FONT_SCALE = "wikiArticleFontScale"
+    const val SAVED_IMAGES = "wikiSavedImages"
+    const val SAVED_HIGHLIGHTS = "wikiSavedHighlights"
+    const val VOCABULARY = "wikiVocabulary"
+    const val ARTICLE_LINE_SPACING = "wikiArticleLineSpacing"
+    const val ARTICLE_MARGIN = "wikiArticleMargin"
+    const val ARTICLE_JUSTIFY = "wikiArticleJustify"
+    const val ARTICLE_SEPIA = "wikiArticleSepia"
+    const val ARTICLE_FONT_FAMILY = "wikiArticleFontFamily"
+    const val SEEN_TUTORIAL = "wikiSeenTutorial"
+}

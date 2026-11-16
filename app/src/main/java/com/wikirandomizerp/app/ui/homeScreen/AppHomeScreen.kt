@@ -67,6 +67,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -144,7 +145,11 @@ fun AppHomeScreen(
     onNavigateToRandomTopics: () -> Unit = {},
     insets: PaddingValues,
     windowSizeClass: WindowSizeClass,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    relatedLoader: suspend (String, String) -> List<com.wikirandomizerp.app.data.ArticleRow> =
+        { _, _ -> emptyList() },
+    previewLoader: suspend (String, String) -> com.wikirandomizerp.app.data.LinkPreview? =
+        { _, _ -> null }
 ) {
     val clipboard = LocalClipboard.current
     val density = LocalDensity.current
@@ -411,32 +416,56 @@ fun AppHomeScreen(
                     // The uid is assigned once per load and never changes, so the scene and the
                     // SaveableStateProvider stay stable while the article content updates in place.
                     entry<HomeSubscreen.Article>(clazzContentKey = { "article-${it.uid}" }) { entry ->
-                        PageContent(
-                            content = entry,
-                            sharedScope = this@SharedTransitionLayout,
-                            preferencesState = preferencesState,
-                            insets = insets,
-                            showLanguageSheet = showLanguageSheet,
-                            recentLangs = recentLangs,
-                            languageSearchStr = languageSearchStr,
-                            languageSearchQuery = languageSearchQuery,
-                            setShowArticleLanguageSheet = setShowArticleLanguageSheet,
-                            onImageClick = {
+                        // These callbacks used to be new lambdas on every AppHomeScreen
+                        // recomposition. A scroll-position save or any home-state update then made
+                        // PageContent recompose even though the article itself had not changed.
+                        // Keep their identity tied to the article id, and read the latest article /
+                        // background through RememberUpdatedState while progressive parsing adds
+                        // sections.
+                        val latestArticle by rememberUpdatedState(entry)
+                        val latestImageBackground by rememberUpdatedState(preferencesState.imageBackground)
+                        val latestLang by rememberUpdatedState(preferencesState.lang)
+                        val onImageClick: () -> Unit = remember(entry.uid) {
+                            {
+                                val article = latestArticle
                                 pushImage(
                                     HomeSubscreen.Image.FullScreenImage(
-                                        photo = entry.photo,
-                                        photoDesc = entry.photoDesc,
-                                        title = entry.title,
-                                        background = preferencesState.imageBackground,
-                                        link = entry.photo?.source,
+                                        photo = article.photo,
+                                        photoDesc = article.photoDesc,
+                                        title = article.title,
+                                        background = latestImageBackground,
+                                        link = article.photo?.source,
+                                        articleTitle = article.title,
+                                        articleLang = article.currentLang ?: latestLang,
                                         onBack = popImage
                                     )
                                 )
-                            },
-                            onReadingProgress = { onAction(HomeAction.ReadingProgress(it)) },
-                            onSaveHighlight = { onAction(HomeAction.SaveHighlight(it)) },
-                            highlights = entry.highlights,
-                            onSearchInBrowser = { text ->
+                            }
+                        }
+                        val onOpenGallery: (List<com.wikirandomizerp.app.ui.image.ArticleGalleryItem>, Int) -> Unit =
+                            remember(entry.uid) {
+                                { items, startIndex ->
+                                    pushImage(
+                                        HomeSubscreen.Image.FullScreenGallery(
+                                            items = items,
+                                            startIndex = startIndex,
+                                            background = latestImageBackground,
+                                            onBack = popImage
+                                        )
+                                    )
+                                }
+                            }
+                        val onReadingProgress: (Float) -> Unit = remember(onAction) {
+                            { onAction(HomeAction.ReadingProgress(it)) }
+                        }
+                        val onSaveHighlight: (String) -> Unit = remember(onAction) {
+                            { onAction(HomeAction.SaveHighlight(it)) }
+                        }
+                        val setSearchStr: (String) -> Unit = remember(onAction) {
+                            { onAction(HomeAction.UpdateLanguageSearchStr(it)) }
+                        }
+                        val onSearchInBrowser: (String) -> Unit = remember(context) {
+                            { text ->
                                 runCatching {
                                     context.startActivity(
                                         Intent(
@@ -447,19 +476,28 @@ fun AppHomeScreen(
                                         )
                                     )
                                 }
-                            },
-                            onOpenGallery = { items, startIndex ->
-                                pushImage(
-                                    HomeSubscreen.Image.FullScreenGallery(
-                                        items = items,
-                                        startIndex = startIndex,
-                                        background = preferencesState.imageBackground,
-                                        onBack = popImage
-                                    )
-                                )
-                            },
-                            setSearchStr = { onAction(HomeAction.UpdateLanguageSearchStr(it)) },
+                            }
+                        }
+                        PageContent(
+                            content = entry,
+                            sharedScope = this@SharedTransitionLayout,
+                            preferencesState = preferencesState,
+                            insets = insets,
+                            showLanguageSheet = showLanguageSheet,
+                            recentLangs = recentLangs,
+                            languageSearchStr = languageSearchStr,
+                            languageSearchQuery = languageSearchQuery,
+                            setShowArticleLanguageSheet = setShowArticleLanguageSheet,
+                            onImageClick = onImageClick,
+                            onReadingProgress = onReadingProgress,
+                            onSaveHighlight = onSaveHighlight,
+                            highlights = entry.highlights,
+                            onSearchInBrowser = onSearchInBrowser,
+                            onOpenGallery = onOpenGallery,
+                            setSearchStr = setSearchStr,
                             onAction = onAction,
+                            relatedLoader = relatedLoader,
+                            previewLoader = previewLoader,
                             modifier = Modifier.background(colorScheme.surface)
                         )
                     }
@@ -472,6 +510,8 @@ fun AppHomeScreen(
                             title = it.title,
                             background = it.background,
                             link = it.link,
+                            articleTitle = it.articleTitle,
+                            articleLang = it.articleLang,
                             onBack = it.onBack
                         )
                     }
@@ -494,6 +534,8 @@ fun AppHomeScreen(
                             sharedScope = this@SharedTransitionLayout,
                             background = it.background,
                             link = it.link,
+                            articleTitle = it.articleTitle,
+                            articleLang = it.articleLang,
                             onBack = it.onBack
                         )
                     }

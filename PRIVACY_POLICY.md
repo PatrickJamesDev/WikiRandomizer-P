@@ -10,7 +10,9 @@ tracking. An account exists only if you choose to turn on optional cloud sync.
 ## What the app stores on your device
 
 Everything the app remembers stays in its private storage on your phone or tablet. If you turn on
-optional cloud sync, a copy of your reading history is also stored in your Firebase account.
+optional cloud sync, a copy of your reading history is stored in your Firebase account, or a compact
+copy of your settings, history, reading progress, highlights and vocabulary is stored in the hidden
+app-data folder of your own Google Drive.
 
 - articles you open, your reading history, saved articles and highlights;
 - your settings (language, theme, fonts, topics, reading options);
@@ -33,9 +35,11 @@ The app only contacts the network to fetch content you asked for:
   updates and to load the optional curator list.
 - **Google Play Billing** when you choose to open the donation screen. Google processes the
   payment; the app never sees or stores your card details.
-- **Google Firebase (Authentication and Firestore)** only if you turn on optional cloud sync and
+- **Google Firebase (Authentication and Firestore)** only if you turn on Firebase cloud sync and
   sign in. Firebase processes your email address and stores the reading-history records described
   below under your account.
+- **Google Drive API** only if you turn on Google Drive sync. The app reads and writes one
+  compressed file in its own hidden `drive.appdata` folder; it cannot see any other Drive file.
 
 Like any web request, these services receive standard technical information such as your IP
 address, the requested URL and a user-agent string. The app does not add advertising IDs,
@@ -46,17 +50,27 @@ If you use Kiwix/ZIM files, those are read locally and need no network access.
 
 ## Optional cloud sync
 
-Cloud sync is off by default. If you enable it, you create or sign in to a Firebase account with an
-email address and password. The app uploads a gzip-compressed snapshot of your reading history:
-article title, language, timestamp, short description, thumbnail URL and topic. It does not upload
-the article text, your saved notes, highlights, vocabulary or settings.
+Cloud sync is off by default. Both options are opt-in and the app works fully without either.
 
-Firestore security rules allow only the signed-in owner to read or write their own snapshot. The
-data is used only to merge history between your devices. You can sign out at any time, or choose
-**Delete cloud copy** in **Settings → Sync account** to remove the Firebase copy while keeping the
-history on this device. Signing out does not delete the cloud copy by itself. If another device is
-still signed in with sync enabled, it can upload its local history again; turn sync off there too.
-To remove the Firebase account and its email address, use the contact link below.
+**Firebase sync.** If you enable it, you create or sign in to a Firebase account with an email
+address and password. The app uploads a gzip-compressed snapshot of your reading history: article
+title, language, timestamp, short description, thumbnail URL and topic. It does not upload the
+article text, your saved notes, highlights, vocabulary or settings. Firestore security rules allow
+only the signed-in owner to read or write their own snapshot.
+
+**Google Drive sync.** If you enable it and authorize the app, it stores a compact gzip-compressed
+JSON file in its hidden `drive.appdata` folder in your own Google Drive. That file contains your
+synced settings, reading history, reading progress, highlights and vocabulary. It does not contain
+article bodies, offline copies, images or caches. The app requests only the `drive.appdata` scope,
+cannot list or open your other Drive files, and sends this data only to Google Drive. The developer
+does not receive a copy. You can choose **Delete Drive copy** in Settings to remove the file while
+keeping data on this device; disconnecting removes the cached access token from this device.
+
+The data is used only to merge state between your devices. For Firebase, sign out at any time, or
+choose **Delete cloud copy** in **Settings → Sync account** to remove the Firebase copy while
+keeping the history on this device. Signing out does not delete the cloud copy by itself. If another
+device is still signed in with sync enabled, it can upload its local history again; turn sync off
+there too. To remove the Firebase account and its email address, use the contact link below.
 
 ## Donations and subscriptions
 
@@ -69,12 +83,12 @@ address or payment details. Manage or cancel a subscription in Google Play.
 ## Children
 
 The app does not knowingly collect personal information from anyone, including children. Cloud
-sync is optional and requires an email address; the app contains no ads and no social features.
+sync is optional and requires a Google sign-in; the app contains no ads and no social features.
 
 ## Permissions
 
 - **Internet / network state:** to download articles and images, check for updates, and (only if
-  you enable cloud sync) contact Firebase.
+  you enable cloud sync) contact Firebase or Google Drive.
 - **Foreground service (data sync):** to keep a large download or article prefetch running
   while you use the app.
 - **Notifications:** to show progress for long downloads, only if you allow notifications.
@@ -86,7 +100,7 @@ sync is optional and requires an email address; the app contains no ads and no s
 
 - Wikipedia and Wikimedia projects, governed by the Wikimedia Foundation's policies.
 - GitHub, governed by GitHub's privacy statement.
-- Google Play Billing and Google Firebase, governed by Google's privacy policy.
+- Google Play Billing, Google Firebase and Google Drive, governed by Google's privacy policy.
 
 The app is not affiliated with or endorsed by the Wikimedia Foundation.
 

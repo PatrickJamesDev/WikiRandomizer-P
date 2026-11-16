@@ -1,5 +1,6 @@
 package com.wikirandomizerp.app
 
+import android.app.ActivityManager
 import android.app.Application
 import android.content.ComponentCallbacks2
 import android.content.Context
@@ -65,6 +66,7 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         com.wikirandomizerp.app.data.PerfMonitor.init(this)
         DebugLog.init(this)
+        com.wikirandomizerp.app.data.notifications.DailyArticleNotifier.ensureChannel(this)
         enableStrictModeIfDebuggable()
         // After an install/update, keep a copy of the previous data before anything opens the database.
         com.wikirandomizerp.app.data.BackupManager.backupIfAppWasUpdated(this)
@@ -98,8 +100,17 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
         registerComponentCallbacks(object : ComponentCallbacks2 {
             override fun onTrimMemory(level: Int) {
                 DebugLog.crumb("onTrimMemory level=$level ${DebugLog.memory()}")
-                if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
-                    runCatching { SingletonImageLoader.get(this@WikiRandomizerPApplication).memoryCache?.clear() }
+                // Do not throw the whole image cache away at RUNNING_LOW: the visible article then
+                // re-decodes every picture, which caused a wave of jank right after the trim.
+                // Trimming to half keeps the pictures on screen while still releasing memory;
+                // only a complete background trim clears everything.
+                runCatching {
+                    val cache = SingletonImageLoader.get(this@WikiRandomizerPApplication).memoryCache
+                        ?: return@runCatching
+                    if (level >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE) cache.clear()
+                    else if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+                        cache.trimToSize(cache.maxSize / 2)
+                    }
                 }
             }
 
@@ -111,13 +122,16 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
         })
     }
 
+    private fun isLowRamDevice(): Boolean =
+        (getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)?.isLowRamDevice == true
+
     override fun newImageLoader(context: Context): ImageLoader {
         return ImageLoader.Builder(context)
             // A dedicated, persistent image cache in filesDir (the default lives in cacheDir and
             // can be cleared by the system at any time). Article pictures therefore survive app
             // restarts and reopen instantly; the retention policy removes old body images
             // explicitly, and pinned History/Saved thumbnails are never touched.
-            // Both on-device caches share the same 400 MB budget by default.
+            // Each on-device cache gets the same 600 MB budget by default.
             .diskCache(
                 coil3.disk.DiskCache.Builder()
                     .directory(java.io.File(filesDir, "image_cache").toOkioPath())
@@ -126,7 +140,10 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
             )
             .memoryCache(
                 coil3.memory.MemoryCache.Builder()
-                    .maxSizePercent(this, 0.25)
+                    // Cap image memory adaptively: 25% of a 512 MB heap is 128 MB, which the app
+                    // reaches quickly on article-heavy pages and then fights with GC. 20% keeps
+                    // enough decoded pictures for smooth scrolling without that pressure.
+                    .maxSizePercent(this, if (isLowRamDevice()) 0.12 else 0.20)
                     .build()
             )
             .components {
@@ -142,15 +159,33 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
                             .readTimeout(30, TimeUnit.SECONDS)
                             .callTimeout(60, TimeUnit.SECONDS)
                             .addNetworkInterceptor { chain ->
-                                chain.proceed(
-                                    chain.request()
-                                        .newBuilder()
-                                        .header(
-                                            "User-Agent",
-                                            container.userAgentString
-                                        )
+                                val t0 = System.nanoTime()
+                                val request = chain.request()
+                                var response = chain.proceed(
+                                    request.newBuilder()
+                                        .header("User-Agent", container.userAgentString)
                                         .build()
                                 )
+                                val host = response.request.url.host
+                                // A thumbnail URL on upload.wikimedia.org never changes its content.
+                                // Coil honours Cache-Control for its disk cache, so a short or missing
+                                // max-age made every picture that was prefetched a few minutes ago
+                                // re-contact the server before it could be shown.
+                                if (response.isSuccessful && host == "upload.wikimedia.org") {
+                                    response = response.newBuilder()
+                                        .removeHeader("Pragma")
+                                        .removeHeader("Expires")
+                                        .header("Cache-Control", "public, max-age=31536000, immutable")
+                                        .build()
+                                }
+                                if (DebugLog.enabled) {
+                                    val ms = (System.nanoTime() - t0) / 1_000_000
+                                    val line = "IMG ${response.code} ${response.protocol} ${ms}ms " +
+                                        "bytes=${response.header("Content-Length") ?: "?"} " +
+                                        "${request.url} -> ${response.request.url}"
+                                    if (ms >= 800) DebugLog.w("Image", "SLOW $line") else DebugLog.d("Image", line)
+                                }
+                                response
                             }
                             .build()
                     )
