@@ -284,16 +284,16 @@ class DriveSyncStore(
     }
 
     private suspend fun applySnapshot(
-        localHistory: List<ViewHistoryItem>,
+        localHistory: List<SyncRecord>,
         snapshot: DriveSnapshot
     ) {
-        val localById = localHistory.associateBy { "${it.lang}:${it.title}" }
+        val localById = localHistory.associateBy { it.id }
         snapshot.history.forEach { record ->
             if (record.deleted) {
                 databaseRepository.deleteViewHistoryByTitle(record.title, record.lang)
             } else {
                 val existing = localById[record.id]
-                if (existing == null || record.updatedAt > existing.time) {
+                if (existing == null || record.updatedAt > existing.updatedAt) {
                     databaseRepository.insertViewHistory(
                         ViewHistoryItem(
                             time = record.updatedAt,

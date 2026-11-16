@@ -52,7 +52,8 @@ class DriveApi {
             if (response.code == 404) return@withContext null
             checkAuthorized(response)
             if (!response.isSuccessful) throw SyncException(response.errorMessage())
-            val bytes = response.body.byteStream().use { it.readBytes() }
+            val bytes = (response.body ?: throw SyncException("Google Drive returned no data"))
+                .byteStream().use { it.readBytes() }
             if (bytes.isEmpty()) return@withContext null
             val text = runCatching {
                 GZIPInputStream(bytes.inputStream()).use { it.readBytes().decodeToString() }
@@ -108,7 +109,7 @@ class DriveApi {
         client.newCall(request).execute().use { response ->
             checkAuthorized(response)
             if (!response.isSuccessful) throw SyncException(response.errorMessage())
-            val body = response.body.string()
+            val body = response.body?.string().orEmpty()
             return runCatching { json.decodeFromString(DriveFileList.serializer(), body) }
                 .getOrElse { throw SyncException("Could not read the Google Drive file list") }
                 .files
@@ -125,7 +126,7 @@ class DriveApi {
         val id = client.newCall(create).execute().use { response ->
             checkAuthorized(response)
             if (!response.isSuccessful) throw SyncException(response.errorMessage())
-            val body = response.body.string()
+            val body = response.body?.string().orEmpty()
             runCatching { json.decodeFromString(DriveId.serializer(), body).id }
                 .getOrElse { throw SyncException("Google Drive did not return a file id") }
         }
@@ -149,11 +150,11 @@ class DriveApi {
     }
 
     private fun Response.errorMessage(): String {
-        val body = runCatching { body.string() }.getOrDefault("")
+        val text = runCatching { body?.string().orEmpty() }.getOrDefault("")
         return when {
             code == 403 -> "Google Drive refused the request (quota or permission denied)"
-            body.isBlank() -> "Google Drive request failed with HTTP $code"
-            else -> "Google Drive request failed with HTTP $code: ${body.take(300)}"
+            text.isBlank() -> "Google Drive request failed with HTTP $code"
+            else -> "Google Drive request failed with HTTP $code: ${text.take(300)}"
         }
     }
 
