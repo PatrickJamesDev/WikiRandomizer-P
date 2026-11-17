@@ -551,7 +551,15 @@ fun AppHomeScreen(
                                 items = it.items,
                                 startIndex = it.startIndex,
                                 background = it.background,
-                                onBack = it.onBack
+                                onBack = it.onBack,
+                                onOpenLink = { title ->
+                                    onAction(
+                                        HomeAction.LoadPage(
+                                            title,
+                                            lang = it.items.firstOrNull()?.articleLang
+                                        )
+                                    )
+                                }
                             )
                         }
                     }

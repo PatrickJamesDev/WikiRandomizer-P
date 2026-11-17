@@ -288,10 +288,31 @@ private fun htmlMediaLines(fragment: String, gallery: Boolean): List<String> {
         for (item in directElements(fragment, "li")) {
             val img = imgTagRegex.find(item.inner) ?: continue
             val name = htmlImageName(img.value) ?: continue
-            lines.add(pictureLine(name, htmlCaptions(item.inner).firstOrNull().orEmpty()))
+            lines.add(pictureLine(name, mediaCaption(item.inner)))
         }
         if (lines.isNotEmpty()) return lines.distinct()
     }
+
+    // REST HTML wraps every body picture in a <figure>. Read each figure as one unit so its
+    // own <figcaption> cannot be paired with the next picture.
+    for (figure in directElements(fragment, "figure")) {
+        val img = imgTagRegex.find(figure.inner) ?: continue
+        val name = htmlImageName(img.value) ?: continue
+        val caption = figcaptionRegex.find(figure.inner)
+            ?.groupValues?.get(1)?.let(::mediaCaption)
+            ?: mediaCaption(figure.inner)
+        lines.add(pictureLine(name, caption))
+    }
+    // {{Multiple image}} becomes a .tmulti wrapper with one .tsingle per picture. Each tsingle
+    // contains its own picture and caption, including infobox collages like Atlanta's skyline.
+    // Reading the whole tmulti as one unit used to give the first picture the flag caption.
+    for (single in elementsWithClass(fragment, "tsingle")) {
+        val img = imgTagRegex.find(single.inner) ?: continue
+        val name = htmlImageName(img.value) ?: continue
+        lines.add(pictureLine(name, mediaCaption(single.inner)))
+    }
+    if (lines.isNotEmpty()) return lines.distinct()
+
     val captions = htmlCaptions(fragment)
     var index = 0
     for (img in imgTagRegex.findAll(fragment)) {
@@ -302,6 +323,47 @@ private fun htmlMediaLines(fragment: String, gallery: Boolean): List<String> {
     }
     return lines.distinct()
 }
+
+/**
+ * Caption of one media container as wikitext-ish text. `<a>` links become `[[Target|label]]`
+ * so the caption renderer can keep them tappable, instead of flattening them to plain text.
+ */
+private fun mediaCaption(html: String): String {
+    val withLinks = htmlAnchorRegex.replace(html) { match ->
+        val label = plainText(match.groupValues[2])
+        val href = attributeValue(match.groupValues[1], hrefAttrRegex)
+        val target = wikiTargetFromHref(href)
+        when {
+            target == null || label.isBlank() -> label
+            label.equals(target, ignoreCase = true) -> "[[$target]]"
+            else -> "[[$target|$label]]"
+        }
+    }
+    return decodeEntities(tagRegex.replace(withLinks, " "))
+        .replace('\u00a0', ' ')
+        .replace(Regex("\\s+"), " ")
+        .trim()
+}
+
+private fun wikiTargetFromHref(href: String?): String? {
+    if (href.isNullOrBlank()) return null
+    val path = href.substringBefore('#').substringBefore('?')
+    val raw = when {
+        path.contains("/wiki/") -> path.substringAfter("/wiki/")
+        path.startsWith("./") -> path.removePrefix("./")
+        else -> return null
+    }
+    if (raw.isBlank()) return null
+    val decoded = runCatching { java.net.URLDecoder.decode(raw, "UTF-8") }
+        .getOrDefault(raw)
+    if (decoded.startsWith("File:", true) || decoded.startsWith("Image:", true) ||
+        decoded.startsWith("Category:", true) || decoded.startsWith("Template:", true) ||
+        decoded.startsWith("Help:", true) || decoded.startsWith("Special:", true)
+    ) return null
+    return decoded.replace('_', ' ')
+}
+
+private val htmlAnchorRegex = Regex("(?is)<a\\b([^>]*)>(.*?)</a\\s*>")
 
 /** File name from an `<img>` tag, preferring `resource` (a stable `File:` title). */
 private fun htmlImageName(token: String): String? {
@@ -369,13 +431,39 @@ private fun htmlCaptions(fragment: String): List<String> {
 }
 
 private fun pictureLine(name: String, caption: String): String {
-    val clean = caption
-        .replace("]]", "")
-        .replace('|', '/')
-        .replace('\n', ' ')
+    return "[[File:$name|${sanitisePictureCaption(caption)}]]"
+}
+
+/** Keeps balanced `[[wiki links]]`, but stops stray pipes/brackets from breaking the File line. */
+private fun sanitisePictureCaption(caption: String): String {
+    val sb = StringBuilder(caption.length)
+    var i = 0
+    var linkDepth = 0
+    while (i < caption.length) {
+        if (caption.startsWith("[[", i)) {
+            linkDepth++
+            sb.append("[[")
+            i += 2
+            continue
+        }
+        if (caption.startsWith("]]", i) && linkDepth > 0) {
+            linkDepth--
+            sb.append("]]")
+            i += 2
+            continue
+        }
+        val c = caption[i]
+        when {
+            c == '\n' -> sb.append(' ')
+            linkDepth == 0 && c == '|' -> sb.append('/')
+            linkDepth == 0 && c == ']' -> Unit
+            else -> sb.append(c)
+        }
+        i++
+    }
+    return sb.toString()
         .replace(Regex("\\s+([,.;:!?])"), "$1")
         .trim()
-    return "[[File:$name|$clean]]"
 }
 
 /** Inner range of the first real element carrying the `mw-parser-output` class. */
@@ -669,6 +757,38 @@ fun splitHtmlCladeBlocks(html: String): List<String> {
 }
 
 private data class HtmlElement(val attributes: String, val inner: String)
+
+/** Every element whose class list contains [className], including nested ones. */
+private fun elementsWithClass(html: String, className: String): List<HtmlElement> {
+    val out = ArrayList<HtmlElement>()
+    var i = 0
+    while (i < html.length) {
+        val start = html.indexOf('<', i)
+        if (start < 0) break
+        if (html.startsWith("<!--", start)) {
+            val commentEnd = html.indexOf("-->", start + 4)
+            i = if (commentEnd < 0) html.length else commentEnd + 3
+            continue
+        }
+        val end = findTagEnd(html, start)
+        if (end < 0) break
+        val tag = parseTag(html.substring(start, end + 1))
+        if (tag == null || tag.closing || tag.selfClosing || tag.name in voidTags) {
+            i = end + 1
+            continue
+        }
+        if (className in classTokens(tag.attributes)) {
+            val close = findMatchingClose(html, end + 1, tag.name)
+            if (close < 0) break
+            val closeTagStart = html.lastIndexOf('<', close)
+            out.add(HtmlElement(tag.attributes, html.substring(end + 1, closeTagStart)))
+            i = end + 1
+        } else {
+            i = end + 1
+        }
+    }
+    return out
+}
 
 /** First `<table class="clade">` at or after [from], or -1. */
 private fun findNextCladeTable(html: String, from: Int): Int {
@@ -1015,8 +1135,7 @@ internal fun scanHtmlInfobox(tableHtml: String): HtmlInfoboxScan {
                         r++ // the caption row belongs to the picture above it
                     }
                 }
-                if (captionText.isNotBlank()) {
-                    // A collage shares one caption: the first picture keeps it.
+                if (captionText.isNotBlank() && pictures.size == 1) {
                     val first = pictures[0]
                     if (!captions.containsKey(first)) captions[first] = captionText
                 }

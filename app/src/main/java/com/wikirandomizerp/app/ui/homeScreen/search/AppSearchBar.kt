@@ -344,7 +344,10 @@ fun AppSearchBar(
                 TopAppBarDefaults.windowInsets
                     .only(WindowInsetsSides.Bottom + WindowInsetsSides.End + WindowInsetsSides.Start),
         titleHorizontalAlignment = Alignment.CenterHorizontally,
-        colors = TopAppBarDefaults.topAppBarColors(scrolledContainerColor = colorScheme.surface),
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = colorScheme.surface.copy(alpha = 0.8f),
+            scrolledContainerColor = colorScheme.surface.copy(alpha = 0.8f)
+        ),
         modifier = modifier
     )
 

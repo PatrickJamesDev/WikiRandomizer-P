@@ -27,8 +27,8 @@ object CustomColors {
     val topBarColors: TopAppBarColors
         @Composable get() {
             return if (!black) TopAppBarDefaults.topAppBarColors(
-                containerColor = colorScheme.surfaceContainer,
-                scrolledContainerColor = colorScheme.surfaceContainer
+                containerColor = colorScheme.surfaceContainer.copy(alpha = 0.8f),
+                scrolledContainerColor = colorScheme.surfaceContainer.copy(alpha = 0.8f)
             ) else TopAppBarDefaults.topAppBarColors()
         }
 

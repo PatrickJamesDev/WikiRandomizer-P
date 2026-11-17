@@ -5,7 +5,7 @@ import android.content.Context
 /**
  * Local-only switch that unlocks the hidden developer menu.
  *
- * It is enabled by tapping the About screen header ten times within five seconds. The flag is a
+ * It is enabled by tapping the app logo in Settings > About twenty times within ten seconds. The flag is a
  * plain boolean in a private preferences file: no analytics, no remote flag and no extra data.
  */
 object DeveloperMode {

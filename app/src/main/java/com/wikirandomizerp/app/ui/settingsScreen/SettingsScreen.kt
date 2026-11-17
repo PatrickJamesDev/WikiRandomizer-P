@@ -25,6 +25,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -93,6 +95,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
@@ -280,6 +284,7 @@ fun SettingsScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val snackBarHostState = remember { SnackbarHostState() }
     var developerEnabled by remember { mutableStateOf(DeveloperMode.isEnabled(context)) }
+    val developerTapTimes = remember { mutableListOf<Long>() }
     val availableUpdate by UpdateState.available.collectAsState()
     val checkingUpdate by UpdateState.checking.collectAsState()
     var showUpdateDialog by remember { mutableStateOf(false) }
@@ -579,6 +584,20 @@ fun SettingsScreen(
                 SettingsAction::SaveINaturalistGallery,
                 help = R.string.settingINaturalistGalleryHelp
             ),
+            SettingsSwitchItem(
+                preferencesState.titleFirst,
+                R.drawable.view_list,
+                string.settingTitleFirst,
+                string.settingTitleFirstDesc,
+                SettingsAction::SaveTitleFirst
+            ),
+            SettingsSwitchItem(
+                preferencesState.anonymousStatistics,
+                R.drawable.check,
+                string.tutorialStatsSwitch,
+                string.tutorialStatsBody,
+                SettingsAction::SaveAnonymousStatistics
+            ),
         )
     }
 
@@ -604,7 +623,9 @@ fun SettingsScreen(
             SettingsCategory.READING, // 17 iNaturalist action
             SettingsCategory.BEHAVIOUR, // 18 swipe gestures
             SettingsCategory.BEHAVIOUR, // 19 Wikivoyage
-            SettingsCategory.READING // 20 iNaturalist gallery
+            SettingsCategory.READING, // 20 iNaturalist gallery
+            SettingsCategory.READING, // 21 title above image
+            SettingsCategory.BEHAVIOUR // 22 anonymous statistics
         )
     }
 
@@ -1949,6 +1970,45 @@ fun SettingsScreen(
             }
             item { Spacer(Modifier.height(12.dp)) }
             if (settingsCategory == SettingsCategory.ABOUT) {
+            item {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(96.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .pointerInput(Unit) {
+                                detectTapGestures {
+                                    if (developerEnabled) return@detectTapGestures
+                                    val now = System.currentTimeMillis()
+                                    developerTapTimes.add(now)
+                                    developerTapTimes.removeAll { now - it > 10_000L }
+                                    if (developerTapTimes.size >= 20) {
+                                        developerTapTimes.clear()
+                                        DeveloperMode.setEnabled(context, true)
+                                        developerEnabled = true
+                                        coroutineScope.launch {
+                                            snackBarHostState.showSnackbar(
+                                                context.getString(string.debugModeEnabled)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.splash_logo),
+                            contentDescription = stringResource(string.app_name),
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+            }
             item {
                 ClickableListItem(
                     headlineContent = { Text(stringResource(string.settingReplayTutorial)) },

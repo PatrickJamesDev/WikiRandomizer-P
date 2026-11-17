@@ -2,7 +2,6 @@ package com.wikirandomizerp.app.ui.aboutScreen
 
 import android.content.Intent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
@@ -85,7 +83,6 @@ fun AboutScreen(
     val checkingUpdate by UpdateState.checking.collectAsState()
     var showUpdateDialog by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val tapTimes = remember { mutableListOf<Long>() }
     var developerEnabled by remember { mutableStateOf(DeveloperMode.isEnabled(context)) }
     val versionLabel = remember {
         when {
@@ -125,23 +122,6 @@ fun AboutScreen(
                             modifier = Modifier
                                 .padding(end = 12.dp)
                                 .size(72.dp)
-                                .pointerInput(Unit) {
-                                    detectTapGestures {
-                                        val now = System.currentTimeMillis()
-                                        tapTimes.add(now)
-                                        tapTimes.removeAll { now - it > 10_000L }
-                                        if (tapTimes.size >= 20) {
-                                            tapTimes.clear()
-                                            DeveloperMode.setEnabled(context, true)
-                                            developerEnabled = true
-                                            scope.launch {
-                                                snackbarHostState.showSnackbar(
-                                                    context.getString(R.string.debugModeEnabled)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
                         ) {
                             Image(
                                 painter = painterResource(R.drawable.splash_logo),

@@ -37,7 +37,7 @@ import com.wikirandomizerp.app.ui.theme.CustomColors.listItemColors
 import com.wikirandomizerp.app.ui.theme.CustomColors.topBarColors
 
 /**
- * Hidden developer menu, reachable only after ten taps on the About header.
+ * Hidden developer menu, reachable only after twenty taps on the logo in Settings > About.
  *
  * It lets a maintainer preview the support prompt and the billing sheet, simulate a purchase and
  * read the on-device debug log without a debug build or a connected Play Console account.

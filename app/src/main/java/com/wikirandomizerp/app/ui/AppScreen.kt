@@ -278,6 +278,20 @@ fun AppScreen(
     )
 
     val searchBarState = rememberSearchBarState()
+    // Returning to an article from History/Saved must not leave the search bar expanded: its
+    // back handler would otherwise collapse the search field and look like the article was
+    // replaced by the Wikipedia search screen.
+    LaunchedEffect(
+        backStack.size,
+        backStack.lastOrNull(),
+        searchBarState.targetValue
+    ) {
+        if (backStack.lastOrNull() is HomeSubscreen.Article &&
+            searchBarState.targetValue == androidx.compose.material3.SearchBarValue.Expanded
+        ) {
+            searchBarState.animateToCollapsed()
+        }
+    }
     val railState = rememberWideNavigationRailState()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
@@ -842,6 +856,10 @@ fun AppScreen(
                             navController.navigate(SettingsScreen) {
                                 launchSingleTop = true
                             }
+                        },
+                        anonymousStatistics = preferencesState.anonymousStatistics,
+                        onAnonymousStatisticsChange = {
+                            settingsAction(SettingsAction.SaveAnonymousStatistics(it))
                         },
                         onFinish = viewModel::finishTutorial
                     )

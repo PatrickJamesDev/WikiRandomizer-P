@@ -19,6 +19,8 @@ sealed class SettingsAction {
     data class SaveHomeWidget(val value: Boolean) : SettingsAction()
     data class SaveOfflineTopUpTarget(val value: Int) : SettingsAction()
     data class SaveOfflineTopUpMobileData(val value: Boolean) : SettingsAction()
+    data class SaveTitleFirst(val value: Boolean) : SettingsAction()
+    data class SaveAnonymousStatistics(val value: Boolean) : SettingsAction()
     data class SaveShowSearchBar(val value: Boolean) : SettingsAction()
     data class SaveToolbarItems(val value: String) : SettingsAction()
     data class SaveToolbarAutoHide(val value: Boolean) : SettingsAction()

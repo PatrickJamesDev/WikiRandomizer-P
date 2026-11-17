@@ -368,6 +368,8 @@
     <string name="settingFontSizeDecrease">Decrease font size</string>
     <string name="settingFontSizeIncrease">Increase font size</string>
     <string name="settingFontStyle">Font style</string>
+    <string name="settingTitleFirst">Title above the lead image</string>
+    <string name="settingTitleFirstDesc">Show the article title and description before the lead image. Off by default, so the picture comes first.</string>
     <string name="settingImageBackground">Image background</string>
     <string name="settingImageBackgroundDesc">Add a white background to transparent images. The background can help increase readability in dark mode.</string>
     <string name="settingImmersiveMode">Immersive mode</string>
@@ -475,6 +477,9 @@
     <string name="tutorialSettingsTitle">Make it yours</string>
     <string name="tutorialSettingsBody">Everything lives in Settings: themes, colours, text size, language, reading history and the topic library. Open it now and take a look; the tour carries on when you come back.</string>
     <string name="tutorialOpenSettings">Open Settings</string>
+    <string name="tutorialStatsTitle">Help improve the app</string>
+    <string name="tutorialStatsBody">Send anonymous usage statistics (screens opened and crashes, never article titles, searches or topics). This is optional and off by default.</string>
+    <string name="tutorialStatsSwitch">Share anonymous statistics</string>
     <string name="tutorialDoneTitle">You are all set</string>
     <string name="tutorialDoneBody">Enjoy exploring! You can replay this tour from Settings at any time.</string>
 
@@ -636,6 +641,8 @@
     <string name="backupScreenTitle">Backup and restore</string>
     <string name="backupExport">Export backup to a file</string>
     <string name="backupExportDesc">Saved articles, highlights, history, vocabulary, statistics, open tabs, settings and offline articles</string>
+    <string name="backupDrive">Back up to Google Drive</string>
+    <string name="backupDriveDesc">Choose Google Drive in the system file picker. Free for everyone, no subscription needed.</string>
     <string name="backupRestoreFile">Restore from a file</string>
     <string name="backupRestoreFileDesc">Replaces the data on this device with a backup you exported earlier</string>
     <string name="backupAutomatic">Automatic backups</string>
@@ -670,7 +677,7 @@
     <string name="authorGithubDesc">github.com/PatrickJamesDev</string>
     <string name="authorSupport">Support the app</string>
     <string name="authorSupportDesc">Optional donations, no ads and no tracking</string>
-    <string name="aboutIndependence">WikiRandomizer-P is an independent app made by Patrick James. It is not affiliated with or endorsed by the Wikimedia Foundation.</string>
+    <string name="aboutIndependence">Wikirandomizer-P is an independent app. It is not affiliated with or endorsed by the Wikimedia Foundation.</string>
 
     <!-- Donations -->
     <string name="donationDialogTitle">Support WikiRandomizer-P</string>
@@ -757,6 +764,7 @@
     <string name="settingJustifyText">Justify text</string>
     <string name="settingJustifyTextDesc">Align paragraphs to both edges</string>
     <string name="premium">Premium</string>
+    <string name="premiumBadgeDesc">Premium feature</string>
     <string name="premiumFeature">Premium feature</string>
     <string name="premiumUnlockHint">Donate once to unlock every premium feature. Thank you!</string>
     <string name="readerAppearance">Reading appearance</string>

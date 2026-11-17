@@ -76,6 +76,7 @@ fun SharedTransitionScope.FullScreenGallery(
     startIndex: Int,
     background: Boolean,
     onBack: () -> Unit,
+    onOpenLink: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     if (items.isEmpty()) return
@@ -163,15 +164,14 @@ fun SharedTransitionScope.FullScreenGallery(
     }
     val colorScheme = MaterialTheme.colorScheme
     val typography = MaterialTheme.typography
-    val captionText = remember(item.caption) {
-        if (item.caption.isBlank()) ""
-        else item.caption.toWikitextAnnotatedStringSafe(
+    val captionText = remember(item.caption, onOpenLink) {
+        item.caption.toWikitextAnnotatedStringSafe(
             colorScheme = colorScheme,
             typography = typography,
-            loadPage = {},
+            loadPage = onOpenLink,
             fontSize = 1,
             showRef = {}
-        ).toString().trim()
+        )
     }
     val counter = stringResource(R.string.imageCounter, pagerState.currentPage + 1, items.size)
     val doubleTapSpec = motionScheme.defaultSpatialSpec<Float>()
@@ -217,7 +217,7 @@ fun SharedTransitionScope.FullScreenGallery(
         }
 
         AnimatedVisibility(
-            showBars && captionText.isNotBlank(),
+            showBars && captionText.text.isNotBlank(),
             enter = fadeIn() + slideInVertically(motionScheme.defaultSpatialSpec()) { it },
             exit = fadeOut() + slideOutVertically(motionScheme.defaultSpatialSpec()) { it },
             modifier = Modifier.align(Alignment.BottomCenter)

@@ -122,6 +122,22 @@ fun BackupScreen(
             item {
                 ListItem(
                     leadingContent = {
+                        Icon(painterResource(R.drawable.cloud), contentDescription = null)
+                    },
+                    headlineContent = { Text(stringResource(R.string.backupDrive)) },
+                    supportingContent = { Text(stringResource(R.string.backupDriveDesc)) },
+                    colors = colors,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable {
+                            val stamp = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())
+                            exportLauncher.launch("wikireader-backup-$stamp.zip")
+                        }
+                )
+            }
+            item {
+                ListItem(
+                    leadingContent = {
                         Icon(painterResource(R.drawable.share), contentDescription = null)
                     },
                     headlineContent = { Text(stringResource(R.string.backupShare)) },

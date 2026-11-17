@@ -143,26 +143,6 @@ fun VerticalFeedScreen(
                 VerticalCard(card = card, onOpen = { onOpenArticle(card.title, card.lang) })
             }
         }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(insets)
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    painterResource(R.drawable.arrow_back),
-                    contentDescription = null,
-                    tint = Color.White
-                )
-            }
-            Text(
-                text = stringResource(string.verticalFeed),
-                style = typography.titleMedium,
-                color = Color.White
-            )
-        }
     }
 }
 

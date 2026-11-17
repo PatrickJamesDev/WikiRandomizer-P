@@ -2145,6 +2145,11 @@ class HomeScreenViewModel(
             val lang = preferencesState.value.lang
             val withImage = ArrayList<WikiApiPage>()
             val withoutImage = ArrayList<WikiApiPage>()
+            val alreadyRead = try {
+                appDatabaseRepository.getViewHistory().first()
+                    .map { it.title.lowercase(java.util.Locale.ROOT) }
+                    .toHashSet()
+            } catch (e: Exception) { emptySet<String>() }
             var attempts = 0
             val noTopics = selectedTopicList().isEmpty()
             while (withImage.size < count && attempts < count * 4) {
@@ -2161,6 +2166,7 @@ class HomeScreenViewModel(
                 }
                 if (candidates.isEmpty()) continue
                 for (page in candidates) {
+                    if (page.title.lowercase(java.util.Locale.ROOT) in alreadyRead) continue
                     if (!feedShown.add("$lang:${page.title}")) continue
                     val hasImage = (page.thumbnail?.source ?: page.photo?.source) != null
                     if (hasImage) withImage += page else withoutImage += page

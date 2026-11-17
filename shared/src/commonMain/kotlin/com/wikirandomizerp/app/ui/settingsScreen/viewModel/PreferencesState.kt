@@ -43,6 +43,10 @@ data class PreferencesState(
     val offlineTopUpTarget: Int = 0,
     /** Allow the recurring top-up to download over mobile data. Off by default. */
     val offlineTopUpMobileData: Boolean = false,
+    /** Show the article title and description before the lead image (off by default). */
+    val titleFirst: Boolean = false,
+    /** Opt-in anonymous usage statistics (off by default; no article titles or searches). */
+    val anonymousStatistics: Boolean = false,
     /** Show the search field and menu/shuffle buttons at the top (off by default). */
     val showSearchBar: Boolean = false,
     /** Comma-separated ids of the tools shown in the bottom utility bar (see ToolbarTools). */

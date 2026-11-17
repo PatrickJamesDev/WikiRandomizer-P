@@ -90,6 +90,8 @@ class SettingsViewModel(
         val homeWidget = boolean("home-widget", false)
         val offlineTopUpTarget = int("offline-top-up-target", 0).coerceIn(0, 200)
         val offlineTopUpMobileData = boolean("offline-top-up-mobile-data", false)
+        val titleFirst = boolean("title-first", false)
+        val anonymousStatistics = boolean("anonymous-statistics", false)
         val showSearchBar = boolean("show-search-bar", false)
         val toolbarItems = string("toolbar-items", "menu,search,random,appearance,share,save,top")
         val toolbarAutoHide = boolean("toolbar-auto-hide", false)
@@ -194,6 +196,8 @@ class SettingsViewModel(
                 homeWidget = homeWidget,
                 offlineTopUpTarget = offlineTopUpTarget,
                 offlineTopUpMobileData = offlineTopUpMobileData,
+                titleFirst = titleFirst,
+                anonymousStatistics = anonymousStatistics,
                 showSearchBar = showSearchBar,
                 toolbarItems = toolbarItems,
                 toolbarAutoHide = toolbarAutoHide,
@@ -353,6 +357,16 @@ class SettingsViewModel(
                         appContext, target, action.value
                     )
                 }
+            }
+
+            is SettingsAction.SaveTitleFirst -> viewModelScope.launch(safeCoroutineHandler) {
+                appPreferencesRepository.saveBooleanPreference("title-first", action.value)
+                preferencesStateMutableFlow.update { it.copy(titleFirst = action.value) }
+            }
+
+            is SettingsAction.SaveAnonymousStatistics -> viewModelScope.launch(safeCoroutineHandler) {
+                appPreferencesRepository.saveBooleanPreference("anonymous-statistics", action.value)
+                preferencesStateMutableFlow.update { it.copy(anonymousStatistics = action.value) }
             }
 
             is SettingsAction.SaveShowSearchBar -> viewModelScope.launch(safeCoroutineHandler) {

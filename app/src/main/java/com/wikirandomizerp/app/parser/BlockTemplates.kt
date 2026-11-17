@@ -454,6 +454,15 @@ fun infoboxPictures(template: String): List<InfoboxPicture> {
                 names.putIfAbsent(index, name)
                 val caption = plainCaption(parts.drop(1).joinToString("|").trim())
                 if (caption.isNotBlank()) captions.putIfAbsent(index, caption)
+            } else if (value.startsWith("{{")) {
+                // `image = {{multiple image|image1=...|caption1=...}}` (Atlanta, many city
+                // infoboxes). Lift the collage's own pictures and per-picture captions instead
+                // of dropping the whole value.
+                extractTemplateImages(value).forEachIndexed { offset, picture ->
+                    val key = "${index}_$offset"
+                    names.putIfAbsent(key, picture.first)
+                    if (picture.second.isNotBlank()) captions.putIfAbsent(key, picture.second)
+                }
             } else {
                 // `image = X.jpg`, `image = File:X.jpg` or `image = [[File:X.jpg]]`.
                 val name = cleanFileName(value) ?: continue

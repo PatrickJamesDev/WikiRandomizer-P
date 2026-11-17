@@ -20,7 +20,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,7 +42,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.MaterialTheme.motionScheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -559,112 +557,120 @@ fun PageContent(
                                 } else Modifier
                             )
                     ) {
-                item(key = content.title + "#--header--") { // Title + Image/description
+                item(key = content.title + "#--header--") { // Lead image, title and description
                     with(sharedScope) {
                         Column {
-                            Text(
-                                text = content.title,
-                                style = MaterialTheme.typography.displaySmallEmphasized,
-                                fontFamily = fontFamily,
-                                color = if (LocalReadingOptions.current.inkColor != Color.Unspecified)
-                                    LocalReadingOptions.current.inkColor else Color.Unspecified,
-                                modifier = Modifier
-                                    .sharedBounds(
-                                        sharedContentState = rememberSharedContentState(
-                                            content.title
-                                        ),
+                            val leadImage: @Composable () -> Unit = {
+                                if (photo != null || photoDesc != null) {
+                                    ImageCard(
+                                        photo = content.thumbnail ?: photo,
+                                        title = content.title,
                                         animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                        zIndexInOverlay = 1f
+                                        showPhoto = !preferencesState.dataSaver,
+                                        onClick = openLeadImage,
+                                        downloadUrl = leadFullUrl,
+                                        background = preferencesState.imageBackground,
+                                        modifier = Modifier.padding(bottom = 8.dp)
                                     )
-                                    .padding(start = 16.dp, end = 16.dp, top = 16.dp)
-                                    .animateContentSize(motionScheme.defaultSpatialSpec())
-                            )
-                            if (photoDesc != null) {
+                                }
+                            }
+                            val titleBlock: @Composable () -> Unit = {
                                 Text(
-                                    text = photoDesc,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = if (LocalReadingOptions.current.inkColor != Color.Unspecified)
-                                        LocalReadingOptions.current.inkColor
-                                    else colorScheme.onSurfaceVariant,
+                                    text = content.title,
+                                    style = MaterialTheme.typography.displaySmallEmphasized,
                                     fontFamily = fontFamily,
+                                    color = if (LocalReadingOptions.current.inkColor != Color.Unspecified)
+                                        LocalReadingOptions.current.inkColor else Color.Unspecified,
                                     modifier = Modifier
                                         .sharedBounds(
                                             sharedContentState = rememberSharedContentState(
-                                                photoDesc
+                                                content.title
                                             ),
                                             animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                             zIndexInOverlay = 1f
                                         )
-                                        .padding(
+                                        .padding(start = 16.dp, end = 16.dp, top = 16.dp)
+                                )
+                                if (photoDesc != null) {
+                                    Text(
+                                        text = photoDesc,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = if (LocalReadingOptions.current.inkColor != Color.Unspecified)
+                                            LocalReadingOptions.current.inkColor
+                                        else colorScheme.onSurfaceVariant,
+                                        fontFamily = fontFamily,
+                                        modifier = Modifier
+                                            .sharedBounds(
+                                                sharedContentState = rememberSharedContentState(
+                                                    photoDesc
+                                                ),
+                                                animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                                zIndexInOverlay = 1f
+                                            )
+                                            .padding(
+                                                start = 16.dp,
+                                                end = 16.dp,
+                                                top = 4.dp,
+                                                bottom = 16.dp
+                                            )
+                                            .fillMaxWidth()
+                                    )
+                                }
+                                if (organismArticle && preferencesState.inaturalistEnabled) {
+                                    AssistChip(
+                                        enabled = !openingINaturalist,
+                                        onClick = {
+                                            if (!openingINaturalist) {
+                                                openingINaturalist = true
+                                                scope.launch {
+                                                    val id = INaturalistTaxa.resolveId(content.title)
+                                                    openingINaturalist = false
+                                                    // The app opens the exact taxon page when the id is
+                                                    // known; otherwise the iNaturalist home screen,
+                                                    // never a search results page.
+                                                    val url = id?.let(::inaturalistTaxonUrl)
+                                                        ?: "https://www.inaturalist.org/"
+                                                    inatOpener.open(url)
+                                                }
+                                            }
+                                        },
+                                        label = {
+                                            Text(
+                                                stringResource(
+                                                    if (openingINaturalist) R.string.openingINaturalist
+                                                    else R.string.viewOnINaturalist
+                                                )
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            if (openingINaturalist) {
+                                                CircularProgressIndicator(
+                                                    strokeWidth = 2.dp,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            } else {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.leaf),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        },
+                                        modifier = Modifier.padding(
                                             start = 16.dp,
                                             end = 16.dp,
                                             top = 4.dp,
-                                            bottom = 16.dp
+                                            bottom = 8.dp
                                         )
-                                        .fillMaxWidth()
-                                )
-                            }
-                            if (organismArticle && preferencesState.inaturalistEnabled) {
-                                AssistChip(
-                                    enabled = !openingINaturalist,
-                                    onClick = {
-                                        if (!openingINaturalist) {
-                                            openingINaturalist = true
-                                            scope.launch {
-                                                val id = INaturalistTaxa.resolveId(content.title)
-                                                openingINaturalist = false
-                                                // The app opens the exact taxon page when the id is
-                                                // known; otherwise the iNaturalist home screen,
-                                                // never a search results page.
-                                                val url = id?.let(::inaturalistTaxonUrl)
-                                                    ?: "https://www.inaturalist.org/"
-                                                inatOpener.open(url)
-                                            }
-                                        }
-                                    },
-                                    label = {
-                                        Text(
-                                            stringResource(
-                                                if (openingINaturalist) R.string.openingINaturalist
-                                                else R.string.viewOnINaturalist
-                                            )
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        if (openingINaturalist) {
-                                            CircularProgressIndicator(
-                                                strokeWidth = 2.dp,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        } else {
-                                            Icon(
-                                                painter = painterResource(R.drawable.leaf),
-                                                contentDescription = null,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    },
-                                    modifier = Modifier.padding(
-                                        start = 16.dp,
-                                        end = 16.dp,
-                                        top = 4.dp,
-                                        bottom = 8.dp
                                     )
-                                )
+                                }
                             }
-                            // Show the lead image even when the article has no short description
-                            // (previously such articles silently lost their picture).
-                            if (photo != null || photoDesc != null) {
-                                ImageCard(
-                                    photo = content.thumbnail ?: photo,
-                                    title = content.title,
-                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                    showPhoto = !preferencesState.dataSaver,
-                                    onClick = openLeadImage,
-                                    downloadUrl = leadFullUrl,
-                                    background = preferencesState.imageBackground,
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
+                            if (preferencesState.titleFirst) {
+                                titleBlock()
+                                leadImage()
+                            } else {
+                                leadImage()
+                                titleBlock()
                             }
                         }
                     }
