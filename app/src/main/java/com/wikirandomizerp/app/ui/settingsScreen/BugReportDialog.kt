@@ -42,10 +42,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.wikirandomizerp.app.R
 import com.wikirandomizerp.app.data.DebugLog
+import com.wikirandomizerp.app.data.LogAnonymizer
 import java.io.File
 
 /**
- * Start of the supporter-only bug reporter.
+ * Bug reporter, open to everyone.
  *
  * There is no server side yet: the report (description + optional log tail + device header) is
  * assembled locally and the user decides whether to copy it or send it through the system share
@@ -65,14 +66,19 @@ fun BugReportDialog(
 
     fun buildReport(): String = buildString {
         appendLine("=== WikiRandomizer-P bug report ===")
-        appendLine(DebugLog.lastCrumb().takeIf { it.isNotBlank() }?.let { "last action: $it" } ?: "")
+        appendLine(
+            DebugLog.lastCrumb().takeIf { it.isNotBlank() }
+                ?.let { "last action: " + LogAnonymizer.anonymize(it) } ?: ""
+        )
         appendLine()
         appendLine("--- what happened ---")
         appendLine(description.trim())
         if (includeLog) {
             appendLine()
             appendLine("--- debug log ---")
-            append(DebugLog.readTail(400_000))
+            // Anonymised: article titles, search words, topic names, file names and e-mail
+            // addresses are removed, so the report shows what broke, not what was read.
+            append(LogAnonymizer.anonymize(DebugLog.readTail(400_000)))
         }
     }
 

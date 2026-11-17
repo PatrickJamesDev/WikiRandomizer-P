@@ -90,7 +90,12 @@ class DonationBilling(context: Context) {
                 // A previous purchase was never acknowledged/consumed: recover it instead of
                 // leaving the user stuck.
                 queryPurchases()
-                _state.update { it.copy(busyProductId = null) }
+                _state.update {
+                    it.copy(
+                        busyProductId = null,
+                        message = "You already own this option. Thank you! Pick another amount to give again."
+                    )
+                }
             }
 
             else -> {
@@ -296,10 +301,11 @@ class DonationBilling(context: Context) {
         val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
             .setProductDetails(details)
             .apply {
-                // Subscription purchases must name the base-plan offer token.
-                details.subscriptionOfferDetails?.firstOrNull()?.offerToken
-                    ?.takeIf { it.isNotBlank() }
-                    ?.let { setOfferToken(it) }
+                // Subscriptions must name the base-plan offer token; one-time products carry one
+                // too in Billing 8+/9 (oneTimePurchaseOfferDetailsList).
+                val token = details.subscriptionOfferDetails?.firstOrNull()?.offerToken
+                    ?: details.oneTimePurchaseOfferDetailsList?.firstOrNull()?.offerToken
+                token?.takeIf { it.isNotBlank() }?.let { setOfferToken(it) }
             }
             .build()
         val flowParams = BillingFlowParams.newBuilder()
@@ -315,7 +321,16 @@ class DonationBilling(context: Context) {
 
     private fun handlePurchase(purchase: Purchase) {
         if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
-            // Pending (for example cash payment): do not grant anything yet.
+            // Pending (for example cash payment): do not grant anything yet, but release the
+            // buttons (they stayed disabled forever) and tell the person what is going on.
+            if (purchase.purchaseState == Purchase.PurchaseState.PENDING) {
+                _state.update {
+                    it.copy(
+                        busyProductId = null,
+                        message = "Payment pending. Support unlocks when it completes."
+                    )
+                }
+            }
             return
         }
         val products = purchase.products
@@ -361,13 +376,32 @@ class DonationBilling(context: Context) {
             return
         }
 
-        // Consumable donation: consume so the same tier can be bought again later.
-        val consumeParams = ConsumeParams.newBuilder()
-            .setPurchaseToken(purchase.purchaseToken)
-            .build()
-        client?.consumeAsync(consumeParams) { result, _ ->
-            if (result.responseCode != BillingClient.BillingResponseCode.OK) {
-                DebugLog.w("Donation", "could not consume donation: ${result.responseCode}")
+        // Donation tiers. Play can only give a purchase back after a reinstall or on a new device
+        // while it is NOT consumed, so the first donation is kept (acknowledged, unconsumed) as
+        // the permanent proof that unlocks Premium again. Later donations are consumed so tiers
+        // can still be bought repeatedly. A purchase that is already acknowledged and still
+        // listed is that kept proof (for example after a reinstall): never consume it.
+        val keepAsProof = purchase.isAcknowledged || !prefs.getBoolean(KEY_PROOF_HELD, false)
+        if (keepAsProof) {
+            prefs.edit().putBoolean(KEY_PROOF_HELD, true).apply()
+            if (!purchase.isAcknowledged) {
+                val params = AcknowledgePurchaseParams.newBuilder()
+                    .setPurchaseToken(purchase.purchaseToken)
+                    .build()
+                client?.acknowledgePurchase(params) { result ->
+                    if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+                        DebugLog.w("Donation", "could not acknowledge donation: ${result.responseCode}")
+                    }
+                }
+            }
+        } else {
+            val consumeParams = ConsumeParams.newBuilder()
+                .setPurchaseToken(purchase.purchaseToken)
+                .build()
+            client?.consumeAsync(consumeParams) { result, _ ->
+                if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+                    DebugLog.w("Donation", "could not consume donation: ${result.responseCode}")
+                }
             }
         }
         markSupporter()
@@ -394,6 +428,7 @@ class DonationBilling(context: Context) {
     }
 
     private fun clearSubscription() {
+        // Only cloud sync depends on an active subscription; Premium itself is lifetime.
         prefs.edit().remove(KEY_SUBSCRIPTION).apply()
         _state.update { it.copy(subscription = false) }
     }
@@ -408,7 +443,7 @@ class DonationBilling(context: Context) {
 
     /** Debug-menu helper: forget the local supporter flag and all debug messages. */
     fun debugReset() {
-        prefs.edit().remove(KEY_SUPPORTER).remove(KEY_SUBSCRIPTION).apply()
+        prefs.edit().remove(KEY_SUPPORTER).remove(KEY_SUBSCRIPTION).remove(KEY_PROOF_HELD).apply()
         _state.update {
             it.copy(
                 supporter = false,
@@ -452,6 +487,7 @@ class DonationBilling(context: Context) {
         private const val PREFS = "donations"
         private const val KEY_SUPPORTER = "supporter"
         private const val KEY_SUBSCRIPTION = "sync_subscription"
+        private const val KEY_PROOF_HELD = "donation_proof_held"
 
         fun isSupporterActive(context: Context): Boolean =
             context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

@@ -14,18 +14,22 @@ object OfflineTopUpScheduler {
     private const val PERIODIC_WORK = "offline-top-up-periodic"
     private const val NOW_WORK = "offline-top-up-now"
 
-    fun update(context: Context, target: Int) {
+    fun update(context: Context, target: Int, allowMobileData: Boolean = false) {
         val workManager = WorkManager.getInstance(context.applicationContext)
         if (target <= 0) {
             workManager.cancelUniqueWork(PERIODIC_WORK)
             workManager.cancelUniqueWork(NOW_WORK)
             return
         }
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
+        // The recurring refill can download up to 200 articles: off mobile data unless the person
+        // allowed it in Settings, and never on a low battery.
+        val periodicConstraints = Constraints.Builder()
+            .setRequiredNetworkType(if (allowMobileData) NetworkType.CONNECTED else NetworkType.UNMETERED)
+            .setRequiresBatteryNotLow(true)
             .build()
+        val constraints = periodicConstraints
         val periodic = PeriodicWorkRequestBuilder<OfflineTopUpWorker>(12, TimeUnit.HOURS, 1, TimeUnit.HOURS)
-            .setConstraints(constraints)
+            .setConstraints(periodicConstraints)
             .build()
         workManager.enqueueUniquePeriodicWork(
             PERIODIC_WORK,

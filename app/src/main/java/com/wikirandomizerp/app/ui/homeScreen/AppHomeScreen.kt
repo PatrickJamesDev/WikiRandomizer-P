@@ -23,6 +23,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -146,6 +147,7 @@ fun AppHomeScreen(
     onSettingsAction: (SettingsAction) -> Unit,
     onOpenDonation: () -> Unit = {},
     onNavigateToRandomTopics: () -> Unit = {},
+    onMenuClick: () -> Unit = {},
     insets: PaddingValues,
     windowSizeClass: WindowSizeClass,
     modifier: Modifier = Modifier,
@@ -185,6 +187,7 @@ fun AppHomeScreen(
     var showSaveDialog by remember { mutableStateOf(false) }
     var showReaderAppearance by remember { mutableStateOf(false) }
     val hasArticleScreen = backStack.lastOrNull() is HomeSubscreen.Article
+    val hasArticle = hasArticleScreen
     LaunchedEffect(hasArticleScreen) {
         if (!hasArticleScreen) {
             showSaveDialog = false
@@ -595,8 +598,13 @@ fun AppHomeScreen(
             }
         }
 
+        val toolbarTools = remember(preferencesState.toolbarItems, preferencesState.showSearchBar) {
+            com.wikirandomizerp.app.ui.common.ToolbarTools.effective(
+                preferencesState.toolbarItems, preferencesState.showSearchBar
+            )
+        }
         AnimatedVisibility(
-            backStack.last() !is HomeSubscreen.Image,
+            backStack.last() !is HomeSubscreen.Image && toolbarTools.isNotEmpty(),
             enter = slideInVertically(
                 motionScheme.defaultSpatialSpec(),
                 initialOffsetY = {
@@ -623,6 +631,64 @@ fun AppHomeScreen(
                     .padding(horizontal = 16.dp)
                     .offset(y = -(insets.calculateBottomPadding()))
             ) {
+                toolbarTools.forEach { toolId ->
+                androidx.compose.runtime.key(toolId) {
+                when (toolId) {
+                "menu" -> {
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                            TooltipAnchorPosition.Above
+                        ),
+                        tooltip = { PlainTooltip { Text(stringResource(R.string.moreOptions)) } },
+                        state = rememberTooltipState()
+                    ) {
+                        IconButton(onClick = onMenuClick) {
+                            Icon(
+                                painterResource(R.drawable.menu),
+                                contentDescription = stringResource(R.string.moreOptions)
+                            )
+                        }
+                    }
+                }
+                "search" -> {
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                            TooltipAnchorPosition.Above
+                        ),
+                        tooltip = { PlainTooltip { Text(stringResource(R.string.searchWikipedia)) } },
+                        state = rememberTooltipState()
+                    ) {
+                        IconButton(onClick = { onAction(HomeAction.FocusSearchBar) }) {
+                            Icon(
+                                painterResource(R.drawable.search),
+                                contentDescription = stringResource(R.string.searchWikipedia)
+                            )
+                        }
+                    }
+                }
+                "random" -> {
+                    // Tap: random article. Long press: choose topics (same as the top bar button).
+                    val topicsLabel = stringResource(R.string.randomTopicsTitle)
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .combinedClickable(
+                                role = androidx.compose.ui.semantics.Role.Button,
+                                onClick = { onAction(HomeAction.LoadRandom) },
+                                onLongClick = onNavigateToRandomTopics,
+                                onLongClickLabel = topicsLabel
+                            )
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.shuffle),
+                            contentDescription = stringResource(R.string.randomArticle)
+                        )
+                    }
+                }
+
+                "language" -> {
                 TooltipBox(
                     positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
                         TooltipAnchorPosition.Above
@@ -641,7 +707,9 @@ fun AppHomeScreen(
                         )
                     }
                 }
+                }
 
+                "appearance" -> {
                 TooltipBox(
                     positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
                         TooltipAnchorPosition.Above
@@ -659,7 +727,9 @@ fun AppHomeScreen(
                         )
                     }
                 }
+                }
 
+                "tts" -> {
                 TooltipBox(
                     positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
                         TooltipAnchorPosition.Above
@@ -706,7 +776,9 @@ fun AppHomeScreen(
                         )
                     }
                 }
+                }
 
+                "share" -> {
                 TooltipBox(
                     positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
                         TooltipAnchorPosition.Above
@@ -727,7 +799,9 @@ fun AppHomeScreen(
                         )
                     }
                 }
+                }
 
+                "save" -> {
                 TooltipBox(
                     positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
                         TooltipAnchorPosition.Above
@@ -799,7 +873,9 @@ fun AppHomeScreen(
                         }
                     }
                 }
+                }
 
+                "votes" -> {
                 // Tune the topics. These are toggles: tapping the active thumb removes the vote,
                 // so an accidental tap never has to be corrected by tapping the other thumb.
                 run {
@@ -880,7 +956,9 @@ fun AppHomeScreen(
                         }
                     }
                 }
+                }
 
+                "top" -> {
                 TooltipBox(
                     positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
                         TooltipAnchorPosition.Above
@@ -897,6 +975,11 @@ fun AppHomeScreen(
                             contentDescription = stringResource(R.string.scroll_to_top)
                         )
                     }
+                }
+                }
+                else -> {}
+                }
+                }
                 }
 
             }

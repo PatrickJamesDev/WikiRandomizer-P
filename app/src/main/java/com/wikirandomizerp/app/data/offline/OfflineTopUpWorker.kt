@@ -3,6 +3,7 @@ package com.wikirandomizerp.app.data.offline
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.wikirandomizerp.app.WikiRandomizerPApplication
 import com.wikirandomizerp.app.data.ArticleCache
 import com.wikirandomizerp.app.data.DebugLog
 import com.wikirandomizerp.app.data.DefaultAppContainer
@@ -19,7 +20,11 @@ class OfflineTopUpWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val container = DefaultAppContainer(applicationContext)
+        // Reuse the process-wide container. Building a second DefaultAppContainer here opened a
+        // second OkHttp Cache on the same directory as the app's own client, which OkHttp
+        // documents as unsafe (journal corruption / IOExceptions) whenever the app was running.
+        val container = (applicationContext as? WikiRandomizerPApplication)?.container
+            ?: DefaultAppContainer(applicationContext)
         val prefs = container.appPreferencesRepository
         val supporterMode = prefs.readBooleanPreference("supporter-mode") == true
         val premium = BillingManager.isPremiumActive(applicationContext, supporterMode)

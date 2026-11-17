@@ -207,7 +207,7 @@ fun ReaderAppearanceSheet(
 
             PremiumSliderRow(
                 title = stringResource(R.string.settingReadingMargin),
-                value = preferencesState.readingMargin.toFloat(),
+                value = preferencesState.readingMargin,
                 valueRange = 4f..48f,
                 steps = 10,
                 valueLabelRes = R.string.settingReadingMarginValue,

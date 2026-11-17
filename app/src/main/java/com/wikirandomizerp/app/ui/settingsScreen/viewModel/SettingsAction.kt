@@ -18,6 +18,10 @@ sealed class SettingsAction {
     data class SaveDailyNotification(val value: Boolean) : SettingsAction()
     data class SaveHomeWidget(val value: Boolean) : SettingsAction()
     data class SaveOfflineTopUpTarget(val value: Int) : SettingsAction()
+    data class SaveOfflineTopUpMobileData(val value: Boolean) : SettingsAction()
+    data class SaveShowSearchBar(val value: Boolean) : SettingsAction()
+    data class SaveToolbarItems(val value: String) : SettingsAction()
+    data class SaveToolbarAutoHide(val value: Boolean) : SettingsAction()
 
     data class SaveBlackTheme(val value: Boolean) : SettingsAction()
     data class SaveDataSaver(val value: Boolean) : SettingsAction()

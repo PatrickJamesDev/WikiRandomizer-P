@@ -48,6 +48,7 @@ import coil3.size.Size
 import com.wikirandomizerp.app.R
 import com.wikirandomizerp.app.data.CacheConfig
 import com.wikirandomizerp.app.ui.image.ImageCacheKeys
+import com.wikirandomizerp.app.ui.image.ImagePrefetcher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -376,15 +377,35 @@ object INaturalistImages {
         observations: List<INatObservation>,
         waitFor: Int = Int.MAX_VALUE,
         fullRes: Int = CacheConfig.MAX_HIGH_RES_IMAGES,
-        done: MutableSet<String>? = null
+        done: MutableSet<String>? = null,
+        urgency: Int = ImagePrefetcher.URGENCY_QUEUE_BASE
     ): Int = withContext(Dispatchers.IO) {
         if (observations.isEmpty()) return@withContext 0
         val loader = SingletonImageLoader.get(context)
         val thumbs = observations.map { it.thumbUrl }.distinct()
-            .filter { done == null || done.add(it) }
+            .filter { done == null || it !in done }
         val large = observations.take(fullRes).map { it.largeUrl }.distinct()
-            .filter { done == null || done.add(it) }
+            .filter { done == null || it !in done }
         if (thumbs.isEmpty() && large.isEmpty()) return@withContext 0
+
+        // Pure background preparation (a queued article, nobody waiting): go through the shared
+        // download queue (3 at a time, ranked by how soon the article will be opened) instead of
+        // firing every photo at once and slowing down the article that is on screen. Photos count
+        // as done only once they are queued, so a cancelled pass can be repeated.
+        if (done != null && waitFor == 0) {
+            ImagePrefetcher.warmPictures(
+                context = context,
+                thumbnails = thumbs,
+                fullRes = large,
+                gapMs = 30L,
+                urgency = urgency
+            )
+            done.addAll(thumbs)
+            done.addAll(large)
+            return@withContext thumbs.size + large.size
+        }
+        done?.addAll(thumbs)
+        done?.addAll(large)
 
         fun request(url: String) = ImageRequest.Builder(context)
             .data(url)

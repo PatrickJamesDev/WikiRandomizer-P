@@ -159,6 +159,14 @@ private fun extractHtmlMediaBlocks(html: String): String {
     ) return html
 
     val out = StringBuilder(html.length)
+    // Files already emitted in this article: the same picture is often present twice in REST HTML
+    // (infobox + thumbnail, or a gallery repeating the lead picture) and was drawn twice.
+    val emittedFiles = HashSet<String>()
+    fun firstTimeOnly(lines: List<String>): List<String> = lines.filter { line ->
+        val name = line.substringAfter("[[File:", "").substringBefore('|').substringBefore("]]")
+        val key = name.substringBeforeLast('.', name).lowercase().filter { it.isLetterOrDigit() }
+        key.isEmpty() || emittedFiles.add(key)
+    }
     var i = 0
     while (i < html.length) {
         val start = html.indexOf('<', i)
@@ -212,8 +220,10 @@ private fun extractHtmlMediaBlocks(html: String): String {
                         null
                     }
                 } else null
-                val media = htmlMediaLines(fragment, gallery = isGallery)
-                    .map { line -> withInfoboxCaption(line, scan?.captions) }
+                val media = firstTimeOnly(
+                    htmlMediaLines(fragment, gallery = isGallery)
+                        .map { line -> withInfoboxCaption(line, scan?.captions) }
+                )
                 if (media.isNotEmpty()) {
                     out.append('\n').append(media.joinToString("\n")).append('\n')
                 }
@@ -229,9 +239,11 @@ private fun extractHtmlMediaBlocks(html: String): String {
         } else if (isFileSpan) {
             val close = findMatchingClose(html, end + 1, tag.name)
             if (close >= 0) {
-                val media = htmlMediaLines(
-                    html.substring(start, close + 1),
-                    gallery = false
+                val media = firstTimeOnly(
+                    htmlMediaLines(
+                        html.substring(start, close + 1),
+                        gallery = false
+                    )
                 )
                 if (media.isNotEmpty()) {
                     out.append('\n').append(media.joinToString("\n")).append('\n')

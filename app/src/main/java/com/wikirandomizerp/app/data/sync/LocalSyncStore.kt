@@ -54,7 +54,6 @@ class LocalSyncStore(
 
     fun hasCloudAccess(): Boolean =
         DonationBilling.isSubscriptionActive(appContext) ||
-            DonationBilling.isSupporterActive(appContext) ||
             DeveloperMode.isEnabled(appContext)
 
     fun setAutoSync(enabled: Boolean) {
@@ -101,7 +100,7 @@ class LocalSyncStore(
      */
     suspend fun syncNow(): LocalSyncResult {
         if (!cloudConfigured) throw SyncException("Cloud sync is not configured in this build")
-        if (!hasCloudAccess()) throw SyncException("Cloud sync is available to supporters")
+        if (!hasCloudAccess()) throw SyncException("Cloud sync needs an active sync subscription")
         val signedIn = firebase.authState.value as? SyncAuthState.SignedIn
             ?: throw SyncException("Sign in to sync your reading history")
         return syncMutex.withLock {
@@ -162,7 +161,7 @@ class LocalSyncStore(
     suspend fun syncNowIfAllowed(): LocalSyncResult {
         if (!autoSync) throw SyncException("Automatic sync is off")
         if (!cloudConfigured) throw SyncException("Cloud sync is not configured in this build")
-        if (!hasCloudAccess()) throw SyncException("Cloud sync is available to supporters")
+        if (!hasCloudAccess()) throw SyncException("Cloud sync needs an active sync subscription")
         if (firebase.authState.value !is SyncAuthState.SignedIn) {
             throw SyncException("Sign in to sync your reading history")
         }

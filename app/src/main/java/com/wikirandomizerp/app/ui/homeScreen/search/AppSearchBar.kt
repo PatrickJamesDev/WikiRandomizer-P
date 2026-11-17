@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -136,6 +137,8 @@ fun AppSearchBar(
     removeHistoryItem: (SearchHistoryItem) -> Unit,
     clearHistory: () -> Unit,
     onMenuIconClicked: () -> Unit,
+    /** False: no search field / menu / shuffle at the top; search opens full-screen on demand. */
+    showCollapsedBar: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val focusRequester = appSearchBarState.focusRequester
@@ -233,6 +236,14 @@ fun AppSearchBar(
         }
 
     val textStyle = LocalTextStyle.current
+    if (!showCollapsedBar) {
+        // Keep the content below the status bar; the bar itself is not drawn.
+        Spacer(
+            Modifier
+                .fillMaxWidth()
+                .height(WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
+        )
+    } else
     TopAppBar(
         title = {
             CompositionLocalProvider(

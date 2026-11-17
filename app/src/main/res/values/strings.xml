@@ -563,7 +563,7 @@
     <string name="reportBugTitle">Report a bug</string>
     <string name="reportBugExplain">Describe what went wrong. The report never leaves your device unless you choose to share it.</string>
     <string name="reportBugDescription">What happened?</string>
-    <string name="reportBugAttachLog">Attach the debug log</string>
+    <string name="reportBugAttachLog">Attach the debug log (anonymised: no article titles, searches or topics)</string>
     <string name="reportBugCopy">Copy</string>
     <string name="reportBugShare">Share\u2026</string>
     <string name="reportBugCopied">Bug report copied</string>
@@ -794,6 +794,8 @@
     <string name="settingOfflineTopUpDesc">Automatically download more articles back to your target whenever a connection is available</string>
     <string name="settingOfflineTopUpValue">Target: %1$d articles</string>
     <string name="settingOfflineTopUpOff">Off</string>
+    <string name="settingOfflineTopUpMobile">Allow top-up on mobile data</string>
+    <string name="settingOfflineTopUpMobileDesc">Off by default: top-ups only run on Wi-Fi (and not on a low battery).</string>
     <string name="offlineTopUpStarted">Automatic top-up is on</string>
     <string name="settingSepiaTheme">Sepia reading theme</string>
     <string name="settingSepiaThemeDesc">Warm paper background with softer ink for long reads</string>
@@ -831,6 +833,16 @@
     <string name="widget_subtitle">A random article from your topics</string>
     <string name="widget_button">Surprise me</string>
     <string name="widget_dev_only">Add it from Settings once developer mode is on</string>
+    <string name="settingShowSearchBar">Search bar at the top</string>
+    <string name="settingShowSearchBarDesc">Off by default. When off, search, menu and shuffle are buttons in the bottom utility bar.</string>
+    <string name="settingToolbarAutoHide">Hide the utility bar while scrolling</string>
+    <string name="settingToolbarAutoHideDesc">It slides back when you scroll up</string>
+    <string name="settingToolbarTools">Utility bar tools</string>
+    <string name="settingToolbarToolsDesc">Choose which buttons appear in the bottom bar, and their order (arrows)</string>
+    <string name="toolbarMoveUp">Move earlier</string>
+    <string name="toolbarMoveDown">Move later</string>
+    <string name="toolbarToolVotes">Like / dislike topic</string>
+    <string name="widget_premium_only">Unlock Premium to use the widget</string>
     <string name="widget_disabled">Enable the widget in Settings to use it</string>
     <string name="widget_description">Open a random article from your topic libraries</string>
 

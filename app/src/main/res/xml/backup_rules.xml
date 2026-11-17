@@ -2,5 +2,7 @@
 <!-- Android 11 and older: same idea as data_extraction_rules.xml (small data only). -->
 <full-backup-content>
     <include domain="database" path="app_database" />
+        <!-- Supporter / subscription flags, so Premium survives a restore. -->
+        <include domain="sharedpref" path="donations.xml" />
     <!-- Only app_database is included, so everything else (caches, logs, the article library) is already left out. -->
 </full-backup-content>

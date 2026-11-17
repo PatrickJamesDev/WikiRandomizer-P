@@ -492,8 +492,7 @@ fun SettingsScreen(
                 R.drawable.manage_history,
                 string.history,
                 string.historyDesc,
-                SettingsAction::SaveHistory,
-                premium = true
+                SettingsAction::SaveHistory
             ),
             SettingsSwitchItem(
                 preferencesState.searchHistory,
@@ -914,6 +913,8 @@ fun SettingsScreen(
                         .clip(bottomListItemShape)
                 )
             }
+            item { Spacer(Modifier.height(12.dp)) }
+            item { ToolbarSettingsSection(preferencesState, onAction) }
             }
             item { Spacer(Modifier.height(12.dp)) }
             if (settingsCategory == SettingsCategory.BEHAVIOUR) {
@@ -1361,6 +1362,24 @@ fun SettingsScreen(
                     modifier = Modifier
                         .clip(cardShape)
                         .clickable(enabled = !premiumUser) { onOpenDonation() }
+                )
+            }
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(string.settingOfflineTopUpMobile)) },
+                    supportingContent = { Text(stringResource(string.settingOfflineTopUpMobileDesc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = preferencesState.offlineTopUpMobileData,
+                            onCheckedChange = {
+                                if (preferencesState.supporterMode) {
+                                    onAction(SettingsAction.SaveOfflineTopUpMobileData(it))
+                                } else onOpenDonation()
+                            },
+                            colors = switchColors
+                        )
+                    },
+                    colors = listItemColors
                 )
             }
             if (developerEnabled) {
@@ -2184,7 +2203,7 @@ fun SettingsScreen(
             }
             }
             item { Spacer(Modifier.height(12.dp)) }
-            if (preferencesState.supporterMode) {
+            run {
                 item {
                     ClickableListItem(
                         leadingContent = {

@@ -41,6 +41,14 @@ data class PreferencesState(
      * available the app downloads more until the target is reached again.
      */
     val offlineTopUpTarget: Int = 0,
+    /** Allow the recurring top-up to download over mobile data. Off by default. */
+    val offlineTopUpMobileData: Boolean = false,
+    /** Show the search field and menu/shuffle buttons at the top (off by default). */
+    val showSearchBar: Boolean = false,
+    /** Comma-separated ids of the tools shown in the bottom utility bar (see ToolbarTools). */
+    val toolbarItems: String = "menu,search,random,appearance,share,save,top",
+    /** Hide the utility bar while scrolling down (always on in short windows / immersive mode). */
+    val toolbarAutoHide: Boolean = false,
     /** When true, article discovery uses popularity-ranked results instead of a random walk. */
     val popularArticlesOnly: Boolean = false,
     /** When true, articles shorter than 5 000 bytes of wikitext are filtered out. */

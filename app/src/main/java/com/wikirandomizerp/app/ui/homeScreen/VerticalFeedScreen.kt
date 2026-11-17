@@ -3,6 +3,9 @@ package com.wikirandomizerp.app.ui.homeScreen
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -71,6 +74,9 @@ fun trimToSentence(text: String): String {
 }
 
 private const val FEED_BATCH = 6
+// The very first request is small so the first card appears quickly; the next batch (full size)
+// starts right after, long before the reader swipes that far.
+private const val FEED_FIRST_BATCH = 2
 private const val FEED_PRELOAD_AHEAD = 3
 
 @Composable
@@ -94,7 +100,7 @@ fun VerticalFeedScreen(
         if (!needMore || loading) return@LaunchedEffect
         loading = true
         try {
-            val fresh = loadMore(FEED_BATCH)
+            val fresh = loadMore(if (cards.isEmpty()) FEED_FIRST_BATCH else FEED_BATCH)
             val known = cards.map { "${it.lang}:${it.title}" }.toSet()
             cards.addAll(fresh.filter { "${it.lang}:${it.title}" !in known })
             failedEmpty = cards.isEmpty()
@@ -163,65 +169,58 @@ fun VerticalFeedScreen(
 @Composable
 private fun VerticalCard(card: VerticalFeedCard, onOpen: () -> Unit) {
     val context = LocalContext.current
-    Box(
+    // The picture is shown whole ("fit") in the upper part of the card instead of being cropped
+    // over the whole screen, and the text sits below it on a plain surface.
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colorScheme.primaryContainer)
+            .background(colorScheme.surfaceContainer)
             .clickable(onClick = onOpen)
     ) {
-        card.image?.let { source ->
-            val displaySource = remember(source) { ImagePrefetcher.standardThumbnailUrl(source) ?: source }
-            val painter = rememberAsyncImagePainter(
-                model = ImageRequest.Builder(context)
-                    .data(displaySource)
-                    .diskCacheKey(ImageCacheKeys.body(displaySource))
-                    .crossfade(true)
-                    .build(),
-                contentScale = ContentScale.Crop
-            )
-            val state by painter.state.collectAsStateWithLifecycle()
-            if (state is AsyncImagePainter.State.Success) {
-                Image(
-                    painter = painter,
-                    contentDescription = card.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+        val image = card.image
+        if (image != null) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.46f)
+                    .statusBarsPadding()
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp)
+            ) {
+                val displaySource = remember(image) { ImagePrefetcher.standardThumbnailUrl(image) ?: image }
+                val painter = rememberAsyncImagePainter(
+                    model = ImageRequest.Builder(context)
+                        .data(displaySource)
+                        .diskCacheKey(ImageCacheKeys.body(displaySource))
+                        .crossfade(true)
+                        .build(),
+                    contentScale = ContentScale.Fit
                 )
+                val state by painter.state.collectAsStateWithLifecycle()
+                if (state is AsyncImagePainter.State.Success) {
+                    Image(
+                        painter = painter,
+                        contentDescription = card.title,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(20.dp))
+                    )
+                }
             }
         }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        0.4f to Color.Black.copy(alpha = 0.35f),
-                        1f to Color.Black.copy(alpha = 0.92f)
-                    )
-                )
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(96.dp)
-                .background(
-                    Brush.verticalGradient(
-                        0f to Color.Black.copy(alpha = 0.55f),
-                        1f to Color.Transparent
-                    )
-                )
-        )
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .align(Alignment.BottomStart)
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 48.dp)
+                .weight(if (image != null) 0.54f else 1f)
+                .then(if (image == null) Modifier.statusBarsPadding() else Modifier)
+                .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 48.dp)
         ) {
             Text(
                 text = card.title,
-                style = typography.headlineLarge,
-                color = Color.White,
+                style = typography.headlineMedium,
+                color = colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
@@ -230,7 +229,7 @@ private fun VerticalCard(card: VerticalFeedCard, onOpen: () -> Unit) {
                 Text(
                     text = it,
                     style = typography.titleSmall,
-                    color = Color.White.copy(alpha = 0.88f),
+                    color = colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -239,8 +238,8 @@ private fun VerticalCard(card: VerticalFeedCard, onOpen: () -> Unit) {
                 Text(
                     text = it,
                     style = typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.85f),
-                    maxLines = 8,
+                    color = colorScheme.onSurfaceVariant,
+                    maxLines = 7,
                     overflow = TextOverflow.Ellipsis
                 )
             }
@@ -248,7 +247,7 @@ private fun VerticalCard(card: VerticalFeedCard, onOpen: () -> Unit) {
             Text(
                 text = stringResource(string.verticalFeedTapToRead),
                 style = typography.labelLarge,
-                color = Color.White.copy(alpha = 0.7f)
+                color = colorScheme.primary
             )
         }
     }

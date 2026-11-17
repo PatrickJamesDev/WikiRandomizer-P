@@ -66,6 +66,7 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         com.wikirandomizerp.app.data.PerfMonitor.init(this)
         DebugLog.init(this)
+        disablePausablePrefetch()
         com.wikirandomizerp.app.data.notifications.DailyArticleNotifier.ensureChannel(this)
         enableStrictModeIfDebuggable()
         // After an install/update, keep a copy of the previous data before anything opens the database.
@@ -199,5 +200,28 @@ class WikiRandomizerPApplication : Application(), SingletonImageLoader.Factory {
                 }
             }
             .build()
+    }
+
+    /**
+     * Compose's lazy-list prefetch can resume a paused composition and crash with "Cannot disable
+     * reuse from root if it was caused by other groups" (seen while scrolling a long article).
+     * Switching the pausable prefetch off keeps the lists scrolling normally. Done by reflection so
+     * it keeps compiling whichever Compose build provides the flag; if it is missing nothing happens.
+     */
+    private fun disablePausablePrefetch() {
+        try {
+            val cls = Class.forName("androidx.compose.foundation.ComposeFoundationFlags")
+            val instance = cls.getField("INSTANCE").get(null)
+            val field = runCatching { cls.getField("isPausableCompositionInPrefetchEnabled") }.getOrNull()
+            if (field != null) {
+                field.setBoolean(instance, false)
+            } else {
+                cls.getMethod("setPausableCompositionInPrefetchEnabled", java.lang.Boolean.TYPE)
+                    .invoke(instance, false)
+            }
+            com.wikirandomizerp.app.data.DebugLog.d("App", "pausable lazy prefetch disabled")
+        } catch (e: Throwable) {
+            com.wikirandomizerp.app.data.DebugLog.d("App", "pausable prefetch flag not available: ${e.javaClass.simpleName}")
+        }
     }
 }

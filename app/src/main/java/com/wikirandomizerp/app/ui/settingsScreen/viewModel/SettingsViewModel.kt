@@ -89,6 +89,10 @@ class SettingsViewModel(
         val dailyNotification = boolean("daily-notification", false)
         val homeWidget = boolean("home-widget", false)
         val offlineTopUpTarget = int("offline-top-up-target", 0).coerceIn(0, 200)
+        val offlineTopUpMobileData = boolean("offline-top-up-mobile-data", false)
+        val showSearchBar = boolean("show-search-bar", false)
+        val toolbarItems = string("toolbar-items", "menu,search,random,appearance,share,save,top")
+        val toolbarAutoHide = boolean("toolbar-auto-hide", false)
         val blackTheme = boolean("black-theme", false)
         val dataSaver = boolean("data-saver", false)
         val feedEnabled = boolean("feed-enabled", true)
@@ -147,6 +151,8 @@ class SettingsViewModel(
         val autoSaveHighlights = boolean("auto-save-highlights", false)
         val donationPrompts = boolean("donation-prompts", false)
         val supporterMode = boolean("supporter-mode", false)
+        // Keep the widget's synchronous premium mirror in step with the stored setting.
+        runCatching { com.wikirandomizerp.app.widget.WidgetPrefs.setPremium(appContext, supporterMode) }
 
         preferencesStateMutableFlow.update { currentState ->
             currentState.copy(
@@ -187,6 +193,10 @@ class SettingsViewModel(
                 dailyNotification = dailyNotification,
                 homeWidget = homeWidget,
                 offlineTopUpTarget = offlineTopUpTarget,
+                offlineTopUpMobileData = offlineTopUpMobileData,
+                showSearchBar = showSearchBar,
+                toolbarItems = toolbarItems,
+                toolbarAutoHide = toolbarAutoHide,
                 fontStyle = fontStyle,
                 imageBackground = imageBackground,
                 immersiveMode = immersiveMode,
@@ -216,7 +226,8 @@ class SettingsViewModel(
             if (offlineTopUpTarget > 0) {
                 com.wikirandomizerp.app.data.offline.OfflineTopUpScheduler.update(
                     appContext,
-                    offlineTopUpTarget
+                    offlineTopUpTarget,
+                    offlineTopUpMobileData
                 )
             }
         }
@@ -322,10 +333,41 @@ class SettingsViewModel(
             }
 
             is SettingsAction.SaveOfflineTopUpTarget -> viewModelScope.launch(safeCoroutineHandler) {
+                // Premium feature: the settings slider is locked, and so is this entry point.
+                if (!preferencesStateMutableFlow.value.supporterMode && action.value > 0) return@launch
                 val value = action.value.coerceIn(0, 200)
                 appPreferencesRepository.saveIntPreference("offline-top-up-target", value)
                 preferencesStateMutableFlow.update { it.copy(offlineTopUpTarget = value) }
-                com.wikirandomizerp.app.data.offline.OfflineTopUpScheduler.update(appContext, value)
+                com.wikirandomizerp.app.data.offline.OfflineTopUpScheduler.update(
+                    appContext, value, preferencesStateMutableFlow.value.offlineTopUpMobileData
+                )
+            }
+
+            is SettingsAction.SaveOfflineTopUpMobileData -> viewModelScope.launch(safeCoroutineHandler) {
+                if (!preferencesStateMutableFlow.value.supporterMode) return@launch
+                appPreferencesRepository.saveBooleanPreference("offline-top-up-mobile-data", action.value)
+                preferencesStateMutableFlow.update { it.copy(offlineTopUpMobileData = action.value) }
+                val target = preferencesStateMutableFlow.value.offlineTopUpTarget
+                if (target > 0) {
+                    com.wikirandomizerp.app.data.offline.OfflineTopUpScheduler.update(
+                        appContext, target, action.value
+                    )
+                }
+            }
+
+            is SettingsAction.SaveShowSearchBar -> viewModelScope.launch(safeCoroutineHandler) {
+                appPreferencesRepository.saveBooleanPreference("show-search-bar", action.value)
+                preferencesStateMutableFlow.update { it.copy(showSearchBar = action.value) }
+            }
+
+            is SettingsAction.SaveToolbarItems -> viewModelScope.launch(safeCoroutineHandler) {
+                appPreferencesRepository.saveStringPreference("toolbar-items", action.value)
+                preferencesStateMutableFlow.update { it.copy(toolbarItems = action.value) }
+            }
+
+            is SettingsAction.SaveToolbarAutoHide -> viewModelScope.launch(safeCoroutineHandler) {
+                appPreferencesRepository.saveBooleanPreference("toolbar-auto-hide", action.value)
+                preferencesStateMutableFlow.update { it.copy(toolbarAutoHide = action.value) }
             }
 
             is SettingsAction.SaveLinkPreviews -> viewModelScope.launch(safeCoroutineHandler) {
@@ -420,6 +462,8 @@ class SettingsViewModel(
 
             is SettingsAction.SaveSupporterMode -> viewModelScope.launch(safeCoroutineHandler) {
                 appPreferencesRepository.saveBooleanPreference("supporter-mode", action.value)
+                com.wikirandomizerp.app.widget.WidgetPrefs.setPremium(appContext, action.value)
+                com.wikirandomizerp.app.widget.RandomArticleWidgetProvider.updateAll(appContext)
                 preferencesStateMutableFlow.update { currentState ->
                     currentState.copy(supporterMode = action.value)
                 }
@@ -559,7 +603,10 @@ class SettingsViewModel(
 
             is SettingsAction.ResetSettings -> viewModelScope.launch(safeCoroutineHandler) {
                 try {
+                    // Premium is lifetime: resetting the settings must not take it away.
+                    val keepPremium = preferencesStateMutableFlow.value.supporterMode
                     appPreferencesRepository.resetSettings()
+                    if (keepPremium) appPreferencesRepository.saveBooleanPreference("supporter-mode", true)
                     // Reset also means "forget learned behaviour" (the feature is off by default).
                     try {
                         TopicIndex.get(
@@ -571,7 +618,7 @@ class SettingsViewModel(
                     }
                     HostGate.project = "wikipedia"
                     preferencesStateMutableFlow.update {
-                        PreferencesState()
+                        PreferencesState(supporterMode = keepPremium)
                     }
                 } catch (e: Exception) {
                     Log.e("ViewModel", "Error in restoring settings: ${e.message}")

@@ -25,6 +25,7 @@ import com.wikirandomizerp.app.data.AppLaunchExtras
 import com.wikirandomizerp.app.data.DebugLog
 import com.wikirandomizerp.app.data.LanguagePinnedWikipediaRepository
 import com.wikirandomizerp.app.data.TopicIndex
+import com.wikirandomizerp.app.data.billing.BillingManager
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
@@ -101,9 +102,16 @@ class DailyArticleWorker(
         val context = applicationContext
         if (!DailyArticleScheduler.isEnabled(context)) return Result.success()
         val application = context as? WikiRandomizerPApplication ?: return Result.success()
-        val prefs = application.container.preferencesStateMutableFlow.value
-        if (!prefs.dailyNotification) return Result.success()
-        val lang = DailyArticleScheduler.language(context, prefs.lang)
+        // Read the stored settings, not container.preferencesStateMutableFlow: that flow is only
+        // filled while the app's UI (SettingsViewModel) is alive. When WorkManager starts the
+        // process on its own at 09:00 it still holds the defaults (dailyNotification = false),
+        // so the notification silently never appeared unless the app happened to be open.
+        val stored = application.container.appPreferencesRepository
+        if (stored.readBooleanPreference("daily-notification") != true) return Result.success()
+        // Premium is enforced here too, not only on the settings switch.
+        val supporterMode = stored.readBooleanPreference("supporter-mode") == true
+        if (!BillingManager.isPremiumActive(context, supporterMode)) return Result.success()
+        val lang = DailyArticleScheduler.language(context, stored.readStringPreference("lang") ?: "en")
         return try {
             val index = TopicIndex.get(context, lang)
             val topics = index.completeEnabledTopics()

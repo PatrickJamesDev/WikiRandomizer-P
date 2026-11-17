@@ -12,11 +12,12 @@ import com.wikirandomizerp.app.MainActivity
 import com.wikirandomizerp.app.R
 import com.wikirandomizerp.app.data.AppLaunchExtras
 import com.wikirandomizerp.app.data.DeveloperMode
+import com.wikirandomizerp.app.data.billing.DonationBilling
 
 /**
- * Developer-preview home-screen widget: a single button that opens a random article from the
+ * Premium home-screen widget: a single button that opens a random article from the
  * user's topic library, plus a tap target that opens the app. The widget shows a short hint and
- * does nothing while developer mode (or the widget itself) is disabled.
+ * does nothing until Premium is unlocked and the widget is switched on in Settings.
  */
 class RandomArticleWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(
@@ -31,8 +32,13 @@ class RandomArticleWidgetProvider : AppWidgetProvider() {
 
     private fun buildViews(context: Context): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_random)
-        val devEnabled = DeveloperMode.isEnabled(context)
-        val enabled = devEnabled && WidgetPrefs.isEnabled(context)
+        // The widget is a Premium feature (Settings → Behaviour). It used to require developer
+        // mode instead, so it never worked for people who had actually unlocked Premium.
+        val premium = WidgetPrefs.isPremium(context) ||
+            DonationBilling.isSupporterActive(context) ||
+            DonationBilling.isSubscriptionActive(context) ||
+            DeveloperMode.isEnabled(context)
+        val enabled = premium && WidgetPrefs.isEnabled(context)
 
         views.setTextViewText(R.id.widget_title, context.getString(R.string.widget_name))
         views.setOnClickPendingIntent(R.id.widget_root, openApp(context))
@@ -54,7 +60,7 @@ class RandomArticleWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(
                 R.id.widget_subtitle,
                 context.getString(
-                    if (devEnabled) R.string.widget_disabled else R.string.widget_dev_only
+                    if (premium) R.string.widget_disabled else R.string.widget_premium_only
                 )
             )
             views.setViewVisibility(R.id.widget_random_button, View.GONE)

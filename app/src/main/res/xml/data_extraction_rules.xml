@@ -11,6 +11,8 @@
     <cloud-backup>
         <!-- With an <include> in a domain, only what is listed in that domain is backed up. -->
         <include domain="database" path="app_database" />
+        <!-- Supporter / subscription flags, so Premium survives a restore. -->
+        <include domain="sharedpref" path="donations.xml" />
         <!-- Only app_database is included, so caches, logs and the article library are already left out. -->
     </cloud-backup>
     <device-transfer>

@@ -89,18 +89,23 @@ class MainActivity : ComponentActivity() {
                         { title, lang -> viewModel.getCommonsCategoryGallery(title, lang) }
                     loader
                 }
+                // Premium reading options only apply while Premium is active (they were only
+                // locked on the settings screen, so they outlived a lapsed subscription).
+                val premiumReading = preferencesState.supporterMode
                 val readingTheme = com.wikirandomizerp.app.ui.theme.ReadingTheme
                     .fromId(preferencesState.readingTheme)
+                    .let { if (it.premium && !premiumReading) com.wikirandomizerp.app.ui.theme.ReadingTheme.DEFAULT else it }
                 val readingOptions = remember(
                     preferencesState.lineSpacing,
                     preferencesState.readingMargin,
                     preferencesState.justifyText,
-                    readingTheme
+                    readingTheme,
+                    premiumReading
                 ) {
                     ReadingOptions(
-                        lineSpacingPercent = preferencesState.lineSpacing,
-                        horizontalMarginDp = preferencesState.readingMargin,
-                        justifyText = preferencesState.justifyText,
+                        lineSpacingPercent = if (premiumReading) preferencesState.lineSpacing else 100,
+                        horizontalMarginDp = if (premiumReading) preferencesState.readingMargin else 16,
+                        justifyText = premiumReading && preferencesState.justifyText,
                         sepia = readingTheme == com.wikirandomizerp.app.ui.theme.ReadingTheme.SEPIA,
                         backgroundColor = readingTheme.background,
                         inkColor = readingTheme.ink,

@@ -1,6 +1,6 @@
 # Optional donations — Google Play setup
 
-The app uses **Google Play Billing Library 8.0.0** for optional support. There are no ads and no
+The app uses **Google Play Billing Library 9.1.0** for optional support. There are no ads and no
 tracking. One-time donations support the developer (Patrick James); an optional
 `sync_subscription` pays for cross-device cloud sync. Neither is a donation to the Wikimedia
 Foundation.

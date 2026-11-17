@@ -83,7 +83,12 @@ fun LibrarySearchScreen(
     modifier: Modifier = Modifier
 ) {
     val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    // Open the keyboard only after the screen has finished sliding in. Focusing straight away made
+    // the keyboard animation and the navigation transition run on top of each other.
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(420)
+        focusRequester.requestFocus()
+    }
 
     Scaffold(
         topBar = {

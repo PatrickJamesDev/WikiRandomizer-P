@@ -111,7 +111,8 @@ object ImagePrefetcher {
         val small = urls.mapNotNull { smallThumbnailUrl(it) }.distinct()
         if (small.isEmpty()) return
         val loader = SingletonImageLoader.get(context)
-        for (u in small) enqueueWarm(loader, context, u, ImageCacheKeys.thumbnail(u), 0)
+        val batch = WarmQueue.newBatch()
+        for (u in small) enqueueWarm(loader, context, u, ImageCacheKeys.thumbnail(u), 0, batch)
     }
 
 
@@ -119,9 +120,12 @@ object ImagePrefetcher {
     fun warmFullScreen(context: Context, urls: Collection<String>) {
         if (urls.isEmpty()) return
         val loader = SingletonImageLoader.get(context)
+        // One batch for the whole list: the first address (the card the reader is on or about to
+        // reach) must load before the later ones, not after them.
+        val batch = WarmQueue.newBatch()
         for (u in urls) {
             val standard = standardThumbnailUrl(u) ?: u
-            enqueueWarm(loader, context, standard, ImageCacheKeys.body(standard), 0)
+            enqueueWarm(loader, context, standard, ImageCacheKeys.body(standard), 0, batch)
         }
     }
 
@@ -145,7 +149,8 @@ object ImagePrefetcher {
         val fresh = candidates.distinct().take(CacheConfig.MAX_HIGH_RES_IMAGES).filter { done.add(it) }
         if (fresh.isEmpty()) return@withContext
         val loader = SingletonImageLoader.get(context)
-        for (u in fresh) enqueueWarm(loader, context, u, ImageCacheKeys.body(u))
+        val batch = WarmQueue.newBatch()
+        for (u in fresh) enqueueWarm(loader, context, u, ImageCacheKeys.body(u), batch = batch)
     }
 
     /**
@@ -154,10 +159,11 @@ object ImagePrefetcher {
      */
     fun preloadCommons(context: Context, gallery: com.wikirandomizerp.app.data.CommonsCategoryGallery) {
         val loader = SingletonImageLoader.get(context)
+        val batch = WarmQueue.newBatch()
         gallery.images.forEachIndexed { index, image ->
-            enqueueWarm(loader, context, image.thumbnailUrl, ImageCacheKeys.body(image.thumbnailUrl))
+            enqueueWarm(loader, context, image.thumbnailUrl, ImageCacheKeys.body(image.thumbnailUrl), batch = batch)
             if (index < CacheConfig.MAX_HIGH_RES_IMAGES) {
-                enqueueWarm(loader, context, image.viewUrl, ImageCacheKeys.body(image.viewUrl))
+                enqueueWarm(loader, context, image.viewUrl, ImageCacheKeys.body(image.viewUrl), batch = batch)
             }
         }
     }
@@ -197,7 +203,8 @@ object ImagePrefetcher {
         context: Context,
         urls: Collection<String>,
         maxFullRes: Int = CacheConfig.MAX_HIGH_RES_IMAGES,
-        gapMs: Long = 0L
+        gapMs: Long = 0L,
+        urgency: Int = URGENCY_FOREGROUND
     ) {
         val distinct = urls.distinct()
         if (distinct.isEmpty()) return
@@ -206,6 +213,7 @@ object ImagePrefetcher {
             thumbnails = distinct,
             fullRes = distinct.take(maxFullRes).mapNotNull(::largeVariant),
             gapMs = gapMs,
+            urgency = urgency
         )
     }
 
@@ -213,21 +221,34 @@ object ImagePrefetcher {
         context: Context,
         thumbnails: Collection<String>,
         fullRes: Collection<String> = emptyList(),
-        gapMs: Long = 0L
+        gapMs: Long = 0L,
+        urgency: Int = URGENCY_FOREGROUND
     ) = withContext(Dispatchers.Default) {
         if (thumbnails.isEmpty() && fullRes.isEmpty()) return@withContext
         val loader = SingletonImageLoader.get(context)
         val batch = WarmQueue.newBatch()
         // The first pictures of the article (the lead picture first) go before everything else.
         thumbnails.forEachIndexed { index, u ->
-            enqueueWarm(loader, context, u, ImageCacheKeys.body(u), if (index < 3) 0 else 1, batch)
+            enqueueWarm(loader, context, u, ImageCacheKeys.body(u), if (index < 3) 0 else 1, batch, urgency)
             if (gapMs > 0 && index >= 3) delay(gapMs)
         }
         for (u in fullRes) {
-            enqueueWarm(loader, context, u, ImageCacheKeys.body(u), 3, batch)
+            enqueueWarm(loader, context, u, ImageCacheKeys.body(u), 3, batch, urgency)
             if (gapMs > 0) delay(gapMs)
         }
     }
+
+    /** Pictures of the article on screen (or being opened): they always go first. */
+    const val URGENCY_FOREGROUND = 0
+
+    /**
+     * Pictures of the Nth prepared article is `URGENCY_QUEUE_BASE + N`: the article the Random
+     * button will open next is fully served before the one after it, whatever the picture sizes.
+     */
+    const val URGENCY_QUEUE_BASE = 1
+
+    /** Background tabs: behind every prepared random article. */
+    const val URGENCY_TABS = 50
 
     /** Lower number = loaded sooner. Covers/thumbnails first, 1920 px renditions last. */
     private fun defaultPriority(url: String): Int =
@@ -239,9 +260,10 @@ object ImagePrefetcher {
         url: String,
         diskCacheKey: String?,
         priority: Int = defaultPriority(url),
-        batch: Long = WarmQueue.newBatch()
+        batch: Long = WarmQueue.newBatch(),
+        urgency: Int = URGENCY_FOREGROUND
     ) {
-        WarmQueue.submit(loader, context.applicationContext, url, diskCacheKey, priority, batch)
+        WarmQueue.submit(loader, context.applicationContext, url, diskCacheKey, priority, batch, urgency)
     }
 
     /**
@@ -259,6 +281,7 @@ object ImagePrefetcher {
         private const val MAX_PENDING = 300
 
         private class Job(
+            val urgency: Int,
             val priority: Int,
             val seq: Long,
             val batch: Long,
@@ -276,9 +299,11 @@ object ImagePrefetcher {
         private var running = 0
         private val known = HashSet<String>()
         private val pending = java.util.TreeSet<Job>(
-            // Priority first; then the newest request group (the article the reader just opened);
-            // inside one group the original order, so the first picture of an article loads first.
-            compareBy<Job>({ it.priority }, { -it.batch }, { it.seq })
+            // Urgency first (what is on screen beats what is merely prepared, and the next
+            // prepared article beats the one after it); then small pictures before huge ones;
+            // then the newest request group; inside one group the original order, so the first
+            // picture of an article loads first.
+            compareBy<Job>({ it.urgency }, { it.priority }, { -it.batch }, { it.seq })
         )
         private val batches = java.util.concurrent.atomic.AtomicLong()
 
@@ -290,12 +315,22 @@ object ImagePrefetcher {
             url: String,
             key: String?,
             priority: Int,
-            batch: Long
+            batch: Long,
+            urgency: Int
         ) {
             synchronized(lock) {
                 val id = key ?: url
-                if (!known.add(id)) return
-                pending.add(Job(priority, seq++, batch, loader, context, url, key))
+                if (!known.add(id)) {
+                    // Already queued by something less urgent (a background warm of the same
+                    // picture): promote it instead of leaving it at the back of the line.
+                    val queued = pending.firstOrNull { (it.key ?: it.url) == id }
+                    if (queued != null && urgency < queued.urgency) {
+                        pending.remove(queued)
+                        pending.add(Job(urgency, minOf(priority, queued.priority), seq++, batch, loader, context, url, key))
+                    }
+                    return
+                }
+                pending.add(Job(urgency, priority, seq++, batch, loader, context, url, key))
                 while (pending.size > MAX_PENDING) {
                     val dropped = pending.pollLast() ?: break
                     known.remove(dropped.key ?: dropped.url)
@@ -437,12 +472,16 @@ object ImagePrefetcher {
         if (fresh.isEmpty()) return@withContext
         DebugLog.i("Prefetch", "queueing ${fresh.size} article images in the background (${done.size} already queued)")
         val loader = SingletonImageLoader.get(context)
+        // One batch for the whole pass, so pictures keep document order: the ones just below the
+        // reader load before the ones at the far end of the article (every enqueue used to get
+        // its own, newer batch, which served the LAST picture first).
+        val batch = WarmQueue.newBatch()
         for ((index, u) in fresh.withIndex()) {
             done.add(u)
-            enqueueWarm(loader, context, u, ImageCacheKeys.body(u))
+            enqueueWarm(loader, context, u, ImageCacheKeys.body(u), batch = batch)
             if (index < CacheConfig.MAX_HIGH_RES_IMAGES) largeVariant(u)?.let {
                 done.add(it)
-                enqueueWarm(loader, context, it, ImageCacheKeys.body(it))
+                enqueueWarm(loader, context, it, ImageCacheKeys.body(it), batch = batch)
             }
             delay(50) // gentle: don't hit the server with a hundred requests at once
         }

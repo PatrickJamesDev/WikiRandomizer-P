@@ -245,10 +245,13 @@ fun AppScreen(
         donationBilling?.state?.collect { donationState = it }
     }
     LaunchedEffect(donationBilling, localSyncStore) {
-        if (localSyncStore?.cloudConfigured == true) donationBilling?.start()
+        // Connect shortly after launch (not only when Firebase is configured) so a purchase made
+        // on another device or before a reinstall is restored without opening the donation dialog.
+        kotlinx.coroutines.delay(4_000)
+        donationBilling?.start()
     }
-    // A completed purchase unlocks the same supporter features the debug switch does. This only
-    // ever turns the flag on: a temporary Billing disconnect must not revoke it.
+    // Premium is lifetime: any completed purchase (donation, supporter or subscription) turns it
+    // on and nothing turns it off again. Only cloud sync stays tied to an active subscription.
     LaunchedEffect(donationState.supporter, donationState.subscription) {
         if ((donationState.supporter || donationState.subscription) && !preferencesState.supporterMode) {
             settingsViewModel.onAction(SettingsAction.SaveSupporterMode(true))
@@ -377,10 +380,14 @@ fun AppScreen(
             preferencesState.immersiveMode
         ) TopAppBarDefaults.enterAlwaysScrollBehavior()
         else TopAppBarDefaults.pinnedScrollBehavior()
+    val toolbarHasTools = com.wikirandomizerp.app.ui.common.ToolbarTools
+        .effective(preferencesState.toolbarItems, preferencesState.showSearchBar).isNotEmpty()
     val floatingToolbarScrollBehaviour =
         if (
-            !windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND) ||
-            preferencesState.immersiveMode
+            toolbarHasTools && (
+                !windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND) ||
+                    preferencesState.immersiveMode || preferencesState.toolbarAutoHide
+                )
         ) FloatingToolbarDefaults.exitAlwaysScrollBehavior(
             exitDirection = FloatingToolbarExitDirection.Bottom,
             snapAnimationSpec = motionScheme.defaultSpatialSpec()
@@ -546,8 +553,7 @@ fun AppScreen(
         homeBackStackEntry = backStack.last(),
         windowSizeClass = windowSizeClass,
         backStackEntry = navBackStackEntry,
-        historyEnabled = preferencesState.browsingHistory &&
-            (preferencesState.supporterMode || donationState.supporter || donationState.subscription),
+        historyEnabled = preferencesState.browsingHistory,
         isImageView = backStack.last() is HomeSubscreen.Image,
         onVerticalFeedClick = {
             navController.navigate(VerticalFeedRoute) { launchSingleTop = true }
@@ -750,7 +756,8 @@ fun AppScreen(
                                 onNavigateToRandomTopics = openRandomTopics,
                                 clearHistory = clearSearchHistory,
                                 removeHistoryItem = removeSearchHistoryItem,
-                                onMenuIconClicked = onMenuIconClicked
+                                onMenuIconClicked = onMenuIconClicked,
+                                showCollapsedBar = preferencesState.showSearchBar
                             )
                         }
                     },
@@ -766,16 +773,22 @@ fun AppScreen(
                             ScaffoldDefaults.contentWindowInsets
                                 .only(WindowInsetsSides.Top + WindowInsetsSides.Bottom + WindowInsetsSides.End)
                         else ScaffoldDefaults.contentWindowInsets,
-                    modifier = (if (floatingToolbarScrollBehaviour != null)
-                        Modifier
-                            .fillMaxSize()
-                            .nestedScroll(searchBarScrollBehavior.nestedScrollConnection)
-                            .nestedScroll(floatingToolbarScrollBehaviour)
-                    else
-                        Modifier
-                            .fillMaxSize()
-                            .nestedScroll(searchBarScrollBehavior.nestedScrollConnection)
-                    )
+                    // The top bar's scroll behaviour must only listen while that bar is on screen.
+                    // With the bar hidden it never measures itself, so its height limit stays at
+                    // its initial extreme and the behaviour swallowed every scroll gesture: no
+                    // article could be scrolled. The same goes for a floating toolbar with no tools.
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (preferencesState.showSearchBar)
+                                Modifier.nestedScroll(searchBarScrollBehavior.nestedScrollConnection)
+                            else Modifier
+                        )
+                        .then(
+                            if (floatingToolbarScrollBehaviour != null)
+                                Modifier.nestedScroll(floatingToolbarScrollBehaviour)
+                            else Modifier
+                        )
                 ) { insets ->
                     AppHomeScreen(
                         backStack = backStack,
@@ -795,6 +808,7 @@ fun AppScreen(
                             showDonationDialog = true
                         },
                         onNavigateToRandomTopics = openRandomTopics,
+                        onMenuClick = onMenuIconClicked,
                         setShowArticleLanguageSheet = setShowArticleLanguageSheet,
                         insets = insets,
                         windowSizeClass = windowSizeClass,
@@ -1213,7 +1227,8 @@ fun AppScreen(
         onNewTab = { viewModel.onAction(HomeAction.NewTab) },
         recentlyClosed = homeScreenState.recentlyClosed,
         onReopenClosedTab = { viewModel.onAction(HomeAction.ReopenClosedTab) },
-        showArticleInfoShortcuts = developerMode && preferencesState.talkPages &&
+        showArticleInfoShortcuts = (preferencesState.supporterMode || donationState.supporter ||
+                donationState.subscription) && preferencesState.talkPages &&
                 currentArticle != null && currentArticle.title != "Error",
         onOpenArticleInfo = { tab ->
             articleInfoTab = tab
